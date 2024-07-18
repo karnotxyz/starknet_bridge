@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use cairo_appchain_bridge::bridge::interface::ITokenBridgeDispatcherTrait;
     use core::serde::Serde;
     use core::result::ResultTrait;
     use core::option::OptionTrait;

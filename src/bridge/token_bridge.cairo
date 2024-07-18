@@ -16,8 +16,11 @@ pub mod TokenBridge {
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
 
+    use cairo_appchain_bridge::withdrawal_limit::component::WithdrawalLimitComponent;
+
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
+    component!(path: WithdrawalLimitComponent, storage: withdrawal, event: WithdrawalEvent);
 
     use core::num::traits::zero::Zero;
     use starknet::{ContractAddress, get_contract_address, get_caller_address, get_block_timestamp};
@@ -38,6 +41,11 @@ pub mod TokenBridge {
 
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
 
+    // WithdrawalLimit
+    #[abi(embed_v0)]
+    impl WithdrawalLimitImpl =
+        WithdrawalLimitComponent::WithdrawalLimit<ContractState>;
+    impl WithdrawalLimitInternal = WithdrawalLimitComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
@@ -48,6 +56,8 @@ pub mod TokenBridge {
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
         upgradeable: UpgradeableComponent::Storage,
+        #[substorage(v0)]
+        withdrawal: WithdrawalLimitComponent::Storage
     }
 
     // 
@@ -83,7 +93,9 @@ pub mod TokenBridge {
         #[flat]
         OwnableEvent: OwnableComponent::Event,
         #[flat]
-        UpgradeableEvent: UpgradeableComponent::Event
+        UpgradeableEvent: UpgradeableComponent::Event,
+        #[flat]
+        WithdrawalEvent: WithdrawalLimitComponent::Event
     }
 
     #[derive(Drop, starknet::Event)]
@@ -744,6 +756,10 @@ pub mod TokenBridge {
             }
             // TODO: Write the WithdrawalLimit functionality
             return 0;
+        }
+
+        fn is_withdrawal_limit_applied(self: @ContractState, token: ContractAddress) -> bool {
+            self.token_settings.read(token).withdrawal_limit_applied
         }
     }
 

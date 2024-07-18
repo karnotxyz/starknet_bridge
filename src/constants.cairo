@@ -14,3 +14,24 @@ pub const TRANSFER_FROM_STARKNET: felt252 = 0;
 pub const UINT256_PART_SIZE_BITS: felt252 = 128;
 pub const UINT256_PART_SIZE: felt252 = 2 * UINT256_PART_SIZE_BITS;
 pub const MAX_PENDING_DURATION: felt252 = 5 * 86400;
+
+
+// Withdrawal limit
+
+pub const WITHDRAW_MESSAGE: felt252 = 0;
+pub const CONTRACT_IDENTITY: felt252 = 'STARKGATE';
+pub const CONTRACT_VERSION: felt252 = 2;
+
+pub const DEFAULT_DAILY_WITHDRAW_LIMIT_PCT: u8 = 5;
+
+pub const SECONDS_IN_DAY: u64 = 86400;
+pub const DEFAULT_UPGRADE_DELAY: u64 = 0;
+
+
+// When storing the remaining quota for today, we add 1 to the value. This is because we want
+// that 0 will mean that it was not set yet.
+pub const REMAINING_QUOTA_OFFSET: u256 = 1;
+
+// starknet_keccak('on_receive').
+pub const ON_RECEIVE_SELECTOR: felt252 =
+    480768629706071032051132431608482761444818804172389941599997570483678682398;

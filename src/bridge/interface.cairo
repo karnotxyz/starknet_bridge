@@ -36,6 +36,7 @@ pub trait ITokenBridge<TContractState> {
     fn identity(self: @TContractState) -> ByteArray;
     fn getStatus(self: @TContractState, token: ContractAddress) -> TokenStatus;
     fn isServicingToken(self: @TContractState, token: ContractAddress) -> bool;
+    fn is_withdrawal_limit_applied(self: @TContractState, token: ContractAddress) -> bool;
 
     fn enroll_token(ref self: TContractState, token: ContractAddress);
     fn check_deployment_status(ref self: TContractState, token: ContractAddress);

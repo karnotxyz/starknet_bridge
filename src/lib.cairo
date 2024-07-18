@@ -3,7 +3,9 @@ pub mod bridge {
     pub mod interface;
 }
 
-pub mod withdrawal_limit { // pub mod component;
+pub mod withdrawal_limit {
+    pub mod component;
+    pub mod interface;
 }
 
 pub mod constants;
