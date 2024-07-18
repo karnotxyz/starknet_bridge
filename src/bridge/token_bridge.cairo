@@ -1,5 +1,6 @@
 #[starknet::contract]
 pub mod TokenBridge {
+    use openzeppelin::access::ownable::ownable::OwnableComponent::InternalTrait;
     use core::option::OptionTrait;
     use core::traits::TryInto;
     use core::starknet::event::EventEmitter;
@@ -10,24 +11,45 @@ pub mod TokenBridge {
         IERC20Dispatcher, IERC20MetadataDispatcher, IERC20DispatcherTrait,
         IERC20MetadataDispatcherTrait
     };
+
+    use openzeppelin::access::ownable::OwnableComponent;
+    use openzeppelin::upgrades::UpgradeableComponent;
+    use openzeppelin::upgrades::interface::IUpgradeable;
+
+    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
+    component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
+
     use core::num::traits::zero::Zero;
     use starknet::{ContractAddress, get_contract_address, get_caller_address, get_block_timestamp};
 
-    use cairo_appchain_bridge::bridge::interface::{TokenStatus, TokenSettings, ITokenBridge};
+    use cairo_appchain_bridge::bridge::interface::{
+        TokenStatus, TokenSettings, ITokenBridge, ITokenBridgeAdmin
+    };
     use piltover::messaging::interface::IMessagingDispatcher;
     use piltover::messaging::interface::IMessagingDispatcherTrait;
-    // use cairo_appchain_bridge::interfaces::IMessaging::{
-    //     IMessagingDispatcherTrait, IMessagingDispatcher
-    // };
     use cairo_appchain_bridge::constants;
+    use starknet::ClassHash;
+
+
+    // Ownable
+    #[abi(embed_v0)]
+    impl OwnableTwoStepImpl = OwnableComponent::OwnableTwoStepImpl<ContractState>;
+    impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
+
+    impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
+
 
     #[storage]
     struct Storage {
         appchain_bridge: ContractAddress,
-        // manager: ContractAddress,
         messaging_contract: IMessagingDispatcher,
-        token_settings: LegacyMap<ContractAddress, TokenSettings>
+        token_settings: LegacyMap<ContractAddress, TokenSettings>,
+        #[substorage(v0)]
+        ownable: OwnableComponent::Storage,
+        #[substorage(v0)]
+        upgradeable: UpgradeableComponent::Storage,
     }
+
     // 
     // Errors 
     //
@@ -36,12 +58,18 @@ pub mod TokenBridge {
         pub const ZERO_DEPOSIT: felt252 = 'Zero amount';
         pub const ALREADY_ENROLLED: felt252 = 'Already enrolled';
         pub const DEPLOYMENT_MESSAGE_NOT_EXIST: felt252 = 'Deployment message inexistent';
+        pub const CANNOT_DEACTIVATE: felt252 = 'Cannot deactivate and block';
+        pub const CANNOT_BLOCK: felt252 = 'Cannot block';
+        pub const INVALID_RECIPIENT: felt252 = 'Invalid recipient';
     }
+
+
     #[derive(Drop, starknet::Event)]
     #[event]
     enum Event {
         TokenEnrollmentInitiated: TokenEnrollmentInitiated,
         TokenDeactivated: TokenDeactivated,
+        TokenBlocked: TokenBlocked,
         Deposit: Deposit,
         DepositWithMessage: DepositWithMessage,
         DepostiCancelRequest: DepositCancelRequest,
@@ -50,11 +78,21 @@ pub mod TokenBridge {
         DepositWithMessageReclaimed: DepositWithMessageReclaimed,
         Withdrawal: Withdrawal,
         WithdrawalLimitEnabled: WithdrawalLimitEnabled,
-        WithdrawalLimitDisabled: WithdrawalLimitDisabled
+        WithdrawalLimitDisabled: WithdrawalLimitDisabled,
+        SetMaxTotalBalance: SetMaxTotalBalance,
+        #[flat]
+        OwnableEvent: OwnableComponent::Event,
+        #[flat]
+        UpgradeableEvent: UpgradeableComponent::Event
     }
 
     #[derive(Drop, starknet::Event)]
     struct TokenDeactivated {
+        token: ContractAddress
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct TokenBlocked {
         token: ContractAddress
     }
 
@@ -75,7 +113,6 @@ pub mod TokenBridge {
         #[key]
         appchain_recipient: ContractAddress,
         nonce: felt252,
-        fee: felt252
     }
 
     #[derive(Drop, starknet::Event)]
@@ -89,7 +126,6 @@ pub mod TokenBridge {
         appchain_recipient: ContractAddress,
         message: Span<felt252>,
         nonce: felt252,
-        fee: felt252
     }
 
     #[derive(Drop, starknet::Event)]
@@ -167,16 +203,25 @@ pub mod TokenBridge {
         token: ContractAddress,
     }
 
+    #[derive(Drop, starknet::Event)]
+    struct SetMaxTotalBalance {
+        #[key]
+        token: ContractAddress,
+        value: u256
+    }
+
     #[constructor]
     fn constructor(
         ref self: ContractState,
         appchain_bridge: ContractAddress,
-        messaging_contract: ContractAddress
+        messaging_contract: ContractAddress,
+        owner: ContractAddress
     ) {
         self.appchain_bridge.write(appchain_bridge);
         self
             .messaging_contract
             .write(IMessagingDispatcher { contract_address: messaging_contract });
+        self.ownable.initializer(owner);
     }
 
 
@@ -195,37 +240,14 @@ pub mod TokenBridge {
             calldata.span()
         }
 
-        // function acceptDeposit(address token, uint256 amount) internal virtual returns (uint256) {
-        //     Fees.checkFee(msg.value);
-        //     uint256 currentBalance = IERC20(token).balanceOf(address(this));
-        //     require(currentBalance + amount <= getMaxTotalBalance(token), "MAX_BALANCE_EXCEEDED");
-        //     Transfers.transferIn(token, msg.sender, amount);
-        //     return msg.value;
-        // }
 
-        fn accept_deposit(self: @ContractState, token: ContractAddress, amount: u256) -> felt252 {
-            // TODO: check fees (not sure if needed)
-
+        fn accept_deposit(self: @ContractState, token: ContractAddress, amount: u256) {
             let caller = get_caller_address();
             let dispatcher = IERC20Dispatcher { contract_address: token };
             assert(dispatcher.balance_of(caller) == amount, 'Not enough balance');
             dispatcher.transfer_from(caller, get_contract_address(), amount);
-            // TODO: Should we return fee here
-            let fee = 0;
-            return fee;
         }
 
-        // function sendDeployMessage(address token) internal returns (bytes32) {
-        //     require(l2TokenBridge() != 0, "L2_BRIDGE_NOT_SET");
-        //     Fees.checkFee(msg.value);
-        //
-        //     (bytes32 deploymentMsgHash, ) = messagingContract().sendMessageToL2{value: msg.value}(
-        //         l2TokenBridge(),
-        //         HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
-        //         deployMessagePayload(token)
-        //     );
-        //     return deploymentMsgHash;
-        // }
         fn send_deploy_message(self: @ContractState, token: ContractAddress) -> felt252 {
             assert(self.appchain_bridge().is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
             // TODO: Check fees not sure if needed
@@ -247,27 +269,26 @@ pub mod TokenBridge {
             token: ContractAddress,
             amount: u256,
             appchain_recipient: ContractAddress,
-            no_message: Span<felt252>,
+            message: Span<felt252>,
             selector: felt252,
             nonce: felt252,
-            fee: felt252
         ) {
             let is_with_message = selector == constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR;
             let caller = get_caller_address();
             if (is_with_message) {
                 self
                     .emit(
-                        Deposit {
+                        DepositWithMessage {
                             sender: caller,
                             token: token,
                             amount: amount,
                             appchain_recipient: appchain_recipient,
+                            message: message,
                             nonce: nonce,
-                            fee
                         }
                     );
             } else {
-                assert(selector == constants::HANDLE_DEPOSIT_SELECTOR, 'Unknown Selector');
+                assert(selector == constants::HANDLE_TOKEN_DEPOSIT_SELECTOR, 'Unknown Selector');
                 self
                     .emit(
                         Deposit {
@@ -276,7 +297,6 @@ pub mod TokenBridge {
                             amount: amount,
                             appchain_recipient: appchain_recipient,
                             nonce: nonce,
-                            fee
                         }
                     )
             }
@@ -289,7 +309,6 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             message: Span<felt252>,
             selector: felt252,
-            fee: felt252
         ) -> felt252 {
             assert(self.appchain_bridge().is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
             assert(amount > 0, Errors::ZERO_DEPOSIT);
@@ -299,13 +318,35 @@ pub mod TokenBridge {
                 .messaging_contract
                 .read()
                 .send_message_to_appchain(
-                    self.appchain_bridge.read(),
+                    self.appchain_bridge(),
                     selector,
                     deposit_message_payload(
                         token, amount, appchain_recipient, is_with_message, message
                     )
                 );
             return nonce;
+        }
+
+        fn consume_message(
+            self: @ContractState, token: ContractAddress, amount: u256, recipient: ContractAddress
+        ) {
+            let appchain_bridge = self.appchain_bridge();
+            assert(appchain_bridge.is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
+            let mut payload = ArrayTrait::new();
+            constants::TRANSFER_FROM_STARKNET.serialize(ref payload);
+            recipient.serialize(ref payload);
+            amount.serialize(ref payload);
+            self
+                .messaging_contract
+                .read()
+                .consume_message_from_appchain(appchain_bridge, payload.span());
+        }
+
+        fn _block_token(ref self: ContractState, token: ContractAddress) {
+            let new_settings = TokenSettings {
+                token_status: TokenStatus::Blocked, ..self.token_settings.read(token)
+            };
+            self.token_settings.write(token, new_settings);
         }
     }
 
@@ -330,6 +371,74 @@ pub mod TokenBridge {
         return payload.span();
     }
 
+    #[abi(embed_v0)]
+    impl TokenBrdigeAdminImpl of ITokenBridgeAdmin<ContractState> {
+        fn set_appchain_token_bridge(ref self: ContractState, appchain_bridge: ContractAddress) {
+            self.appchain_bridge.write(appchain_bridge);
+        }
+
+        // Deactivates a token in the system.
+        // This fun ction is used to deactivate a token that was previously enrolled.
+        // Only the manager, who initiated the enrollment, can call this function.
+        //
+        // @param token The address of the token contract to be deactivated.
+        // No return value, but it updates the token's status to 'Deactivated'.
+        // Emits a `TokenDeactivated` event when the deactivation is successful.
+        // Throws an error if the token is not enrolled or if the sender is not the manager.
+        fn block_token(ref self: ContractState, token: ContractAddress) {
+            self.ownable.assert_only_owner();
+            let settings = self.token_settings.read(token);
+            assert(settings.token_status == TokenStatus::Unknown, Errors::CANNOT_BLOCK);
+
+            self._block_token(:token);
+            self.emit(TokenBlocked { token });
+        }
+
+
+        fn deactivate_and_block_token(ref self: ContractState, token: ContractAddress) {
+            self.ownable.assert_only_owner();
+            let settings = self.token_settings.read(token);
+            assert(
+                settings.token_status == TokenStatus::Active
+                    || settings.token_status == TokenStatus::Pending,
+                Errors::CANNOT_DEACTIVATE
+            );
+
+            self._block_token(:token);
+
+            self.emit(TokenDeactivated { token });
+            self.emit(TokenBlocked { token });
+        }
+
+        fn enable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
+            self.ownable.assert_only_owner();
+            let new_settings = TokenSettings {
+                withdrawal_limit_applied: true, ..self.token_settings.read(token)
+            };
+            self.token_settings.write(token, new_settings);
+            self.emit(WithdrawalLimitEnabled { sender: get_caller_address(), token });
+        }
+
+        fn disable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
+            self.ownable.assert_only_owner();
+            let new_settings = TokenSettings {
+                withdrawal_limit_applied: false, ..self.token_settings.read(token)
+            };
+            self.token_settings.write(token, new_settings);
+            self.emit(WithdrawalLimitDisabled { sender: get_caller_address(), token });
+        }
+
+        fn set_max_total_balance(
+            ref self: ContractState, token: ContractAddress, max_total_balance: u256
+        ) {
+            self.ownable.assert_only_owner();
+            let new_settings = TokenSettings {
+                max_total_balance: max_total_balance, ..self.token_settings.read(token)
+            };
+            self.token_settings.write(token, new_settings);
+            self.emit(SetMaxTotalBalance { token, value: max_total_balance });
+        }
+    }
 
     #[abi(embed_v0)]
     impl TokenBridgeImpl of ITokenBridge<ContractState> {
@@ -341,36 +450,6 @@ pub mod TokenBridge {
             "cairo_appchain_bridge"
         }
 
-        // /**
-        //     Initiates the enrollment of a token into the system.
-        //     This function is used to initiate the enrollment process of a token.
-        //     The token is marked as 'Pending' because the success of the deployment is uncertain at this stage.
-        //     The deployment message's existence is checked, indicating that deployment has been attempted.
-        //     The success of the deployment is determined at a later stage during the application's lifecycle.
-        //     Only the manager, who initiates the deployment, can call this function.
-        //
-        //     @param token The address of the token contract to be enrolled.
-        //     No return value, but it updates the token's status to 'Pending' and records the deployment message and expiration time.
-        //     Emits a `TokenEnrollmentInitiated` event when the enrollment is initiated.
-        //     Throws an error if the sender is not the manager or if the deployment message does not exist.
-        //  */
-        // function enrollToken(address token) external payable virtual onlyManager {
-        //     require(
-        //         tokenSettings()[token].tokenStatus == TokenStatus.Unknown,
-        //         "TOKEN_ALREADY_ENROLLED"
-        //     );
-        //     // send message.
-        //     bytes32 deploymentMsgHash = sendDeployMessage(token);
-        //
-        //     require(
-        //         messagingContract().l1ToL2Messages(deploymentMsgHash) > 0,
-        //         "DEPLOYMENT_MESSAGE_NOT_EXIST"
-        //     );
-        //     tokenSettings()[token].tokenStatus = TokenStatus.Pending;
-        //     tokenSettings()[token].deploymentMsgHash = deploymentMsgHash;
-        //     tokenSettings()[token].pendingDeploymentExpiration = block.timestamp + MAX_PENDING_DURATION;
-        //     emit TokenEnrollmentInitiated(token, deploymentMsgHash);
-        // }
 
         fn enroll_token(ref self: ContractState, token: ContractAddress) {
             let status = self.token_settings.read(token).token_status;
@@ -401,34 +480,6 @@ pub mod TokenBridge {
             self.emit(TokenEnrollmentInitiated { token, deployment_message_hash });
         }
 
-        // function deposit(
-        //     address token,
-        //     uint256 amount,
-        //     uint256 l2Recipient
-        // ) external payable onlyServicingToken(token) {
-        //     uint256[] memory noMessage = new uint256[](0);
-        //     uint256 fee = acceptDeposit(token, amount);
-        //     uint256 nonce = sendDepositMessage(
-        //         token,
-        //         amount,
-        //         l2Recipient,
-        //         noMessage,
-        //         HANDLE_TOKEN_DEPOSIT_SELECTOR,
-        //         fee
-        //     );
-        //     emitDepositEvent(
-        //         token,
-        //         amount,
-        //         l2Recipient,
-        //         noMessage,
-        //         HANDLE_TOKEN_DEPOSIT_SELECTOR,
-        //         nonce,
-        //         fee
-        //     );
-        //
-        //     // Piggy-back the deposit tx to check and update the status of token bridge deployment.
-        //     checkDeploymentStatus(token);
-        // }
         fn deposit(
             ref self: ContractState,
             token: ContractAddress,
@@ -436,7 +487,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress
         ) {
             let no_message: Span<felt252> = array![].span();
-            let fee = self.accept_deposit(token, amount);
+            self.accept_deposit(token, amount);
             let nonce = self
                 .send_deposit_message(
                     token,
@@ -444,7 +495,6 @@ pub mod TokenBridge {
                     appchain_recipient,
                     no_message.clone(),
                     constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
-                    fee
                 );
             self
                 .emit_deposit_event(
@@ -454,12 +504,41 @@ pub mod TokenBridge {
                     no_message,
                     constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
                     nonce,
-                    fee
                 );
             self.check_deployment_status(token);
         }
 
 
+        fn deposit_with_message(
+            ref self: ContractState,
+            token: ContractAddress,
+            amount: u256,
+            appchain_recipient: ContractAddress,
+            message: Span<felt252>
+        ) {
+            self.accept_deposit(token, amount);
+            let nonce = self
+                .send_deposit_message(
+                    token,
+                    amount,
+                    appchain_recipient,
+                    message,
+                    constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR,
+                );
+
+            self
+                .emit_deposit_event(
+                    token,
+                    amount,
+                    appchain_recipient,
+                    message,
+                    constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR,
+                    nonce
+                );
+
+            // Piggy-back the deposit tx to check and update the status of token bridge deployment.
+            self.check_deployment_status(token);
+        }
         //
         //     checks token deployment status.
         //     relies on starknet clearing l1-l2 message upon successful completion of deployment.
@@ -492,21 +571,153 @@ pub mod TokenBridge {
 
         }
 
-        // Deactivates a token in the system.
-        // This function is used to deactivate a token that was previously enrolled.
-        // Only the manager, who initiated the enrollment, can call this function.
-        //
-        // @param token The address of the token contract to be deactivated.
-        // No return value, but it updates the token's status to 'Deactivated'.
-        // Emits a `TokenDeactivated` event when the deactivation is successful.
-        // Throws an error if the token is not enrolled or if the sender is not the manager.
-        fn deactivate_token(ref self: ContractState, token: ContractAddress) {
+
+        fn withdraw(
+            ref self: ContractState,
+            token: ContractAddress,
+            amount: u256,
+            recipient: ContractAddress
+        ) {
+            assert(recipient.is_non_zero(), Errors::INVALID_RECIPIENT);
+
+            self.consume_message(token, amount, recipient);
             let settings = self.token_settings.read(token);
-            assert(settings.token_status != TokenStatus::Unknown, 'UNKNOWN_TOKEN');
-            let new_settings = TokenSettings { token_status: TokenStatus::Deactivated, ..settings };
-            self.token_settings.write(token, new_settings);
-            self.emit(TokenDeactivated { token });
+            // TODO: Consume quota from here
+            // DEP(byteZorvin): Complete the withdrawal component in cairo 
+            if (settings.withdrawal_limit_applied) {}
+            let tokenDispatcher = IERC20Dispatcher { contract_address: token };
+            tokenDispatcher.transfer(recipient, amount);
+            self.emit(Withdrawal { recipient, token, amount });
         }
+
+        // /*
+        //   A deposit cancellation requires two steps:
+        //   1. The depositor should send a depositCancelRequest request with deposit details & nonce.
+        //   2. After a predetermined time (cancellation delay), the depositor can claim back the funds by
+        //      calling depositReclaim (using the same arguments).
+        //
+        //   Note: As long as the depositReclaim was not performed, the deposit may be processed, even if
+        //         the cancellation delay time has already passed. Only the depositor is allowed to cancel
+        //         a deposit, and only before depositReclaim was performed.
+        // */
+        fn deposit_cancel_request(
+            ref self: ContractState,
+            token: ContractAddress,
+            amount: u256,
+            appchain_recipient: ContractAddress,
+            nonce: felt252
+        ) {
+            let no_message: Span<felt252> = array![].span();
+            self
+                .messaging_contract
+                .read()
+                .start_message_cancellation(
+                    self.appchain_bridge(),
+                    constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
+                    deposit_message_payload(token, amount, appchain_recipient, false, no_message),
+                    nonce
+                );
+            self
+                .emit(
+                    DepositCancelRequest {
+                        sender: get_caller_address(), token, amount, appchain_recipient, nonce
+                    }
+                );
+        }
+
+        fn deposit_with_message_cancel_request(
+            ref self: ContractState,
+            token: ContractAddress,
+            amount: u256,
+            appchain_recipient: ContractAddress,
+            message: Span<felt252>,
+            nonce: felt252
+        ) {
+            self
+                .messaging_contract
+                .read()
+                .start_message_cancellation(
+                    self.appchain_bridge(),
+                    constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR,
+                    deposit_message_payload(token, amount, appchain_recipient, true, message),
+                    nonce
+                );
+            self
+                .emit(
+                    DepositWithMessageCancelRequest {
+                        sender: get_caller_address(),
+                        token,
+                        amount,
+                        appchain_recipient,
+                        message,
+                        nonce
+                    }
+                );
+        }
+
+        fn deposit_with_message_reclaim(
+            ref self: ContractState,
+            token: ContractAddress,
+            amount: u256,
+            appchain_recipient: ContractAddress,
+            message: Span<felt252>,
+            nonce: felt252
+        ) {
+            self
+                .messaging_contract
+                .read()
+                .cancel_message(
+                    self.appchain_bridge(),
+                    constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR,
+                    deposit_message_payload(token, amount, appchain_recipient, true, message),
+                    nonce
+                );
+
+            let dispatcher = IERC20Dispatcher { contract_address: token };
+            dispatcher.transfer(get_caller_address(), amount);
+
+            self
+                .emit(
+                    DepositWithMessageReclaimed {
+                        sender: get_caller_address(),
+                        token,
+                        amount,
+                        appchain_recipient,
+                        message,
+                        nonce
+                    }
+                );
+        }
+
+        fn deposit_reclaim(
+            ref self: ContractState,
+            token: ContractAddress,
+            amount: u256,
+            appchain_recipient: ContractAddress,
+            nonce: felt252
+        ) {
+            let no_message: Span<felt252> = array![].span();
+            self
+                .messaging_contract
+                .read()
+                .cancel_message(
+                    self.appchain_bridge(),
+                    constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
+                    deposit_message_payload(token, amount, appchain_recipient, false, no_message),
+                    nonce
+                );
+
+            let dispatcher = IERC20Dispatcher { contract_address: token };
+            dispatcher.transfer(get_caller_address(), amount);
+
+            self
+                .emit(
+                    DepositReclaimed {
+                        sender: get_caller_address(), token, amount, appchain_recipient, nonce
+                    }
+                );
+        }
+
 
         fn getStatus(self: @ContractState, token: ContractAddress) -> TokenStatus {
             self.token_settings.read(token).token_status
@@ -527,8 +738,23 @@ pub mod TokenBridge {
         //             ? WithdrawalLimit.getRemainingIntradayAllowance(token)
         //             : type(uint256).max;
         // }
-        fn get_remaining_intraday_allowance(token: ContractAddress) -> u256 {
-            self.token_settings.read(token);
+        fn get_remaining_intraday_allowance(self: @ContractState, token: ContractAddress) -> u256 {
+            if (self.token_settings.read(token).withdrawal_limit_applied) {
+                return core::integer::BoundedInt::max();
+            }
+            // TODO: Write the WithdrawalLimit functionality
+            return 0;
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl UpgradeableImpl of IUpgradeable<ContractState> {
+        fn upgrade(ref self: ContractState, new_class_hash: ClassHash) {
+            // This function can only be called by the owner
+            self.ownable.assert_only_owner();
+
+            // Replace the class hash upgrading the contract
+            self.upgradeable.upgrade(new_class_hash);
         }
     }
 }

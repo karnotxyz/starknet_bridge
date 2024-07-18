@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use core::serde::Serde;
-    use cairo_appchain_bridge::layer2::token_bridge::ITokenBridgeDispatcherTrait;
     use core::result::ResultTrait;
     use core::option::OptionTrait;
     use core::traits::TryInto;
@@ -9,7 +8,9 @@ mod tests {
     use snforge_std::{ContractClassTrait};
     use starknet::{ContractAddress, storage::StorageMemberAccessTrait};
     use cairo_appchain_bridge::mocks::erc20::ERC20;
-    use cairo_appchain_bridge::layer2::token_bridge::{TokenBridge, ITokenBridgeDispatcher};
+    use cairo_appchain_bridge::bridge::interface::{
+        ITokenBridgeAdmin, ITokenBridge, ITokenBridgeDispatcher
+    };
     use starknet::contract_address::{contract_address_const};
 
     fn deploy_token_bridge() -> (ITokenBridgeDispatcher, ContractAddress) {
@@ -53,7 +54,7 @@ mod tests {
     fn test_enroll_token() {
         let (token_bridge, _) = deploy_token_bridge();
         let usdc = deploy_erc20("USDC", "USDC");
-        let l3_bridge_address = token_bridge.l3_token_bridge();
+        let l3_bridge_address = token_bridge.appchain_bridge();
         assert(
             l3_bridge_address == contract_address_const::<'l3_bridge_address'>(),
             'L3 Bridge address incorrect'
