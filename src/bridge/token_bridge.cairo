@@ -44,7 +44,7 @@ pub mod TokenBridge {
     // WithdrawalLimit
     #[abi(embed_v0)]
     impl WithdrawalLimitImpl =
-        WithdrawalLimitComponent::WithdrawalLimit<ContractState>;
+        WithdrawalLimitComponent::WithdrawalLimitImpl<ContractState>;
     impl WithdrawalLimitInternal = WithdrawalLimitComponent::InternalImpl<ContractState>;
 
     #[storage]
