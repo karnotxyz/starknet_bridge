@@ -16,7 +16,7 @@ pub mod TokenBridge {
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
 
-    use cairo_appchain_bridge::withdrawal_limit::component::WithdrawalLimitComponent;
+    use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent;
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
@@ -25,12 +25,13 @@ pub mod TokenBridge {
     use core::num::traits::zero::Zero;
     use starknet::{ContractAddress, get_contract_address, get_caller_address, get_block_timestamp};
 
-    use cairo_appchain_bridge::bridge::interface::{
-        TokenStatus, TokenSettings, ITokenBridge, ITokenBridgeAdmin
+    use starknet_bridge::bridge::{
+        types::{TokenStatus, TokenSettings, MessageHash, Nonce},
+        interface::{ITokenBridge, ITokenBridgeAdmin}
     };
     use piltover::messaging::interface::IMessagingDispatcher;
     use piltover::messaging::interface::IMessagingDispatcherTrait;
-    use cairo_appchain_bridge::constants;
+    use starknet_bridge::constants;
     use starknet::ClassHash;
 
 
@@ -49,8 +50,11 @@ pub mod TokenBridge {
 
     #[storage]
     struct Storage {
+        // corresponding bridge contract_address deployed on the appchain
         appchain_bridge: ContractAddress,
+        // the core messaging contract deployed on starknet used for l2 - l3 messsaging
         messaging_contract: IMessagingDispatcher,
+        // All token related settings and its status
         token_settings: LegacyMap<ContractAddress, TokenSettings>,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
@@ -67,7 +71,7 @@ pub mod TokenBridge {
         pub const APPCHAIN_BRIDGE_NOT_SET: felt252 = 'L3 bridge not set';
         pub const ZERO_DEPOSIT: felt252 = 'Zero amount';
         pub const ALREADY_ENROLLED: felt252 = 'Already enrolled';
-        pub const DEPLOYMENT_MESSAGE_NOT_EXIST: felt252 = 'Deployment message inexistent';
+        pub const DEPLOYMENT_MESSAGE_DOES_NOT_EXIST: felt252 = 'Deployment message inexistent';
         pub const CANNOT_DEACTIVATE: felt252 = 'Cannot deactivate and block';
         pub const CANNOT_BLOCK: felt252 = 'Cannot block';
         pub const INVALID_RECIPIENT: felt252 = 'Invalid recipient';
@@ -111,7 +115,7 @@ pub mod TokenBridge {
     #[derive(Drop, starknet::Event)]
     struct TokenEnrollmentInitiated {
         token: ContractAddress,
-        deployment_message_hash: felt252
+        deployment_message_hash: MessageHash
     }
 
 
@@ -124,7 +128,7 @@ pub mod TokenBridge {
         amount: u256,
         #[key]
         appchain_recipient: ContractAddress,
-        nonce: felt252,
+        nonce: Nonce,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -137,7 +141,7 @@ pub mod TokenBridge {
         #[key]
         appchain_recipient: ContractAddress,
         message: Span<felt252>,
-        nonce: felt252,
+        nonce: Nonce,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -149,7 +153,7 @@ pub mod TokenBridge {
         amount: u256,
         #[key]
         appchain_recipient: ContractAddress,
-        nonce: felt252,
+        nonce: Nonce,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -174,7 +178,7 @@ pub mod TokenBridge {
         amount: u256,
         #[key]
         appchain_recipient: ContractAddress,
-        nonce: felt252
+        nonce: Nonce
     }
 
     #[derive(Drop, starknet::Event)]
@@ -187,7 +191,7 @@ pub mod TokenBridge {
         #[key]
         appchain_recipient: ContractAddress,
         message: Span<felt252>,
-        nonce: felt252
+        nonce: Nonce
     }
 
     #[derive(Drop, starknet::Event)]
@@ -239,39 +243,16 @@ pub mod TokenBridge {
 
     #[generate_trait]
     impl TokenBridgeInternalImpl of TokenBridgeInternal {
-        fn deployment_message_payload(
-            self: @ContractState, token: ContractAddress
-        ) -> Span<felt252> {
-            // Create the calldata that will be sent to on_receive. l2_token, amount and
-            // depositor are the fields from the deposit context.
-            let mut calldata = ArrayTrait::new();
-            let dispatcher = IERC20MetadataDispatcher { contract_address: token };
-            dispatcher.name().serialize(ref calldata);
-            dispatcher.symbol().serialize(ref calldata);
-            dispatcher.decimals().serialize(ref calldata);
-            calldata.span()
-        }
-
-
-        fn accept_deposit(self: @ContractState, token: ContractAddress, amount: u256) {
-            let caller = get_caller_address();
-            let dispatcher = IERC20Dispatcher { contract_address: token };
-            assert(dispatcher.balance_of(caller) == amount, 'Not enough balance');
-            dispatcher.transfer_from(caller, get_contract_address(), amount);
-        }
-
         fn send_deploy_message(self: @ContractState, token: ContractAddress) -> felt252 {
             assert(self.appchain_bridge().is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
-            // TODO: Check fees not sure if needed
 
-            // TODO: Add the token deployment selector as a constant here
             let (hash, _nonce) = self
                 .messaging_contract
                 .read()
                 .send_message_to_appchain(
                     self.appchain_bridge(),
                     constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
-                    self.deployment_message_payload(token)
+                    deployment_message_payload(token)
                 );
             return hash;
         }
@@ -283,7 +264,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             message: Span<felt252>,
             selector: felt252,
-            nonce: felt252,
+            nonce: Nonce,
         ) {
             let is_with_message = selector == constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR;
             let caller = get_caller_address();
@@ -321,7 +302,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             message: Span<felt252>,
             selector: felt252,
-        ) -> felt252 {
+        ) -> Nonce {
             assert(self.appchain_bridge().is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
             assert(amount > 0, Errors::ZERO_DEPOSIT);
 
@@ -347,6 +328,7 @@ pub mod TokenBridge {
             let mut payload = ArrayTrait::new();
             constants::TRANSFER_FROM_STARKNET.serialize(ref payload);
             recipient.serialize(ref payload);
+            token.serialize(ref payload);
             amount.serialize(ref payload);
             self
                 .messaging_contract
@@ -354,7 +336,7 @@ pub mod TokenBridge {
                 .consume_message_from_appchain(appchain_bridge, payload.span());
         }
 
-        fn _block_token(ref self: ContractState, token: ContractAddress) {
+        fn block_token_internal(ref self: ContractState, token: ContractAddress) {
             let new_settings = TokenSettings {
                 token_status: TokenStatus::Blocked, ..self.token_settings.read(token)
             };
@@ -383,26 +365,44 @@ pub mod TokenBridge {
         return payload.span();
     }
 
+
+    fn deployment_message_payload(token: ContractAddress) -> Span<felt252> {
+        // Create the calldata that will be sent to on_receive. l2_token, amount and
+        // depositor are the fields from the deposit context.
+        let mut calldata = ArrayTrait::new();
+        let dispatcher = IERC20MetadataDispatcher { contract_address: token };
+        token.serialize(ref calldata);
+        dispatcher.name().serialize(ref calldata);
+        dispatcher.symbol().serialize(ref calldata);
+        dispatcher.decimals().serialize(ref calldata);
+        calldata.span()
+    }
+
+
+    fn accept_deposit(token: ContractAddress, amount: u256) {
+        let caller = get_caller_address();
+        let dispatcher = IERC20Dispatcher { contract_address: token };
+        assert(dispatcher.balance_of(caller) == amount, 'Not enough balance');
+        dispatcher.transfer_from(caller, get_contract_address(), amount);
+    }
+
+
     #[abi(embed_v0)]
     impl TokenBrdigeAdminImpl of ITokenBridgeAdmin<ContractState> {
         fn set_appchain_token_bridge(ref self: ContractState, appchain_bridge: ContractAddress) {
+            self.ownable.assert_only_owner();
             self.appchain_bridge.write(appchain_bridge);
         }
 
-        // Deactivates a token in the system.
-        // This fun ction is used to deactivate a token that was previously enrolled.
-        // Only the manager, who initiated the enrollment, can call this function.
-        //
         // @param token The address of the token contract to be deactivated.
-        // No return value, but it updates the token's status to 'Deactivated'.
-        // Emits a `TokenDeactivated` event when the deactivation is successful.
+        // No return value, but it updates the token's status to 'Blocked'.
+        // Emits a `TokenBlocked` event when the deactivation is successful.
         // Throws an error if the token is not enrolled or if the sender is not the manager.
         fn block_token(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
-            let settings = self.token_settings.read(token);
-            assert(settings.token_status == TokenStatus::Unknown, Errors::CANNOT_BLOCK);
+            assert(self.get_status(token) == TokenStatus::Unknown, Errors::CANNOT_BLOCK);
 
-            self._block_token(:token);
+            self.block_token_internal(token);
             self.emit(TokenBlocked { token });
         }
 
@@ -416,7 +416,7 @@ pub mod TokenBridge {
                 Errors::CANNOT_DEACTIVATE
             );
 
-            self._block_token(:token);
+            self.block_token_internal(:token);
 
             self.emit(TokenDeactivated { token });
             self.emit(TokenBlocked { token });
@@ -459,25 +459,21 @@ pub mod TokenBridge {
         }
 
         fn identity(self: @ContractState) -> ByteArray {
-            "cairo_appchain_bridge"
+            "STARKNET_BRIDGE_0.1.0"
         }
 
 
         fn enroll_token(ref self: ContractState, token: ContractAddress) {
-            let status = self.token_settings.read(token).token_status;
-            assert(status == TokenStatus::Unknown, Errors::ALREADY_ENROLLED);
+            assert(self.get_status(token) == TokenStatus::Unknown, Errors::ALREADY_ENROLLED);
 
             // Send message to appchain
             let deployment_message_hash = self.send_deploy_message(token);
 
-            // TODO: check the deployment msg has been sent by calling l1ToL2Messages() > 0
-
-            // Dep(piltover): Will uncomment once piltover updates interface
-            // let nonce = self
-            //     .messaging_contract
-            //     .read()
-            //     .sn_to_appchain_messages(deployment_message_hash);
-            // assert(nonce > 0, Errors::DEPLOYMENT_MESSAGE_NOT_EXIST);
+            let nonce = self
+                .messaging_contract
+                .read()
+                .sn_to_appchain_messages(deployment_message_hash);
+            assert(nonce.is_non_zero(), Errors::DEPLOYMENT_MESSAGE_DOES_NOT_EXIST);
 
             let token_status = TokenSettings {
                 token_status: TokenStatus::Pending,
@@ -499,7 +495,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress
         ) {
             let no_message: Span<felt252> = array![].span();
-            self.accept_deposit(token, amount);
+            accept_deposit(token, amount);
             let nonce = self
                 .send_deposit_message(
                     token,
@@ -528,7 +524,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             message: Span<felt252>
         ) {
-            self.accept_deposit(token, amount);
+            accept_deposit(token, amount);
             let nonce = self
                 .send_deposit_message(
                     token,
@@ -551,6 +547,7 @@ pub mod TokenBridge {
             // Piggy-back the deposit tx to check and update the status of token bridge deployment.
             self.check_deployment_status(token);
         }
+
         //
         //     checks token deployment status.
         //     relies on starknet clearing l1-l2 message upon successful completion of deployment.
@@ -559,28 +556,22 @@ pub mod TokenBridge {
         //
         fn check_deployment_status(ref self: ContractState, token: ContractAddress) {
             let settings = self.token_settings.read(token);
-            if (settings.token_status == TokenStatus::Pending) {
+            if (settings.token_status != TokenStatus::Pending) {
                 return;
             }
 
-            let _msg_hash = settings.deployment_message_hash;
-        // DEP(piltover) : to uncomment once the interface of piltover changes
-        // if (self.messaging_contract.read().sn_to_appchain_messages(msg_hash) > 0) {
-        //     let new_settings = TokenSettings {
-        //         token_status: TokenStatus::Active, ..settings
-        //     };
-        //     self.token_settings.write(token, new_settings);
-        // } else if (get_block_timestamp() > settings.pending_deployment_expiration) {
-        //     let new_settings = TokenSettings {
-        //         token_status: TokenStatus::Unknown,
-        //         deployment_msg_hash: 0,
-        //         pending_deployment_expiration: 0,
-        //         max_total_balance: 0,
-        //         withdrawal_limit_applied: false
-        //     };
-        //     self.token_settings.write(token, new_settings);
-        // }
+            let nonce = self
+                .messaging_contract
+                .read()
+                .sn_to_appchain_messages(settings.deployment_message_hash);
 
+            if (nonce.is_non_zero()) {
+                let new_settings = TokenSettings { token_status: TokenStatus::Active, ..settings };
+                self.token_settings.write(token, new_settings);
+            } else if (get_block_timestamp() > settings.pending_deployment_expiration) {
+                let new_settings = TokenSettings { token_status: TokenStatus::Unknown, ..settings };
+                self.token_settings.write(token, new_settings);
+            }
         }
 
 
@@ -617,7 +608,7 @@ pub mod TokenBridge {
             token: ContractAddress,
             amount: u256,
             appchain_recipient: ContractAddress,
-            nonce: felt252
+            nonce: Nonce
         ) {
             let no_message: Span<felt252> = array![].span();
             self
@@ -643,7 +634,7 @@ pub mod TokenBridge {
             amount: u256,
             appchain_recipient: ContractAddress,
             message: Span<felt252>,
-            nonce: felt252
+            nonce: Nonce
         ) {
             self
                 .messaging_contract
@@ -673,7 +664,7 @@ pub mod TokenBridge {
             amount: u256,
             appchain_recipient: ContractAddress,
             message: Span<felt252>,
-            nonce: felt252
+            nonce: Nonce
         ) {
             self
                 .messaging_contract
@@ -706,7 +697,7 @@ pub mod TokenBridge {
             token: ContractAddress,
             amount: u256,
             appchain_recipient: ContractAddress,
-            nonce: felt252
+            nonce: Nonce
         ) {
             let no_message: Span<felt252> = array![].span();
             self
@@ -731,11 +722,11 @@ pub mod TokenBridge {
         }
 
 
-        fn getStatus(self: @ContractState, token: ContractAddress) -> TokenStatus {
+        fn get_status(self: @ContractState, token: ContractAddress) -> TokenStatus {
             self.token_settings.read(token).token_status
         }
 
-        fn isServicingToken(self: @ContractState, token: ContractAddress) -> bool {
+        fn is_servicing_token(self: @ContractState, token: ContractAddress) -> bool {
             self.token_settings.read(token).token_status == TokenStatus::Active
         }
 

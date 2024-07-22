@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cairo_appchain_bridge::bridge::interface::ITokenBridgeDispatcherTrait;
+    use starknet_bridge::bridge::interface::ITokenBridgeDispatcherTrait;
     use core::serde::Serde;
     use core::result::ResultTrait;
     use core::option::OptionTrait;
@@ -8,8 +8,8 @@ mod tests {
     use snforge_std as snf;
     use snforge_std::{ContractClassTrait};
     use starknet::{ContractAddress, storage::StorageMemberAccessTrait};
-    use cairo_appchain_bridge::mocks::erc20::ERC20;
-    use cairo_appchain_bridge::bridge::interface::{
+    use starknet_bridge::mocks::erc20::ERC20;
+    use starknet_bridge::bridge::interface::{
         ITokenBridgeAdmin, ITokenBridge, ITokenBridgeDispatcher
     };
     use starknet::contract_address::{contract_address_const};

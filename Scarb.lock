@@ -2,15 +2,6 @@
 version = 1
 
 [[package]]
-name = "cairo_appchain_bridge"
-version = "0.1.0"
-dependencies = [
- "openzeppelin",
- "piltover",
- "snforge_std",
-]
-
-[[package]]
 name = "openzeppelin"
 version = "0.14.0"
 source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v0.14.0#f091c4f51ddeb10297db984acae965328c5a4e5b"
@@ -18,7 +9,7 @@ source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v0.14.0#f0
 [[package]]
 name = "piltover"
 version = "0.1.0"
-source = "git+https://github.com/byteZorvin/piltover?branch=main#34be166da6ec295f950c65ad231890127da68b5e"
+source = "git+https://github.com/byteZorvin/piltover?branch=bridge-testing#a4021a0bb5e1638e3aebf634f5810ebb17da6a38"
 dependencies = [
  "openzeppelin",
 ]
@@ -27,3 +18,12 @@ dependencies = [
 name = "snforge_std"
 version = "0.26.0"
 source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.26.0#50eb589db65e113efe4f09241feb59b574228c7e"
+
+[[package]]
+name = "starknet_bridge"
+version = "0.1.0"
+dependencies = [
+ "openzeppelin",
+ "piltover",
+ "snforge_std",
+]

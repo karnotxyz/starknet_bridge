@@ -1,12 +1,12 @@
 #[starknet::component]
 pub mod WithdrawalLimitComponent {
     use starknet::{ContractAddress, get_block_timestamp};
-    use cairo_appchain_bridge::bridge::interface::ITokenBridge;
-    use cairo_appchain_bridge::constants;
+    use starknet_bridge::bridge::interface::ITokenBridge;
+    use starknet_bridge::constants;
     use core::integer::BoundedInt;
 
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use cairo_appchain_bridge::withdrawal_limit::interface::IWithdrawalLimit;
+    use starknet_bridge::withdrawal_limit::interface::IWithdrawalLimit;
 
     #[storage]
     struct Storage {

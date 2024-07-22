@@ -1,22 +1,5 @@
 use starknet::ContractAddress;
-
-#[derive(Serde, Drop, starknet::Store, PartialEq)]
-pub enum TokenStatus {
-    #[default]
-    Unknown,
-    Pending,
-    Active,
-    Blocked
-}
-
-#[derive(Serde, Drop, starknet::Store)]
-pub struct TokenSettings {
-    pub token_status: TokenStatus,
-    pub deployment_message_hash: felt252,
-    pub pending_deployment_expiration: u64,
-    pub max_total_balance: u256,
-    pub withdrawal_limit_applied: bool
-}
+use starknet_bridge::bridge::types::{TokenStatus, TokenSettings};
 
 #[starknet::interface]
 pub trait ITokenBridgeAdmin<TContractState> {
@@ -34,8 +17,8 @@ pub trait ITokenBridgeAdmin<TContractState> {
 pub trait ITokenBridge<TContractState> {
     fn appchain_bridge(self: @TContractState) -> ContractAddress;
     fn identity(self: @TContractState) -> ByteArray;
-    fn getStatus(self: @TContractState, token: ContractAddress) -> TokenStatus;
-    fn isServicingToken(self: @TContractState, token: ContractAddress) -> bool;
+    fn get_status(self: @TContractState, token: ContractAddress) -> TokenStatus;
+    fn is_servicing_token(self: @TContractState, token: ContractAddress) -> bool;
     fn is_withdrawal_limit_applied(self: @TContractState, token: ContractAddress) -> bool;
 
     fn enroll_token(ref self: TContractState, token: ContractAddress);

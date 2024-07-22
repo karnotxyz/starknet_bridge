@@ -1,5 +1,5 @@
 [package]
-name = "cairo_appchain_bridge"
+name = "starknet_bridge"
 version = "0.1.0"
 edition = "2023_11"
 
@@ -8,7 +8,7 @@ edition = "2023_11"
 [dependencies]
 openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.14.0" }
 starknet = "2.6.4"
-piltover = { git = "https://github.com/byteZorvin/piltover", branch="main"}
+piltover = { git = "https://github.com/byteZorvin/piltover", branch="bridge-testing"}
 
 [dev-dependencies]
 snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.26.0" }
@@ -16,11 +16,6 @@ snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v
 [[target.starknet-contract]]
 casm = true
 build-external-contracts = ["piltover::appchain::appchain"]
-
-[[tool.snforge.fork]]
-name = "mainnet"
-url = "https://starknet-mainnet.public.blastapi.io"
-block_id.tag = "Latest"
 
 [scripts]
 test = "snforge test"
