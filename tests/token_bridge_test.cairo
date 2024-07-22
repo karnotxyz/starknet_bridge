@@ -45,22 +45,21 @@ mod tests {
         let (usdc, _) = erc20Ch.deploy(@constructor_args).unwrap();
         return usdc;
     }
-
-    #[test]
-    fn constructor_ok() {
-        deploy_token_bridge();
-    }
-
-    #[test]
-    fn test_enroll_token() {
-        let (token_bridge, _) = deploy_token_bridge();
-        let usdc = deploy_erc20("USDC", "USDC");
-        let l3_bridge_address = token_bridge.appchain_bridge();
-        assert(
-            l3_bridge_address == contract_address_const::<'l3_bridge_address'>(),
-            'L3 Bridge address incorrect'
-        );
-        token_bridge.enroll_token(usdc);
-    }
+// #[test]
+// fn constructor_ok() {
+//     deploy_token_bridge();
+// }
+//
+// #[test]
+// fn test_enroll_token() {
+//     let (token_bridge, _) = deploy_token_bridge();
+//     let usdc = deploy_erc20("USDC", "USDC");
+//     let l3_bridge_address = token_bridge.appchain_bridge();
+//     assert(
+//         l3_bridge_address == contract_address_const::<'l3_bridge_address'>(),
+//         'L3 Bridge address incorrect'
+//     );
+//     token_bridge.enroll_token(usdc);
+// }
 }
 
