@@ -15,12 +15,19 @@ pub mod TokenBridge {
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
+    use openzeppelin::security::reentrancyguard::{
+        ReentrancyGuardComponent,
+        ReentrancyGuardComponent::InternalTrait as InternalReentrancyGuardImpl
+    };
 
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent;
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
     component!(path: WithdrawalLimitComponent, storage: withdrawal, event: WithdrawalEvent);
+    component!(
+        path: ReentrancyGuardComponent, storage: reentrancy_guard, event: ReentrancyGuardEvent
+    );
 
     use core::num::traits::zero::Zero;
     use starknet::{ContractAddress, get_contract_address, get_caller_address, get_block_timestamp};
@@ -61,7 +68,9 @@ pub mod TokenBridge {
         #[substorage(v0)]
         upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
-        withdrawal: WithdrawalLimitComponent::Storage
+        withdrawal: WithdrawalLimitComponent::Storage,
+        #[substorage(v0)]
+        reentrancy_guard: ReentrancyGuardComponent::Storage,
     }
 
     // 
@@ -99,7 +108,9 @@ pub mod TokenBridge {
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
         #[flat]
-        WithdrawalEvent: WithdrawalLimitComponent::Event
+        WithdrawalEvent: WithdrawalLimitComponent::Event,
+        #[flat]
+        ReentrancyGuardEvent: ReentrancyGuardComponent::Event,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -257,44 +268,6 @@ pub mod TokenBridge {
             return hash;
         }
 
-        fn emit_deposit_event(
-            ref self: ContractState,
-            token: ContractAddress,
-            amount: u256,
-            appchain_recipient: ContractAddress,
-            message: Span<felt252>,
-            selector: felt252,
-            nonce: Nonce,
-        ) {
-            let is_with_message = selector == constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR;
-            let caller = get_caller_address();
-            if (is_with_message) {
-                self
-                    .emit(
-                        DepositWithMessage {
-                            sender: caller,
-                            token: token,
-                            amount: amount,
-                            appchain_recipient: appchain_recipient,
-                            message: message,
-                            nonce: nonce,
-                        }
-                    );
-            } else {
-                assert(selector == constants::HANDLE_TOKEN_DEPOSIT_SELECTOR, 'Unknown Selector');
-                self
-                    .emit(
-                        Deposit {
-                            sender: caller,
-                            token: token,
-                            amount: amount,
-                            appchain_recipient: appchain_recipient,
-                            nonce: nonce,
-                        }
-                    )
-            }
-        }
-
         fn send_deposit_message(
             self: @ContractState,
             token: ContractAddress,
@@ -409,10 +382,9 @@ pub mod TokenBridge {
 
         fn deactivate_and_block_token(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
-            let settings = self.token_settings.read(token);
+            let status = self.get_status(token);
             assert(
-                settings.token_status == TokenStatus::Active
-                    || settings.token_status == TokenStatus::Pending,
+                status == TokenStatus::Active || status == TokenStatus::Pending,
                 Errors::CANNOT_DEACTIVATE
             );
 
@@ -504,15 +476,20 @@ pub mod TokenBridge {
                     no_message.clone(),
                     constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
                 );
+
+            let caller = get_caller_address();
             self
-                .emit_deposit_event(
-                    token,
-                    amount,
-                    appchain_recipient,
-                    no_message,
-                    constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
-                    nonce,
+                .emit(
+                    DepositWithMessage {
+                        sender: caller,
+                        token,
+                        amount,
+                        appchain_recipient,
+                        message: no_message,
+                        nonce,
+                    }
                 );
+
             self.check_deployment_status(token);
         }
 
@@ -534,16 +511,13 @@ pub mod TokenBridge {
                     constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR,
                 );
 
+            let caller = get_caller_address();
             self
-                .emit_deposit_event(
-                    token,
-                    amount,
-                    appchain_recipient,
-                    message,
-                    constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR,
-                    nonce
+                .emit(
+                    DepositWithMessage {
+                        sender: caller, token, amount, appchain_recipient, message, nonce,
+                    }
                 );
-
             // Piggy-back the deposit tx to check and update the status of token bridge deployment.
             self.check_deployment_status(token);
         }
@@ -581,6 +555,7 @@ pub mod TokenBridge {
             amount: u256,
             recipient: ContractAddress
         ) {
+            self.reentrancy_guard.start();
             assert(recipient.is_non_zero(), Errors::INVALID_RECIPIENT);
 
             self.consume_message(token, amount, recipient);
@@ -590,6 +565,8 @@ pub mod TokenBridge {
             if (settings.withdrawal_limit_applied) {}
             let tokenDispatcher = IERC20Dispatcher { contract_address: token };
             tokenDispatcher.transfer(recipient, amount);
+            self.reentrancy_guard.end();
+
             self.emit(Withdrawal { recipient, token, amount });
         }
 
@@ -666,6 +643,7 @@ pub mod TokenBridge {
             message: Span<felt252>,
             nonce: Nonce
         ) {
+            self.reentrancy_guard.start();
             self
                 .messaging_contract
                 .read()
@@ -678,6 +656,8 @@ pub mod TokenBridge {
 
             let dispatcher = IERC20Dispatcher { contract_address: token };
             dispatcher.transfer(get_caller_address(), amount);
+
+            self.reentrancy_guard.end();
 
             self
                 .emit(
@@ -699,6 +679,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             nonce: Nonce
         ) {
+            self.reentrancy_guard.start();
             let no_message: Span<felt252> = array![].span();
             self
                 .messaging_contract
@@ -712,6 +693,8 @@ pub mod TokenBridge {
 
             let dispatcher = IERC20Dispatcher { contract_address: token };
             dispatcher.transfer(get_caller_address(), amount);
+
+            self.reentrancy_guard.end();
 
             self
                 .emit(
