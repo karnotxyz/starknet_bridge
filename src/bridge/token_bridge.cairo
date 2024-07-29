@@ -515,6 +515,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             message: Span<felt252>
         ) {
+            self.reentrancy_guard.start();
             self.accept_deposit(token, amount);
             let nonce = self
                 .send_deposit_message(
@@ -534,6 +535,7 @@ pub mod TokenBridge {
                 );
             // Piggy-back the deposit tx to check and update the status of token bridge deployment.
             self.check_deployment_status(token);
+            self.reentrancy_guard.end();
         }
 
         //
