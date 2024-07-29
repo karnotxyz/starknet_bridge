@@ -550,7 +550,7 @@ pub mod TokenBridge {
                 .read()
                 .sn_to_appchain_messages(settings.deployment_message_hash);
 
-            if (nonce.is_non_zero()) {
+            if (nonce.is_zero()) {
                 let new_settings = TokenSettings { token_status: TokenStatus::Active, ..settings };
                 self.token_settings.write(token, new_settings);
             } else if (get_block_timestamp() > settings.pending_deployment_expiration) {
