@@ -315,6 +315,14 @@ pub mod TokenBridge {
                 .read()
                 .consume_message_from_appchain(appchain_bridge, payload.span());
         }
+
+        fn accept_deposit(self: @ContractState, token: ContractAddress, amount: u256) {
+            self.is_servicing_token(token);
+            let caller = get_caller_address();
+            let dispatcher = IERC20Dispatcher { contract_address: token };
+            assert(dispatcher.balance_of(caller) == amount, 'Not enough balance');
+            dispatcher.transfer_from(caller, get_contract_address(), amount);
+        }
     }
 
 
@@ -349,14 +357,6 @@ pub mod TokenBridge {
         dispatcher.symbol().serialize(ref calldata);
         dispatcher.decimals().serialize(ref calldata);
         calldata.span()
-    }
-
-
-    fn accept_deposit(token: ContractAddress, amount: u256) {
-        let caller = get_caller_address();
-        let dispatcher = IERC20Dispatcher { contract_address: token };
-        assert(dispatcher.balance_of(caller) == amount, 'Not enough balance');
-        dispatcher.transfer_from(caller, get_contract_address(), amount);
     }
 
 
@@ -478,7 +478,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress
         ) {
             let no_message: Span<felt252> = array![].span();
-            accept_deposit(token, amount);
+            self.accept_deposit(token, amount);
             let nonce = self
                 .send_deposit_message(
                     token,
@@ -512,7 +512,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             message: Span<felt252>
         ) {
-            accept_deposit(token, amount);
+            self.accept_deposit(token, amount);
             let nonce = self
                 .send_deposit_message(
                     token,
