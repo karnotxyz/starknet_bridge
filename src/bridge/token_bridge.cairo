@@ -33,11 +33,12 @@ pub mod TokenBridge {
     use starknet::{ContractAddress, get_contract_address, get_caller_address, get_block_timestamp};
 
     use starknet_bridge::bridge::{
-        types::{TokenStatus, TokenSettings, MessageHash, Nonce},
-        interface::{ITokenBridge, ITokenBridgeAdmin}
+        types::{TokenStatus, TokenSettings}, interface::{ITokenBridge, ITokenBridgeAdmin}
     };
-    use piltover::messaging::interface::IMessagingDispatcher;
-    use piltover::messaging::interface::IMessagingDispatcherTrait;
+    use piltover::messaging::{
+        interface::{IMessagingDispatcher, IMessagingDispatcherTrait},
+        messaging_cpt::{MessageHash, Nonce}
+    };
     use starknet_bridge::constants;
     use starknet::ClassHash;
 
@@ -477,6 +478,7 @@ pub mod TokenBridge {
             amount: u256,
             appchain_recipient: ContractAddress
         ) {
+            self.reentrancy_guard.start();
             let no_message: Span<felt252> = array![].span();
             self.accept_deposit(token, amount);
             let nonce = self
@@ -502,6 +504,7 @@ pub mod TokenBridge {
                 );
 
             self.check_deployment_status(token);
+            self.reentrancy_guard.end();
         }
 
 

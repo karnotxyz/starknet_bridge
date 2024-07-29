@@ -1,5 +1,4 @@
-pub type MessageHash = felt252;
-pub type Nonce = felt252;
+use piltover::messaging::messaging_cpt::{MessageHash, Nonce};
 
 #[derive(Serde, Drop, starknet::Store, PartialEq)]
 pub enum TokenStatus {
