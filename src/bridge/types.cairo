@@ -7,7 +7,8 @@ pub enum TokenStatus {
     Unknown,
     Pending,
     Active,
-    Blocked
+    Blocked,
+    Deactivated
 }
 
 #[derive(Serde, Drop, starknet::Store)]

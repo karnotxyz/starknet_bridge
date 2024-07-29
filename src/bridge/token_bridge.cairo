@@ -103,6 +103,7 @@ pub mod TokenBridge {
         WithdrawalLimitEnabled: WithdrawalLimitEnabled,
         WithdrawalLimitDisabled: WithdrawalLimitDisabled,
         SetMaxTotalBalance: SetMaxTotalBalance,
+        SetAppchainBridge: SetAppchainBridge,
         #[flat]
         OwnableEvent: OwnableComponent::Event,
         #[flat]
@@ -237,6 +238,12 @@ pub mod TokenBridge {
         value: u256
     }
 
+    #[derive(Drop, starknet::Event)]
+    pub struct SetAppchainBridge {
+        pub appchain_bridge: ContractAddress
+    }
+
+
     #[constructor]
     fn constructor(
         ref self: ContractState,
@@ -308,13 +315,6 @@ pub mod TokenBridge {
                 .read()
                 .consume_message_from_appchain(appchain_bridge, payload.span());
         }
-
-        fn block_token_internal(ref self: ContractState, token: ContractAddress) {
-            let new_settings = TokenSettings {
-                token_status: TokenStatus::Blocked, ..self.token_settings.read(token)
-            };
-            self.token_settings.write(token, new_settings);
-        }
     }
 
 
@@ -365,6 +365,8 @@ pub mod TokenBridge {
         fn set_appchain_token_bridge(ref self: ContractState, appchain_bridge: ContractAddress) {
             self.ownable.assert_only_owner();
             self.appchain_bridge.write(appchain_bridge);
+
+            self.emit(SetAppchainBridge { appchain_bridge: appchain_bridge });
         }
 
         // @param token The address of the token contract to be deactivated.
@@ -375,12 +377,15 @@ pub mod TokenBridge {
             self.ownable.assert_only_owner();
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::CANNOT_BLOCK);
 
-            self.block_token_internal(token);
+            let new_settings = TokenSettings {
+                token_status: TokenStatus::Blocked, ..self.token_settings.read(token)
+            };
+            self.token_settings.write(token, new_settings);
             self.emit(TokenBlocked { token });
         }
 
 
-        fn deactivate_and_block_token(ref self: ContractState, token: ContractAddress) {
+        fn deactivate_token(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
             let status = self.get_status(token);
             assert(
@@ -388,7 +393,10 @@ pub mod TokenBridge {
                 Errors::CANNOT_DEACTIVATE
             );
 
-            self.block_token_internal(:token);
+            let new_settings = TokenSettings {
+                token_status: TokenStatus::Deactivated, ..self.token_settings.read(token)
+            };
+            self.token_settings.write(token, new_settings);
 
             self.emit(TokenDeactivated { token });
             self.emit(TokenBlocked { token });
@@ -430,10 +438,13 @@ pub mod TokenBridge {
             return self.appchain_bridge.read();
         }
 
-        fn identity(self: @ContractState) -> ByteArray {
-            "STARKNET_BRIDGE_0.1.0"
+        fn get_identity(self: @ContractState) -> felt252 {
+            constants::CONTRACT_IDENTITY
         }
 
+        fn get_version(self: @ContractState) -> felt252 {
+            constants::CONTRACT_VERSION
+        }
 
         fn enroll_token(ref self: ContractState, token: ContractAddress) {
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::ALREADY_ENROLLED);
