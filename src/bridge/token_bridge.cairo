@@ -248,7 +248,6 @@ pub mod TokenBridge {
     }
 
 
-
     #[constructor]
     fn constructor(
         ref self: ContractState,
@@ -323,13 +322,6 @@ pub mod TokenBridge {
 
         fn accept_deposit(self: @ContractState, token: ContractAddress, amount: u256) {
             self.is_servicing_token(token);
-            let caller = get_caller_address();
-            let dispatcher = IERC20Dispatcher { contract_address: token };
-            assert(dispatcher.balance_of(caller) == amount, 'Not enough balance');
-            dispatcher.transfer_from(caller, get_contract_address(), amount);
-        }
-
-        fn accept_deposit(self: @ContractState, token: ContractAddress, amount: u256) {
             let caller = get_caller_address();
             let dispatcher = IERC20Dispatcher { contract_address: token };
 
@@ -532,7 +524,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             message: Span<felt252>
         ) {
-            accept_deposit(token, amount);
+            self.accept_deposit(token, amount);
             let nonce = self
                 .send_deposit_message(
                     token,
@@ -760,7 +752,7 @@ pub mod TokenBridge {
     impl WithdrawalLimitStatusImpl of IWithdrawalLimitStatus<ContractState> {
         fn is_withdrawal_limit_applied(self: @ContractState, token: ContractAddress) -> bool {
             self.token_settings.read(token).withdrawal_limit_applied
-        } 
+        }
     }
 
 
