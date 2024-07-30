@@ -1,0 +1,21 @@
+[package]
+name = "starknet_bridge"
+version = "0.1.0"
+edition = "2023_11"
+
+# See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
+
+[dependencies]
+openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.14.0" }
+starknet = "2.6.4"
+piltover = { git = "https://github.com/byteZorvin/piltover", branch="bridge-testing"}
+
+[dev-dependencies]
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.26.0" }
+
+[[target.starknet-contract]]
+casm = true
+build-external-contracts = ["piltover::appchain::appchain"]
+
+[scripts]
+test = "snforge test"
