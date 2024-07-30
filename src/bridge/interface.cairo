@@ -20,7 +20,6 @@ pub trait ITokenBridge<TContractState> {
     fn get_version(self: @TContractState) -> felt252;
     fn get_status(self: @TContractState, token: ContractAddress) -> TokenStatus;
     fn is_servicing_token(self: @TContractState, token: ContractAddress) -> bool;
-    fn is_withdrawal_limit_applied(self: @TContractState, token: ContractAddress) -> bool;
 
     fn enroll_token(ref self: TContractState, token: ContractAddress);
     fn check_deployment_status(ref self: TContractState, token: ContractAddress);
@@ -75,4 +74,9 @@ pub trait ITokenBridge<TContractState> {
         nonce: felt252
     );
     fn get_remaining_intraday_allowance(self: @TContractState, token: ContractAddress) -> u256;
+}
+
+#[starknet::interface]
+pub trait IWithdrawalLimitStatus<TContractState> {
+    fn is_withdrawal_limit_applied(self: @TContractState, token: ContractAddress) -> bool;
 }

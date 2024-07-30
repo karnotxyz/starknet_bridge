@@ -33,7 +33,8 @@ pub mod TokenBridge {
     use starknet::{ContractAddress, get_contract_address, get_caller_address, get_block_timestamp};
 
     use starknet_bridge::bridge::{
-        types::{TokenStatus, TokenSettings}, interface::{ITokenBridge, ITokenBridgeAdmin}
+        types::{TokenStatus, TokenSettings},
+        interface::{ITokenBridge, ITokenBridgeAdmin, IWithdrawalLimitStatus}
     };
     use piltover::messaging::{
         interface::{IMessagingDispatcher, IMessagingDispatcherTrait},
@@ -747,11 +748,16 @@ pub mod TokenBridge {
             // TODO: Write the WithdrawalLimit functionality
             return 0;
         }
+    }
 
+
+    #[abi(embed_v0)]
+    impl WithdrawalLimitStatusImpl of IWithdrawalLimitStatus<ContractState> {
         fn is_withdrawal_limit_applied(self: @ContractState, token: ContractAddress) -> bool {
             self.token_settings.read(token).withdrawal_limit_applied
         }
     }
+
 
     #[abi(embed_v0)]
     impl UpgradeableImpl of IUpgradeable<ContractState> {

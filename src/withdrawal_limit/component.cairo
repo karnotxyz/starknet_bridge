@@ -1,7 +1,7 @@
 #[starknet::component]
 pub mod WithdrawalLimitComponent {
     use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
-    use starknet_bridge::bridge::interface::ITokenBridge;
+    use starknet_bridge::bridge::interface::IWithdrawalLimitStatus;
     use starknet_bridge::constants;
     use core::integer::BoundedInt;
 
@@ -33,7 +33,7 @@ pub mod WithdrawalLimitComponent {
 
     #[embeddable_as(WithdrawalLimitImpl)]
     pub impl WithdrawalLimit<
-        TContractState, +HasComponent<TContractState>, +ITokenBridge<TContractState>
+        TContractState, +HasComponent<TContractState>, +IWithdrawalLimitStatus<TContractState>
     > of IWithdrawalLimit<ComponentState<TContractState>> {
         // Returns the current remaining withdrawal quota for a given token. If there is no limit,
         // returns max uint256. If the limit was not set yet, we calculate it based on the total
@@ -55,7 +55,7 @@ pub mod WithdrawalLimitComponent {
 
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState, +HasComponent<TContractState>, +ITokenBridge<TContractState>
+        TContractState, +HasComponent<TContractState>, +IWithdrawalLimitStatus<TContractState>
     > of InternalTrait<TContractState> {
         // Sets the remaining withdrawal quota for today.
         fn set_remaining_withdrawal_quota(
