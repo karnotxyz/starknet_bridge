@@ -1,6 +1,6 @@
 #[starknet::component]
 pub mod WithdrawalLimitComponent {
-    use starknet::{ContractAddress, get_block_timestamp};
+    use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
     use starknet_bridge::bridge::interface::ITokenBridge;
     use starknet_bridge::constants;
     use core::integer::BoundedInt;
@@ -84,14 +84,9 @@ pub mod WithdrawalLimitComponent {
             token: ContractAddress,
             amount_to_withdraw: u256
         ) {
+            assert(self.get_contract().is_withdrawal_limit_applied(:token), 'LIMIT_NOT_ENABLED');
             let remaining_withdrawal_quota = self.get_remaining_withdrawal_quota(token);
-            // This function should be called only after checking that `is_withdrawal_limit_applied`
-            // is true. When limit withdrawal is disabled, the `remaining_withdrawal_quota` is
-            // BoundedInt::max(). We rely on that to limit the access only to cases where limit
-            // withdrawal is enabled.
-            assert(
-                remaining_withdrawal_quota < BoundedInt::max(), 'withdrawal_limit_applied ERROR'
-            );
+
             assert(remaining_withdrawal_quota >= amount_to_withdraw, 'LIMIT_EXCEEDED');
             self
                 .set_remaining_withdrawal_quota(
@@ -106,9 +101,10 @@ pub mod WithdrawalLimitComponent {
         fn get_daily_withdrawal_limit(
             self: @ComponentState<TContractState>, token: ContractAddress
         ) -> u256 {
-            let total_supply = IERC20Dispatcher { contract_address: token }.total_supply();
+            let dispatcher = IERC20Dispatcher { contract_address: token };
+            let balance = dispatcher.balance_of(get_contract_address());
             let daily_withdrawal_limit_pct: u256 = self.get_daily_withdrawal_limit_pct().into();
-            total_supply * daily_withdrawal_limit_pct / 100
+            balance * daily_withdrawal_limit_pct / 100
         }
 
         fn get_daily_withdrawal_limit_pct(self: @ComponentState<TContractState>) -> u8 {
