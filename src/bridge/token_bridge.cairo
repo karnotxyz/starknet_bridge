@@ -327,7 +327,7 @@ pub mod TokenBridge {
 
             let current_balance: u256 = dispatcher.balance_of(get_contract_address());
             let max_total_balance = self.get_max_total_balance(token);
-            assert(currentBalance + amount < max_total_balance, Errors::MAX_BALANCE_EXCEEDED);
+            assert(current_balance + amount < max_total_balance, Errors::MAX_BALANCE_EXCEEDED);
             dispatcher.transfer_from(caller, get_contract_address(), amount);
         }
     }
@@ -584,9 +584,7 @@ pub mod TokenBridge {
 
             self.consume_message(token, amount, recipient);
 
-            if (self.is_withdrawal_limit_applied(token)) {
-                self.withdrawal.consume_withdrawal_quota(token, amount);
-            }
+            self.withdrawal.consume_withdrawal_quota(token, amount);
 
             let tokenDispatcher = IERC20Dispatcher { contract_address: token };
             tokenDispatcher.transfer(recipient, amount);
