@@ -5,7 +5,10 @@ use starknet_bridge::bridge::types::{TokenStatus, TokenSettings};
 pub trait ITokenBridgeAdmin<TContractState> {
     fn set_appchain_token_bridge(ref self: TContractState, appchain_bridge: ContractAddress);
     fn block_token(ref self: TContractState, token: ContractAddress);
+    fn unblock_token(ref self: TContractState, token: ContractAddress);
     fn deactivate_token(ref self: TContractState, token: ContractAddress);
+    fn reactivate_token(ref self: TContractState, token: ContractAddress);
+
     fn enable_withdrawal_limit(ref self: TContractState, token: ContractAddress);
     fn disable_withdrawal_limit(ref self: TContractState, token: ContractAddress);
     fn set_max_total_balance(
