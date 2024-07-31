@@ -325,7 +325,7 @@ pub mod TokenBridge {
             let caller = get_caller_address();
             let dispatcher = IERC20Dispatcher { contract_address: token };
 
-            let currentBalance: u256 = dispatcher.balance_of(get_contract_address());
+            let current_balance: u256 = dispatcher.balance_of(get_contract_address());
             let max_total_balance = self.get_max_total_balance(token);
             assert(currentBalance + amount < max_total_balance, Errors::MAX_BALANCE_EXCEEDED);
             dispatcher.transfer_from(caller, get_contract_address(), amount);
