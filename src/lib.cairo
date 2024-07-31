@@ -21,5 +21,6 @@ pub mod constants;
 
 pub mod mocks {
     pub mod erc20;
+    pub mod messaging;
 }
 
