@@ -96,6 +96,8 @@ pub mod TokenBridge {
         TokenEnrollmentInitiated: TokenEnrollmentInitiated,
         TokenDeactivated: TokenDeactivated,
         TokenBlocked: TokenBlocked,
+        TokenReactivated: TokenReactivated,
+        TokenUnblocked: TokenUnblocked,
         Deposit: Deposit,
         DepositWithMessage: DepositWithMessage,
         DepostiCancelRequest: DepositCancelRequest,
@@ -124,6 +126,18 @@ pub mod TokenBridge {
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenBlocked {
+        pub token: ContractAddress
+    }
+
+
+    #[derive(Drop, starknet::Event)]
+    pub struct TokenUnblocked {
+        pub token: ContractAddress
+    }
+
+
+    #[derive(Drop, starknet::Event)]
+    pub struct TokenReactivated {
         pub token: ContractAddress
     }
 
@@ -391,14 +405,22 @@ pub mod TokenBridge {
             self.emit(TokenBlocked { token });
         }
 
+        fn unblock_token(ref self: ContractState, token: ContractAddress) {
+            self.ownable.assert_only_owner();
+            assert(self.get_status(token) == TokenStatus::Blocked, Errors::CANNOT_BLOCK);
+
+            let new_settings = TokenSettings {
+                token_status: TokenStatus::Unknown, ..self.token_settings.read(token)
+            };
+            self.token_settings.write(token, new_settings);
+            self.emit(TokenUnblocked { token });
+        }
+
 
         fn deactivate_token(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
             let status = self.get_status(token);
-            assert(
-                status == TokenStatus::Active || status == TokenStatus::Pending,
-                Errors::CANNOT_DEACTIVATE
-            );
+            assert(status == TokenStatus::Active, Errors::CANNOT_DEACTIVATE);
 
             let new_settings = TokenSettings {
                 token_status: TokenStatus::Deactivated, ..self.token_settings.read(token)
@@ -406,8 +428,21 @@ pub mod TokenBridge {
             self.token_settings.write(token, new_settings);
 
             self.emit(TokenDeactivated { token });
-            self.emit(TokenBlocked { token });
         }
+
+        fn reactivate_token(ref self: ContractState, token: ContractAddress) {
+            self.ownable.assert_only_owner();
+            let status = self.get_status(token);
+            assert(status == TokenStatus::Deactivated, Errors::CANNOT_DEACTIVATE);
+
+            let new_settings = TokenSettings {
+                token_status: TokenStatus::Active, ..self.token_settings.read(token)
+            };
+            self.token_settings.write(token, new_settings);
+
+            self.emit(TokenReactivated { token });
+        }
+
 
         fn enable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
