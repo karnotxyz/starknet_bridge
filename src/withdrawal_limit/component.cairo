@@ -1,8 +1,7 @@
 #[starknet::component]
 pub mod WithdrawalLimitComponent {
     use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
-    use starknet_bridge::bridge::interface::IWithdrawalLimitStatus;
-    use starknet_bridge::constants;
+    use starknet_bridge::{constants, bridge::IWithdrawalLimitStatus};
     use core::integer::BoundedInt;
 
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};

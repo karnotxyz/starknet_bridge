@@ -1,6 +1,6 @@
 #[starknet::contract]
 pub mod TokenBridge {
-    use openzeppelin::access::ownable::ownable::OwnableComponent::InternalTrait;
+    use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
     use core::option::OptionTrait;
     use core::traits::TryInto;
     use core::starknet::event::EventEmitter;
@@ -86,12 +86,13 @@ pub mod TokenBridge {
         pub const CANNOT_DEACTIVATE: felt252 = 'Cannot deactivate and block';
         pub const CANNOT_BLOCK: felt252 = 'Cannot block';
         pub const INVALID_RECIPIENT: felt252 = 'Invalid recipient';
+        pub const MAX_BALANCE_EXCEEDED: felt252 = 'Max Balance Exceeded';
     }
 
 
     #[derive(Drop, starknet::Event)]
     #[event]
-    enum Event {
+    pub enum Event {
         TokenEnrollmentInitiated: TokenEnrollmentInitiated,
         TokenDeactivated: TokenDeactivated,
         TokenBlocked: TokenBlocked,
@@ -117,128 +118,129 @@ pub mod TokenBridge {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct TokenDeactivated {
-        token: ContractAddress
+    pub struct TokenDeactivated {
+        pub token: ContractAddress
     }
 
     #[derive(Drop, starknet::Event)]
-    struct TokenBlocked {
-        token: ContractAddress
+    pub struct TokenBlocked {
+        pub token: ContractAddress
     }
 
     #[derive(Drop, starknet::Event)]
-    struct TokenEnrollmentInitiated {
-        token: ContractAddress,
-        deployment_message_hash: MessageHash
+    pub struct TokenEnrollmentInitiated {
+        pub token: ContractAddress,
+        pub deployment_message_hash: MessageHash
     }
 
 
     #[derive(Drop, starknet::Event)]
-    struct Deposit {
+    pub struct Deposit {
         #[key]
-        sender: ContractAddress,
+        pub sender: ContractAddress,
         #[key]
-        token: ContractAddress,
-        amount: u256,
+        pub token: ContractAddress,
+        pub amount: u256,
         #[key]
-        appchain_recipient: ContractAddress,
-        nonce: Nonce,
+        pub appchain_recipient: ContractAddress,
+        pub nonce: felt252,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct DepositWithMessage {
+    pub struct DepositWithMessage {
         #[key]
-        sender: ContractAddress,
+        pub sender: ContractAddress,
         #[key]
-        token: ContractAddress,
-        amount: u256,
+        pub token: ContractAddress,
+        pub amount: u256,
         #[key]
-        appchain_recipient: ContractAddress,
-        message: Span<felt252>,
-        nonce: Nonce,
+        pub appchain_recipient: ContractAddress,
+        pub message: Span<felt252>,
+        pub nonce: felt252,
     }
 
     #[derive(Drop, starknet::Event)]
     struct DepositCancelRequest {
         #[key]
-        sender: ContractAddress,
+        pub sender: ContractAddress,
         #[key]
-        token: ContractAddress,
-        amount: u256,
+        pub token: ContractAddress,
+        pub amount: u256,
         #[key]
-        appchain_recipient: ContractAddress,
-        nonce: Nonce,
+        pub appchain_recipient: ContractAddress,
+        pub nonce: felt252,
     }
 
     #[derive(Drop, starknet::Event)]
     struct DepositWithMessageCancelRequest {
         #[key]
-        sender: ContractAddress,
+        pub sender: ContractAddress,
         #[key]
-        token: ContractAddress,
-        amount: u256,
+        pub token: ContractAddress,
+        pub amount: u256,
         #[key]
-        appchain_recipient: ContractAddress,
-        message: Span<felt252>,
-        nonce: felt252
+        pub appchain_recipient: ContractAddress,
+        pub message: Span<felt252>,
+        pub nonce: felt252
     }
 
     #[derive(Drop, starknet::Event)]
-    struct DepositReclaimed {
+    pub struct DepositReclaimed {
         #[key]
-        sender: ContractAddress,
+        pub sender: ContractAddress,
         #[key]
-        token: ContractAddress,
-        amount: u256,
+        pub token: ContractAddress,
+        pub amount: u256,
         #[key]
-        appchain_recipient: ContractAddress,
-        nonce: Nonce
+        pub appchain_recipient: ContractAddress,
+        pub nonce: felt252
     }
 
     #[derive(Drop, starknet::Event)]
-    struct DepositWithMessageReclaimed {
+    pub struct DepositWithMessageReclaimed {
         #[key]
-        sender: ContractAddress,
+        pub sender: ContractAddress,
         #[key]
-        token: ContractAddress,
-        amount: u256,
+        pub token: ContractAddress,
+        pub amount: u256,
         #[key]
-        appchain_recipient: ContractAddress,
-        message: Span<felt252>,
-        nonce: Nonce
+        pub appchain_recipient: ContractAddress,
+        pub message: Span<felt252>,
+        pub nonce: felt252
     }
 
     #[derive(Drop, starknet::Event)]
-    struct Withdrawal {
+    pub struct Withdrawal {
         #[key]
-        recipient: ContractAddress,
+        pub recipient: ContractAddress,
         #[key]
-        token: ContractAddress,
-        amount: u256,
+        pub token: ContractAddress,
+        pub amount: u256,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct WithdrawalLimitEnabled {
+    pub struct WithdrawalLimitEnabled {
         #[key]
-        sender: ContractAddress,
+        pub sender: ContractAddress,
         #[key]
-        token: ContractAddress,
+        pub token: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct WithdrawalLimitDisabled {
+    pub struct WithdrawalLimitDisabled {
         #[key]
-        sender: ContractAddress,
+        pub sender: ContractAddress,
         #[key]
-        token: ContractAddress,
+        pub token: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct SetMaxTotalBalance {
+    pub struct SetMaxTotalBalance {
         #[key]
-        token: ContractAddress,
-        value: u256
+        pub token: ContractAddress,
+        pub value: u256
     }
+
 
     #[derive(Drop, starknet::Event)]
     pub struct SetAppchainBridge {
@@ -322,7 +324,10 @@ pub mod TokenBridge {
             self.is_servicing_token(token);
             let caller = get_caller_address();
             let dispatcher = IERC20Dispatcher { contract_address: token };
-            assert(dispatcher.balance_of(caller) == amount, 'Not enough balance');
+
+            let current_balance: u256 = dispatcher.balance_of(get_contract_address());
+            let max_total_balance = self.get_max_total_balance(token);
+            assert(current_balance + amount < max_total_balance, Errors::MAX_BALANCE_EXCEEDED);
             dispatcher.transfer_from(caller, get_contract_address(), amount);
         }
     }
@@ -368,7 +373,7 @@ pub mod TokenBridge {
             self.ownable.assert_only_owner();
             self.appchain_bridge.write(appchain_bridge);
 
-            self.emit(SetAppchainBridge { appchain_bridge: appchain_bridge });
+            self.emit(SetAppchainBridge { appchain_bridge });
         }
 
         // @param token The address of the token contract to be deactivated.
@@ -460,16 +465,19 @@ pub mod TokenBridge {
                 .sn_to_appchain_messages(deployment_message_hash);
             assert(nonce.is_non_zero(), Errors::DEPLOYMENT_MESSAGE_DOES_NOT_EXIST);
 
-            let token_status = TokenSettings {
+            // Reading existing settings as withdrawal_limit_applied and max_total_balance
+            // can be set before the token is enrolled.
+
+            let old_settings = self.token_settings.read(token);
+            let new_settings = TokenSettings {
                 token_status: TokenStatus::Pending,
                 deployment_message_hash: deployment_message_hash,
                 pending_deployment_expiration: get_block_timestamp()
                     + constants::MAX_PENDING_DURATION.try_into().unwrap(),
-                max_total_balance: core::integer::BoundedInt::max(),
-                withdrawal_limit_applied: false
+                ..old_settings
             };
 
-            self.token_settings.write(token, token_status);
+            self.token_settings.write(token, new_settings);
             self.emit(TokenEnrollmentInitiated { token, deployment_message_hash });
         }
 
@@ -516,7 +524,6 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             message: Span<felt252>
         ) {
-            self.reentrancy_guard.start();
             self.accept_deposit(token, amount);
             let nonce = self
                 .send_deposit_message(
@@ -576,10 +583,9 @@ pub mod TokenBridge {
             assert(recipient.is_non_zero(), Errors::INVALID_RECIPIENT);
 
             self.consume_message(token, amount, recipient);
-            let settings = self.token_settings.read(token);
-            // TODO: Consume quota from here
-            // DEP(byteZorvin): Complete the withdrawal component in cairo 
-            if (settings.withdrawal_limit_applied) {}
+
+            self.withdrawal.consume_withdrawal_quota(token, amount);
+
             let tokenDispatcher = IERC20Dispatcher { contract_address: token };
             tokenDispatcher.transfer(recipient, amount);
             self.reentrancy_guard.end();
@@ -730,23 +736,12 @@ pub mod TokenBridge {
             self.token_settings.read(token).token_status == TokenStatus::Active
         }
 
-        // /**
-        //     Returns the remaining amount of withdrawal allowed for this day.
-        //     If the daily allowance was not yet set, it is calculated and returned.
-        //     If the withdraw limit is not enabled for that token - the uint256.max is returned.
-        //  */
-        // function getRemainingIntradayAllowance(address token) external view returns (uint256) {
-        //     return
-        //         tokenSettings()[token].withdrawalLimitApplied
-        //             ? WithdrawalLimit.getRemainingIntradayAllowance(token)
-        //             : type(uint256).max;
-        // }
-        fn get_remaining_intraday_allowance(self: @ContractState, token: ContractAddress) -> u256 {
-            if (self.token_settings.read(token).withdrawal_limit_applied) {
+        fn get_max_total_balance(self: @ContractState, token: ContractAddress) -> u256 {
+            let max_total_balance = self.token_settings.read(token).max_total_balance;
+            if (max_total_balance == 0) {
                 return core::integer::BoundedInt::max();
             }
-            // TODO: Write the WithdrawalLimit functionality
-            return 0;
+            return max_total_balance;
         }
     }
 
