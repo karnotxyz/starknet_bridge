@@ -339,3 +339,65 @@ fn disable_withdrwal_not_owner() {
     );
 }
 
+#[test]
+fn unblock_token_ok() {
+    let (token_bridge, mut spy) = deploy_token_bridge();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address
+    };
+
+    let usdc_address = deploy_erc20("usdc", "usdc");
+
+    let owner = OWNER();
+    // Cheat for the owner
+    snf::start_cheat_caller_address(token_bridge.contract_address, owner);
+    token_bridge_admin.block_token(usdc_address);
+
+    let expected_token_blocked = TokenBridge::TokenBlocked { token: usdc_address };
+
+    assert(token_bridge.get_status(usdc_address) == TokenStatus::Blocked, 'Should be blocked');
+
+    token_bridge_admin.unblock_token(usdc_address);
+    assert(token_bridge.get_status(usdc_address) == TokenStatus::Unknown, 'Should be unknown');
+
+    let expected_token_unblocked = TokenBridge::TokenUnblocked { token: usdc_address };
+
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    spy
+        .assert_emitted(
+            @array![
+                (token_bridge.contract_address, Event::TokenBlocked(expected_token_blocked)),
+                (token_bridge.contract_address, Event::TokenUnblocked(expected_token_unblocked))
+            ]
+        );
+}
+
+#[test]
+#[should_panic(expected: ('Caller is not the owner',))]
+fn unblock_token_not_owner() {
+    let (token_bridge, mut spy) = deploy_token_bridge();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address
+    };
+
+    let usdc_address = deploy_erc20("usdc", "usdc");
+
+    let owner = OWNER();
+    // Cheat for the owner
+    snf::start_cheat_caller_address(token_bridge.contract_address, owner);
+    token_bridge_admin.block_token(usdc_address);
+
+    let expected_token_blocked = TokenBridge::TokenBlocked { token: usdc_address };
+
+    assert(token_bridge.get_status(usdc_address) == TokenStatus::Blocked, 'Should be blocked');
+
+    spy
+        .assert_emitted(
+            @array![(token_bridge.contract_address, Event::TokenBlocked(expected_token_blocked))]
+        );
+
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+    token_bridge_admin.unblock_token(usdc_address);
+}
+
