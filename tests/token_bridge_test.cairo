@@ -1,4 +1,4 @@
-use openzeppelin::access::ownable::interface::IOwnableTwoStepDispatcherTrait;
+use starknet_bridge::bridge::token_bridge::TokenBridge::__member_module_token_settings::InternalContractMemberStateTrait;
 use core::array::ArrayTrait;
 use core::serde::Serde;
 use core::result::ResultTrait;
@@ -11,14 +11,14 @@ use starknet_bridge::mocks::{
     messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, erc20::ERC20
 };
 use starknet_bridge::bridge::{
-    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, ITokenBridgeAdminDispatcher,
-    ITokenBridgeAdminDispatcherTrait, IWithdrawalLimitStatusDispatcher,
+    ITokenBridge, ITokenBridgeAdmin, ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait,
+    ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, IWithdrawalLimitStatusDispatcher,
     IWithdrawalLimitStatusDispatcherTrait, TokenBridge, TokenBridge::Event,
     types::{TokenStatus, TokenSettings}
 };
 use openzeppelin::access::ownable::{
     OwnableComponent, OwnableComponent::Event as OwnableEvent,
-    interface::{IOwnableTwoStepDispatcher, IOwnableDispatcherTrait}
+    interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait}
 };
 use starknet::contract_address::{contract_address_const};
 use super::constants::{OWNER, L3_BRIDGE_ADDRESS, DELAY_TIME};
