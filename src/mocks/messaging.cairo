@@ -1,7 +1,7 @@
 use piltover::messaging::output_process::MessageToAppchain;
 #[starknet::interface]
-trait IMockMessaging<TState> {
-    fn update_state(ref self: TState, messages: Span<MessageToAppchain>);
+pub trait IMockMessaging<TState> {
+    fn update_state_for_message(ref self: TState, message_hash: felt252);
 }
 
 #[starknet::contract]
@@ -38,8 +38,8 @@ mod messaging_mock {
 
     #[abi(embed_v0)]
     impl MockMessagingImpl of IMockMessaging<ContractState> {
-        fn update_state(ref self: ContractState, messages: Span<MessageToAppchain>) {
-            self.messaging.process_messages_to_appchain(messages);
+        fn update_state_for_message(ref self: ContractState, message_hash: felt252) {
+            self.messaging.sn_to_appc_messages.write(message_hash, 0);
         }
     }
 }

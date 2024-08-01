@@ -1,3 +1,6 @@
+use starknet_bridge::bridge::interface::ITokenBridge;
+use starknet_bridge::bridge::interface::ITokenBridgeAdmin;
+use starknet_bridge::bridge::token_bridge::TokenBridge::__member_module_token_settings::InternalContractMemberStateTrait;
 use openzeppelin::access::ownable::interface::IOwnableTwoStepDispatcherTrait;
 use core::array::ArrayTrait;
 use core::serde::Serde;
@@ -7,7 +10,9 @@ use core::traits::TryInto;
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, EventSpy, EventSpyTrait, EventSpyAssertionsTrait};
 use starknet::{ContractAddress, storage::StorageMemberAccessTrait};
-use starknet_bridge::mocks::erc20::ERC20;
+use starknet_bridge::mocks::{
+    messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, erc20::ERC20
+};
 use starknet_bridge::bridge::{
     ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, ITokenBridgeAdminDispatcher,
     ITokenBridgeAdminDispatcherTrait, IWithdrawalLimitStatusDispatcher,
@@ -35,8 +40,9 @@ fn deploy_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
     return usdc;
 }
 
-
-fn deploy_token_bridge() -> (ITokenBridgeDispatcher, EventSpy) {
+fn deploy_token_bridge_with_messaging() -> (
+    ITokenBridgeDispatcher, EventSpy, IMockMessagingDispatcher
+) {
     // Deploy messaging mock with 5 days cancellation delay
     let messaging_mock_class_hash = snf::declare("messaging_mock").unwrap();
     // Deploying with 5 days as the delay time (5 * 86400 = 432000)
@@ -61,16 +67,20 @@ fn deploy_token_bridge() -> (ITokenBridgeDispatcher, EventSpy) {
     let (token_bridge_address, _) = token_bridge_class_hash.deploy(@calldata).unwrap();
 
     let token_bridge = ITokenBridgeDispatcher { contract_address: token_bridge_address };
-    let token_bridge_ownable = IOwnableTwoStepDispatcher { contract_address: token_bridge_address };
+    let messaging_mock = IMockMessagingDispatcher { contract_address: messaging_contract_address };
 
     let mut spy = snf::spy_events();
-    assert(owner == token_bridge_ownable.owner(), 'Incorrect owner');
+    (token_bridge, spy, messaging_mock)
+}
 
+
+fn deploy_token_bridge() -> (ITokenBridgeDispatcher, EventSpy) {
+    let (token_bridge, spy, _) = deploy_token_bridge_with_messaging();
     (token_bridge, spy)
 }
 
 
-/// Returns the state of a component for testing. This must be used
+/// Returns the state of a contract for testing. This must be used
 /// to test internal functions or directly access the storage.
 /// You can't spy event with this. Use deploy instead.
 fn mock_state_testing() -> TokenBridge::ContractState {
@@ -79,7 +89,11 @@ fn mock_state_testing() -> TokenBridge::ContractState {
 
 #[test]
 fn constructor_ok() {
-    deploy_token_bridge();
+    let (token_bridge, _) = deploy_token_bridge();
+    let token_bridge_ownable = IOwnableTwoStepDispatcher {
+        contract_address: token_bridge.contract_address
+    };
+    assert(OWNER() == token_bridge_ownable.owner(), 'Incorrect owner');
 }
 
 #[test]
@@ -234,8 +248,8 @@ fn block_token_not_owner() {
 }
 
 #[test]
-#[should_panic(expected: ('Cannot block',))]
-fn block_token_pending() {
+#[should_panic(expected: ('Only unknown can be blocked',))]
+fn block_token_not_unknown() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
         contract_address: token_bridge.contract_address
@@ -399,5 +413,82 @@ fn unblock_token_not_owner() {
 
     snf::stop_cheat_caller_address(token_bridge.contract_address);
     token_bridge_admin.unblock_token(usdc_address);
+}
+
+
+#[test]
+#[should_panic(expected: ('Token not blocked',))]
+fn unblock_token_not_blocked() {
+    let mut mock = mock_state_testing();
+    let usdc_address = deploy_erc20("usdc", "usdc");
+
+    // Setting the token active
+    let old_settings = mock.token_settings.read(usdc_address);
+    mock
+        .token_settings
+        .write(usdc_address, TokenSettings { token_status: TokenStatus::Active, ..old_settings });
+
+    mock.ownable.Ownable_owner.write(OWNER());
+    snf::cheat_caller_address_global(OWNER());
+
+    mock.unblock_token(usdc_address);
+}
+
+#[test]
+fn reactivate_token_ok() {
+    let mut mock = mock_state_testing();
+    let usdc_address = deploy_erc20("usdc", "usdc");
+
+    // Setting the token active
+    let old_settings = mock.token_settings.read(usdc_address);
+    mock
+        .token_settings
+        .write(
+            usdc_address, TokenSettings { token_status: TokenStatus::Deactivated, ..old_settings }
+        );
+
+    mock.ownable.Ownable_owner.write(OWNER());
+
+    snf::cheat_caller_address_global(OWNER());
+
+    mock.reactivate_token(usdc_address);
+    assert(mock.get_status(usdc_address) == TokenStatus::Active, 'Did not reactivate');
+}
+
+#[test]
+#[should_panic(expected: ('Caller is not the owner',))]
+fn reactivate_token_not_owner() {
+    let mut mock = mock_state_testing();
+    let usdc_address = deploy_erc20("usdc", "usdc");
+
+    // Setting the token active
+    let old_settings = mock.token_settings.read(usdc_address);
+    mock
+        .token_settings
+        .write(
+            usdc_address, TokenSettings { token_status: TokenStatus::Deactivated, ..old_settings }
+        );
+
+    snf::cheat_caller_address_global(snf::test_address());
+
+    mock.reactivate_token(usdc_address);
+}
+
+#[test]
+#[should_panic(expected: ('Token not deactivated',))]
+fn reactivate_token_not_deactivated() {
+    let mut mock = mock_state_testing();
+    let usdc_address = deploy_erc20("usdc", "usdc");
+
+    // Setting the token active
+    let old_settings = mock.token_settings.read(usdc_address);
+    mock
+        .token_settings
+        .write(usdc_address, TokenSettings { token_status: TokenStatus::Blocked, ..old_settings });
+
+    mock.ownable.Ownable_owner.write(OWNER());
+    snf::cheat_caller_address_global(OWNER());
+
+    mock.reactivate_token(usdc_address);
 }
 
