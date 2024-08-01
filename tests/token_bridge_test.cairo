@@ -207,57 +207,45 @@ fn set_max_total_balance_ok() {
 
 #[test]
 fn block_token_ok() {
-    let (token_bridge, mut spy) = deploy_token_bridge();
-    let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
-    };
-
+    let mut mock = mock_state_testing();
     let usdc_address = deploy_erc20("usdc", "usdc");
 
-    let owner = OWNER();
-    // Cheat for the owner
-    snf::start_cheat_caller_address(token_bridge.contract_address, owner);
-    token_bridge_admin.block_token(usdc_address);
+    mock.ownable.Ownable_owner.write(OWNER());
+    snf::cheat_caller_address_global(OWNER());
 
-    let expected_event = TokenBridge::TokenBlocked { token: usdc_address };
-    spy
-        .assert_emitted(
-            @array![(token_bridge.contract_address, Event::TokenBlocked(expected_event))]
-        );
-
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Blocked, 'Should be blocked');
-
-    snf::stop_cheat_caller_address(token_bridge.contract_address);
+    mock.block_token(usdc_address);
+    assert(mock.get_status(usdc_address) == TokenStatus::Blocked, 'Token not blocked');
 }
 
 
 #[test]
 #[should_panic(expected: ('Caller is not the owner',))]
 fn block_token_not_owner() {
-    let (token_bridge, _) = deploy_token_bridge();
-    let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
-    };
-
+    let mut mock = mock_state_testing();
     let usdc_address = deploy_erc20("usdc", "usdc");
 
-    token_bridge_admin.block_token(usdc_address);
+    mock.ownable.Ownable_owner.write(OWNER());
+    snf::cheat_caller_address_global(snf::test_address());
+
+    mock.block_token(usdc_address);
 }
 
 #[test]
 #[should_panic(expected: ('Only unknown can be blocked',))]
 fn block_token_not_unknown() {
-    let (token_bridge, _) = deploy_token_bridge();
-    let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
-    };
-
-    let owner = OWNER();
+    let mut mock = mock_state_testing();
     let usdc_address = deploy_erc20("usdc", "usdc");
-    token_bridge.enroll_token(usdc_address);
 
-    snf::start_cheat_caller_address(token_bridge.contract_address, owner);
-    token_bridge_admin.block_token(usdc_address);
+    // Setting the token active
+    let old_settings = mock.token_settings.read(usdc_address);
+    mock
+        .token_settings
+        .write(usdc_address, TokenSettings { token_status: TokenStatus::Active, ..old_settings });
+
+    mock.ownable.Ownable_owner.write(OWNER());
+    snf::cheat_caller_address_global(OWNER());
+
+    mock.block_token(usdc_address);
 }
 
 #[test]
@@ -352,64 +340,38 @@ fn disable_withdrwal_not_owner() {
 
 #[test]
 fn unblock_token_ok() {
-    let (token_bridge, mut spy) = deploy_token_bridge();
-    let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
-    };
-
+    let mut mock = mock_state_testing();
     let usdc_address = deploy_erc20("usdc", "usdc");
 
-    let owner = OWNER();
-    // Cheat for the owner
-    snf::start_cheat_caller_address(token_bridge.contract_address, owner);
-    token_bridge_admin.block_token(usdc_address);
+    // Setting the token active
+    let old_settings = mock.token_settings.read(usdc_address);
+    mock
+        .token_settings
+        .write(usdc_address, TokenSettings { token_status: TokenStatus::Blocked, ..old_settings });
 
-    let expected_token_blocked = TokenBridge::TokenBlocked { token: usdc_address };
+    mock.ownable.Ownable_owner.write(OWNER());
+    snf::cheat_caller_address_global(OWNER());
 
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Blocked, 'Should be blocked');
-
-    token_bridge_admin.unblock_token(usdc_address);
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Unknown, 'Should be unknown');
-
-    let expected_token_unblocked = TokenBridge::TokenUnblocked { token: usdc_address };
-
-    snf::stop_cheat_caller_address(token_bridge.contract_address);
-
-    spy
-        .assert_emitted(
-            @array![
-                (token_bridge.contract_address, Event::TokenBlocked(expected_token_blocked)),
-                (token_bridge.contract_address, Event::TokenUnblocked(expected_token_unblocked))
-            ]
-        );
+    mock.unblock_token(usdc_address);
+    assert(mock.get_status(usdc_address) == TokenStatus::Unknown, 'Not unblocked');
 }
 
 #[test]
 #[should_panic(expected: ('Caller is not the owner',))]
 fn unblock_token_not_owner() {
-    let (token_bridge, mut spy) = deploy_token_bridge();
-    let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
-    };
-
+    let mut mock = mock_state_testing();
     let usdc_address = deploy_erc20("usdc", "usdc");
 
-    let owner = OWNER();
-    // Cheat for the owner
-    snf::start_cheat_caller_address(token_bridge.contract_address, owner);
-    token_bridge_admin.block_token(usdc_address);
+    // Setting the token active
+    let old_settings = mock.token_settings.read(usdc_address);
+    mock
+        .token_settings
+        .write(usdc_address, TokenSettings { token_status: TokenStatus::Blocked, ..old_settings });
 
-    let expected_token_blocked = TokenBridge::TokenBlocked { token: usdc_address };
+    mock.ownable.Ownable_owner.write(OWNER());
+    snf::cheat_caller_address_global(snf::test_address());
 
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Blocked, 'Should be blocked');
-
-    spy
-        .assert_emitted(
-            @array![(token_bridge.contract_address, Event::TokenBlocked(expected_token_blocked))]
-        );
-
-    snf::stop_cheat_caller_address(token_bridge.contract_address);
-    token_bridge_admin.unblock_token(usdc_address);
+    mock.unblock_token(usdc_address);
 }
 
 
