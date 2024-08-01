@@ -73,6 +73,6 @@ pub fn deploy_token_bridge() -> (ITokenBridgeDispatcher, EventSpy) {
 /// Returns the state of a contract for testing. This must be used
 /// to test internal functions or directly access the storage.
 /// You can't spy event with this. Use deploy instead.
-fn mock_state_testing() -> TokenBridge::ContractState {
+pub fn mock_state_testing() -> TokenBridge::ContractState {
     TokenBridge::contract_state_for_testing()
 }
