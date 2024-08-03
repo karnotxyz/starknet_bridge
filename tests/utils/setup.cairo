@@ -1,5 +1,7 @@
 use snforge_std as snf;
-use snforge_std::{ContractClassTrait, EventSpy, EventSpyTrait, EventSpyAssertionsTrait};
+use snforge_std::{
+    ContractClassTrait, EventSpy, EventSpyTrait, EventsFilterTrait, EventSpyAssertionsTrait
+};
 use starknet::{ContractAddress, storage::StorageMemberAccessTrait};
 use starknet_bridge::mocks::{
     messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, erc20::ERC20
