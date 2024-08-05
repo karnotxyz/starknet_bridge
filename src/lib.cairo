@@ -7,6 +7,7 @@ pub mod bridge {
     pub mod tests {
         pub mod constants;
         mod test_bridge;
+        mod token_actions_test;
     }
 
     pub use token_bridge::TokenBridge;
