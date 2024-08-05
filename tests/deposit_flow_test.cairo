@@ -27,8 +27,8 @@ use openzeppelin::access::ownable::{
 
 use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
 use starknet::contract_address::{contract_address_const};
-use super::utils::constants::{OWNER, L3_BRIDGE_ADDRESS, DELAY_TIME};
-use super::utils::setup::{
+use super::constants::{OWNER, L3_BRIDGE_ADDRESS, DELAY_TIME};
+use super::setup::{
     deploy_erc20, deploy_token_bridge_with_messaging, deploy_token_bridge, mock_state_testing
 };
 

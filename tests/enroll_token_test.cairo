@@ -21,8 +21,8 @@ use openzeppelin::access::ownable::{
     interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait}
 };
 use starknet::contract_address::{contract_address_const};
-use super::utils::constants::{OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS, DELAY_TIME};
-use super::utils::setup::{deploy_erc20, deploy_token_bridge, mock_state_testing};
+use super::constants::{OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS, DELAY_TIME};
+use super::setup::{deploy_erc20, deploy_token_bridge, mock_state_testing};
 
 
 #[test]
