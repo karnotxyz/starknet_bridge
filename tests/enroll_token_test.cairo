@@ -21,7 +21,7 @@ use openzeppelin::access::ownable::{
     interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait}
 };
 use starknet::contract_address::{contract_address_const};
-use super::utils::constants::{OWNER, L3_BRIDGE_ADDRESS, DELAY_TIME};
+use super::utils::constants::{OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS, DELAY_TIME};
 use super::utils::setup::{deploy_erc20, deploy_token_bridge, mock_state_testing};
 
 
@@ -53,3 +53,24 @@ fn enroll_token_already_enrolled() {
 
     token_bridge.enroll_token(usdc_address);
 }
+
+#[test]
+#[should_panic(expected: ('Already enrolled',))]
+fn enroll_token_blocked() {
+    let mut mock = mock_state_testing();
+
+    let usdc_address = USDC_MOCK_ADDRESS();
+
+    // Setting the token active
+    let old_settings = mock.token_settings.read(usdc_address);
+    mock
+        .token_settings
+        .write(usdc_address, TokenSettings { token_status: TokenStatus::Blocked, ..old_settings });
+
+    mock.ownable.Ownable_owner.write(OWNER());
+
+    snf::start_cheat_caller_address_global(OWNER());
+    mock.enroll_token(usdc_address);
+}
+
+fn enroll_token_piltover() {}
