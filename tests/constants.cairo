@@ -8,6 +8,9 @@ pub fn L3_BRIDGE_ADDRESS() -> ContractAddress {
     contract_address_const::<'l3_bridge_address'>()
 }
 
+pub fn USDC_MOCK_ADDRESS() -> ContractAddress {
+    contract_address_const::<'Usdc address'>()
+}
 
 // 5 days as the delay time (5 * 86400 = 432000)
 pub const DELAY_TIME: felt252 = 432000;
