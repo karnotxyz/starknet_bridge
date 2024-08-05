@@ -184,3 +184,22 @@ fn reactivate_token_not_deactivated() {
     mock.reactivate_token(usdc_address);
 }
 
+#[test]
+#[should_panic(expected: ('Already enrolled',))]
+fn enroll_token_blocked() {
+    let mut mock = mock_state_testing();
+
+    let usdc_address = USDC_MOCK_ADDRESS();
+
+    // Setting the token active
+    let old_settings = mock.token_settings.read(usdc_address);
+    mock
+        .token_settings
+        .write(usdc_address, TokenSettings { token_status: TokenStatus::Blocked, ..old_settings });
+
+    mock.ownable.Ownable_owner.write(OWNER());
+
+    snf::start_cheat_caller_address_global(OWNER());
+    mock.enroll_token(usdc_address);
+}
+
