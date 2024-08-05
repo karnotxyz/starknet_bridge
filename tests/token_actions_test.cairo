@@ -21,14 +21,14 @@ use openzeppelin::access::ownable::{
     interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait}
 };
 use starknet::contract_address::{contract_address_const};
-use super::constants::{OWNER, L3_BRIDGE_ADDRESS, DELAY_TIME};
+use super::constants::{OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS, DELAY_TIME};
 use super::setup::{deploy_erc20, deploy_token_bridge, mock_state_testing};
 
 
 #[test]
 fn block_token_ok() {
     let mut mock = mock_state_testing();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let usdc_address = USDC_MOCK_ADDRESS();
 
     mock.ownable.Ownable_owner.write(OWNER());
     snf::cheat_caller_address_global(OWNER());
@@ -42,7 +42,7 @@ fn block_token_ok() {
 #[should_panic(expected: ('Caller is not the owner',))]
 fn block_token_not_owner() {
     let mut mock = mock_state_testing();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let usdc_address = USDC_MOCK_ADDRESS();
 
     mock.ownable.Ownable_owner.write(OWNER());
     snf::cheat_caller_address_global(snf::test_address());
@@ -54,7 +54,7 @@ fn block_token_not_owner() {
 #[should_panic(expected: ('Only unknown can be blocked',))]
 fn block_token_not_unknown() {
     let mut mock = mock_state_testing();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let usdc_address = USDC_MOCK_ADDRESS();
 
     // Setting the token active
     let old_settings = mock.token_settings.read(usdc_address);
@@ -161,7 +161,7 @@ fn disable_withdrwal_not_owner() {
 #[test]
 fn unblock_token_ok() {
     let mut mock = mock_state_testing();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let usdc_address = USDC_MOCK_ADDRESS();
 
     // Setting the token active
     let old_settings = mock.token_settings.read(usdc_address);
@@ -180,7 +180,7 @@ fn unblock_token_ok() {
 #[should_panic(expected: ('Caller is not the owner',))]
 fn unblock_token_not_owner() {
     let mut mock = mock_state_testing();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let usdc_address = USDC_MOCK_ADDRESS();
 
     // Setting the token active
     let old_settings = mock.token_settings.read(usdc_address);
@@ -199,7 +199,7 @@ fn unblock_token_not_owner() {
 #[should_panic(expected: ('Token not blocked',))]
 fn unblock_token_not_blocked() {
     let mut mock = mock_state_testing();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let usdc_address = USDC_MOCK_ADDRESS();
 
     // Setting the token active
     let old_settings = mock.token_settings.read(usdc_address);
@@ -216,7 +216,7 @@ fn unblock_token_not_blocked() {
 #[test]
 fn reactivate_token_ok() {
     let mut mock = mock_state_testing();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let usdc_address = USDC_MOCK_ADDRESS();
 
     // Setting the token active
     let old_settings = mock.token_settings.read(usdc_address);
@@ -238,7 +238,7 @@ fn reactivate_token_ok() {
 #[should_panic(expected: ('Caller is not the owner',))]
 fn reactivate_token_not_owner() {
     let mut mock = mock_state_testing();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let usdc_address = USDC_MOCK_ADDRESS();
 
     // Setting the token active
     let old_settings = mock.token_settings.read(usdc_address);
@@ -257,7 +257,7 @@ fn reactivate_token_not_owner() {
 #[should_panic(expected: ('Token not deactivated',))]
 fn reactivate_token_not_deactivated() {
     let mut mock = mock_state_testing();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let usdc_address = USDC_MOCK_ADDRESS();
 
     // Setting the token active
     let old_settings = mock.token_settings.read(usdc_address);
@@ -270,4 +270,3 @@ fn reactivate_token_not_deactivated() {
 
     mock.reactivate_token(usdc_address);
 }
-
