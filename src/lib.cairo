@@ -3,6 +3,12 @@ pub mod bridge {
     pub mod interface;
     pub mod types;
 
+    #[cfg(test)]
+    pub mod tests {
+        pub mod constants;
+        mod test_bridge;
+    }
+
     pub use token_bridge::TokenBridge;
     pub use interface::{
         ITokenBridge, ITokenBridgeAdmin, IWithdrawalLimitStatus, ITokenBridgeDispatcher,
