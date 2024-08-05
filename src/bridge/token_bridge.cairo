@@ -83,8 +83,10 @@ pub mod TokenBridge {
         pub const ZERO_DEPOSIT: felt252 = 'Zero amount';
         pub const ALREADY_ENROLLED: felt252 = 'Already enrolled';
         pub const DEPLOYMENT_MESSAGE_DOES_NOT_EXIST: felt252 = 'Deployment message inexistent';
-        pub const CANNOT_DEACTIVATE: felt252 = 'Cannot deactivate and block';
-        pub const CANNOT_BLOCK: felt252 = 'Cannot block';
+        pub const NOT_ACTIVE: felt252 = 'Token not active';
+        pub const NOT_DEACTIVATED: felt252 = 'Token not deactivated';
+        pub const NOT_BLOCKED: felt252 = 'Token not blocked';
+        pub const NOT_UNKNOWN: felt252 = 'Only unknown can be blocked';
         pub const INVALID_RECIPIENT: felt252 = 'Invalid recipient';
         pub const MAX_BALANCE_EXCEEDED: felt252 = 'Max Balance Exceeded';
     }
@@ -94,8 +96,11 @@ pub mod TokenBridge {
     #[event]
     pub enum Event {
         TokenEnrollmentInitiated: TokenEnrollmentInitiated,
+        TokenActivated: TokenActivated,
         TokenDeactivated: TokenDeactivated,
         TokenBlocked: TokenBlocked,
+        TokenReactivated: TokenReactivated,
+        TokenUnblocked: TokenUnblocked,
         Deposit: Deposit,
         DepositWithMessage: DepositWithMessage,
         DepostiCancelRequest: DepositCancelRequest,
@@ -118,12 +123,29 @@ pub mod TokenBridge {
     }
 
     #[derive(Drop, starknet::Event)]
+    pub struct TokenActivated {
+        pub token: ContractAddress
+    }
+
+    #[derive(Drop, starknet::Event)]
     pub struct TokenDeactivated {
         pub token: ContractAddress
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenBlocked {
+        pub token: ContractAddress
+    }
+
+
+    #[derive(Drop, starknet::Event)]
+    pub struct TokenUnblocked {
+        pub token: ContractAddress
+    }
+
+
+    #[derive(Drop, starknet::Event)]
+    pub struct TokenReactivated {
         pub token: ContractAddress
     }
 
@@ -382,7 +404,7 @@ pub mod TokenBridge {
         // Throws an error if the token is not enrolled or if the sender is not the manager.
         fn block_token(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
-            assert(self.get_status(token) == TokenStatus::Unknown, Errors::CANNOT_BLOCK);
+            assert(self.get_status(token) == TokenStatus::Unknown, Errors::NOT_UNKNOWN);
 
             let new_settings = TokenSettings {
                 token_status: TokenStatus::Blocked, ..self.token_settings.read(token)
@@ -391,14 +413,22 @@ pub mod TokenBridge {
             self.emit(TokenBlocked { token });
         }
 
+        fn unblock_token(ref self: ContractState, token: ContractAddress) {
+            self.ownable.assert_only_owner();
+            assert(self.get_status(token) == TokenStatus::Blocked, Errors::NOT_BLOCKED);
+
+            let new_settings = TokenSettings {
+                token_status: TokenStatus::Unknown, ..self.token_settings.read(token)
+            };
+            self.token_settings.write(token, new_settings);
+            self.emit(TokenUnblocked { token });
+        }
+
 
         fn deactivate_token(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
             let status = self.get_status(token);
-            assert(
-                status == TokenStatus::Active || status == TokenStatus::Pending,
-                Errors::CANNOT_DEACTIVATE
-            );
+            assert(status == TokenStatus::Active, Errors::NOT_ACTIVE);
 
             let new_settings = TokenSettings {
                 token_status: TokenStatus::Deactivated, ..self.token_settings.read(token)
@@ -406,8 +436,21 @@ pub mod TokenBridge {
             self.token_settings.write(token, new_settings);
 
             self.emit(TokenDeactivated { token });
-            self.emit(TokenBlocked { token });
         }
+
+        fn reactivate_token(ref self: ContractState, token: ContractAddress) {
+            self.ownable.assert_only_owner();
+            let status = self.get_status(token);
+            assert(status == TokenStatus::Deactivated, Errors::NOT_DEACTIVATED);
+
+            let new_settings = TokenSettings {
+                token_status: TokenStatus::Active, ..self.token_settings.read(token)
+            };
+            self.token_settings.write(token, new_settings);
+
+            self.emit(TokenReactivated { token });
+        }
+
 
         fn enable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
@@ -566,6 +609,7 @@ pub mod TokenBridge {
             if (nonce.is_zero()) {
                 let new_settings = TokenSettings { token_status: TokenStatus::Active, ..settings };
                 self.token_settings.write(token, new_settings);
+                self.emit(TokenActivated { token });
             } else if (get_block_timestamp() > settings.pending_deployment_expiration) {
                 let new_settings = TokenSettings { token_status: TokenStatus::Unknown, ..settings };
                 self.token_settings.write(token, new_settings);
