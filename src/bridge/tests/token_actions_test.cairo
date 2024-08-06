@@ -1,3 +1,4 @@
+use starknet_bridge::bridge::token_bridge::TokenBridge::TokenBridgeInternal;
 use starknet_bridge::bridge::token_bridge::TokenBridge::__member_module_token_settings::InternalContractMemberStateTrait;
 use snforge_std as snf;
 use starknet::{ContractAddress, storage::StorageMemberAccessTrait};

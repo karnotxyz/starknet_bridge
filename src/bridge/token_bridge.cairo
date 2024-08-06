@@ -87,6 +87,7 @@ pub mod TokenBridge {
         pub const NOT_DEACTIVATED: felt252 = 'Token not deactivated';
         pub const NOT_BLOCKED: felt252 = 'Token not blocked';
         pub const NOT_UNKNOWN: felt252 = 'Only unknown can be blocked';
+        pub const NOT_SERVICING: felt252 = 'Only servicing tokens';
         pub const INVALID_RECIPIENT: felt252 = 'Invalid recipient';
         pub const MAX_BALANCE_EXCEEDED: felt252 = 'Max Balance Exceeded';
     }
@@ -286,7 +287,7 @@ pub mod TokenBridge {
 
 
     #[generate_trait]
-    impl TokenBridgeInternalImpl of TokenBridgeInternal {
+    pub impl TokenBridgeInternalImpl of TokenBridgeInternal {
         fn send_deploy_message(self: @ContractState, token: ContractAddress) -> felt252 {
             assert(self.appchain_bridge().is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
 
@@ -343,7 +344,7 @@ pub mod TokenBridge {
         }
 
         fn accept_deposit(self: @ContractState, token: ContractAddress, amount: u256) {
-            self.is_servicing_token(token);
+            assert(self.is_servicing_token(token), Errors::NOT_SERVICING);
             let caller = get_caller_address();
             let dispatcher = IERC20Dispatcher { contract_address: token };
 
