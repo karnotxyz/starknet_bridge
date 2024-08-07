@@ -324,7 +324,7 @@ pub mod TokenBridge {
                         token, amount, appchain_recipient, is_with_message, message
                     )
                 );
-            return nonce;
+            nonce
         }
 
         fn consume_message(
@@ -333,7 +333,7 @@ pub mod TokenBridge {
             let appchain_bridge = self.appchain_bridge();
             assert(appchain_bridge.is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
             let mut payload = ArrayTrait::new();
-            constants::TRANSFER_FROM_STARKNET.serialize(ref payload);
+            constants::TRANSFER_FROM_APPCHAIN.serialize(ref payload);
             recipient.serialize(ref payload);
             token.serialize(ref payload);
             amount.serialize(ref payload);

@@ -56,6 +56,7 @@ pub mod ERC20 {
         self.erc20.mint(recipient, fixed_supply);
     }
 
+
     #[generate_trait]
     #[abi(per_item)]
     impl IERC20Impl of IERC20Trait {
