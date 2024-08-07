@@ -34,10 +34,9 @@ use starknet_bridge::bridge::tests::utils::message_payloads;
 
 #[test]
 fn withdraw_ok() {
-    let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
+    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
     let usdc_address = deploy_erc20("usdc", "usdc");
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
-    let messaging = IMessagingDispatcher { contract_address: messaging_mock.contract_address };
 
     snf::start_cheat_caller_address(usdc_address, OWNER());
     usdc.transfer(snf::test_address(), 100);
@@ -48,22 +47,13 @@ fn withdraw_ok() {
     token_bridge.enroll_token(usdc_address);
     assert(token_bridge.get_status(usdc_address) == TokenStatus::Pending, 'Should be Pending');
 
-    // Enroll token will emit the event `TokenEnrollmentInitiated`
-    // Getting the deployment_message_hash from the emitted event
-    let (_, event) = spy.get_events().emitted_by(token_bridge.contract_address).events.at(0);
-    let mut keys = event.keys.span();
-    let mut data = event.data.span();
-    let token_enrollment_initiated = starknet::Event::<
-        TokenBridge::TokenEnrollmentInitiated
-    >::deserialize(ref keys, ref data)
-        .unwrap();
-
-    messaging_mock.update_state_for_message(token_enrollment_initiated.deployment_message_hash);
-
-    // Successfully updates the nonce
-    let nonce: felt252 = messaging
-        .sn_to_appchain_messages(token_enrollment_initiated.deployment_message_hash);
-    assert(nonce == 0, 'Nonce no zero');
+    // Settles the message sent to appchain
+    messaging_mock
+        .process_last_message_to_appchain(
+            L3_BRIDGE_ADDRESS(),
+            constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
+            message_payloads::deployment_message_payload(usdc_address)
+        );
 
     token_bridge.check_deployment_status(usdc_address);
 
