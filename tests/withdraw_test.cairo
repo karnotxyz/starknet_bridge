@@ -86,6 +86,19 @@ fn withdraw_ok() {
                 usdc_address, amount, snf::test_address()
             )
         );
+
+    let initial_bridge_balance = usdc.balance_of(token_bridge.contract_address);
+    let initial_recipient_balance = usdc.balance_of(snf::test_address());
     token_bridge.withdraw(usdc_address, 100, snf::test_address());
+
+    assert(
+        usdc.balance_of(snf::test_address()) == initial_recipient_balance + amount,
+        'Incorrect amount recieved'
+    );
+
+    assert(
+        usdc.balance_of(token_bridge.contract_address) == initial_bridge_balance - amount,
+        'Incorrect token amount'
+    );
 }
 
