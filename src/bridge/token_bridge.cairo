@@ -183,7 +183,7 @@ pub mod TokenBridge {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct DepositCancelRequest {
+    pub struct DepositCancelRequest {
         #[key]
         pub sender: ContractAddress,
         #[key]
@@ -195,7 +195,7 @@ pub mod TokenBridge {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct DepositWithMessageCancelRequest {
+    pub struct DepositWithMessageCancelRequest {
         #[key]
         pub sender: ContractAddress,
         #[key]
