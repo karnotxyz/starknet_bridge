@@ -69,7 +69,7 @@ fn deposit_ok() {
     let final_status = token_bridge.get_status(usdc_address);
     assert(final_status == TokenStatus::Active, 'Should be Active');
 
-  assert(snf::test_address() == starknet::get_contract_address(), 'should be equal');
+    assert(snf::test_address() == starknet::get_contract_address(), 'should be equal');
     usdc.approve(token_bridge.contract_address, 100);
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 }
