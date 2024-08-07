@@ -61,7 +61,6 @@ fn deposit_ok() {
     let final_status = token_bridge.get_status(usdc_address);
     assert(final_status == TokenStatus::Active, 'Should be Active');
 
-    assert(snf::test_address() == starknet::get_contract_address(), 'should be equal');
     usdc.approve(token_bridge.contract_address, 100);
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 }
@@ -272,4 +271,39 @@ fn deposit_with_message_deactivated() {
     'param1'.serialize(ref calldata);
     'param2'.serialize(ref calldata);
     token_bridge.deposit_with_message(usdc_address, 100, snf::test_address(), calldata.span());
+}
+
+
+#[test]
+fn deposit_cancel_request_ok() {
+    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
+    let usdc_address = deploy_erc20("usdc", "usdc");
+    let usdc = IERC20Dispatcher { contract_address: usdc_address };
+
+    snf::start_cheat_caller_address(usdc_address, OWNER());
+    usdc.transfer(snf::test_address(), 100);
+    snf::stop_cheat_caller_address(usdc_address);
+
+    assert(token_bridge.get_status(usdc_address) == TokenStatus::Unknown, 'Should be Unknown');
+
+    token_bridge.enroll_token(usdc_address);
+    assert(token_bridge.get_status(usdc_address) == TokenStatus::Pending, 'Should be Pending');
+
+    // Settles the message sent to appchain
+    messaging_mock
+        .process_last_message_to_appchain(
+            L3_BRIDGE_ADDRESS(),
+            constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
+            message_payloads::deployment_message_payload(usdc_address)
+        );
+
+    token_bridge.check_deployment_status(usdc_address);
+
+    let final_status = token_bridge.get_status(usdc_address);
+    assert(final_status == TokenStatus::Active, 'Should be Active');
+
+    usdc.approve(token_bridge.contract_address, 100);
+    token_bridge.deposit(usdc_address, 100, snf::test_address());
+
+    token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 2);
 }
