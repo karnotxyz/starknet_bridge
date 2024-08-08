@@ -77,7 +77,7 @@ fn deposit_ok() {
 
 #[test]
 #[should_panic(expected: ('ERC20: insufficient balance',))]
-fn deposit_issufficient_balance() {
+fn deposit_insufficient_balance() {
     let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
     let usdc_address = deploy_erc20("usdc", "usdc");
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
