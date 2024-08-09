@@ -24,6 +24,12 @@ pub mod bridge {
 pub mod withdrawal_limit {
     pub mod component;
     pub mod interface;
+    pub mod mock;
+
+    #[cfg(test)]
+    mod tests {
+        mod withdrawal_limit_test;
+    }
 }
 
 pub mod constants;
