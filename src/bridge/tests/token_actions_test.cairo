@@ -186,7 +186,7 @@ fn reactivate_token_not_deactivated() {
 }
 
 #[test]
-#[should_panic(expected: ('Already enrolled',))]
+#[should_panic(expected: ('Incorrect token status',))]
 fn enroll_token_blocked() {
     let mut mock = mock_state_testing();
 
@@ -204,3 +204,11 @@ fn enroll_token_blocked() {
     mock.enroll_token(usdc_address);
 }
 
+#[test]
+#[should_panic(expected: ('Invalid recipient',))]
+fn consume_message_zero_recipient() {
+    let mut mock = mock_state_testing();
+    let usdc_address = USDC_MOCK_ADDRESS();
+
+    mock.consume_message(usdc_address, 100, contract_address_const::<0>());
+}

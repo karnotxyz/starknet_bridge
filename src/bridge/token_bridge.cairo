@@ -81,7 +81,7 @@ pub mod TokenBridge {
     pub mod Errors {
         pub const APPCHAIN_BRIDGE_NOT_SET: felt252 = 'L3 bridge not set';
         pub const ZERO_DEPOSIT: felt252 = 'Zero amount';
-        pub const ALREADY_ENROLLED: felt252 = 'Already enrolled';
+        pub const ALREADY_ENROLLED: felt252 = 'Incorrect token status';
         pub const DEPLOYMENT_MESSAGE_DOES_NOT_EXIST: felt252 = 'Deployment message inexistent';
         pub const NOT_ACTIVE: felt252 = 'Token not active';
         pub const NOT_DEACTIVATED: felt252 = 'Token not deactivated';
@@ -544,17 +544,7 @@ pub mod TokenBridge {
                 );
 
             let caller = get_caller_address();
-            self
-                .emit(
-                    DepositWithMessage {
-                        sender: caller,
-                        token,
-                        amount,
-                        appchain_recipient,
-                        message: no_message,
-                        nonce,
-                    }
-                );
+            self.emit(Deposit { sender: caller, token, amount, appchain_recipient, nonce });
 
             self.check_deployment_status(token);
             self.reentrancy_guard.end();

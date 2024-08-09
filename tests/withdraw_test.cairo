@@ -28,7 +28,9 @@ use openzeppelin::access::ownable::{
 use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
 use starknet::contract_address::{contract_address_const};
 use super::constants::{OWNER, L3_BRIDGE_ADDRESS, DELAY_TIME};
-use super::setup::{deploy_erc20, deploy_token_bridge_with_messaging, deploy_token_bridge};
+use super::setup::{
+    deploy_erc20, deploy_token_bridge_with_messaging, deploy_token_bridge, enroll_token_and_settle
+};
 use starknet_bridge::constants;
 use starknet_bridge::bridge::tests::utils::message_payloads;
 
@@ -42,23 +44,7 @@ fn withdraw_ok() {
     usdc.transfer(snf::test_address(), 100);
     snf::stop_cheat_caller_address(usdc_address);
 
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Unknown, 'Should be Unknown');
-
-    token_bridge.enroll_token(usdc_address);
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Pending, 'Should be Pending');
-
-    // Settles the message sent to appchain
-    messaging_mock
-        .process_last_message_to_appchain(
-            L3_BRIDGE_ADDRESS(),
-            constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
-            message_payloads::deployment_message_payload(usdc_address)
-        );
-
-    token_bridge.check_deployment_status(usdc_address);
-
-    let final_status = token_bridge.get_status(usdc_address);
-    assert(final_status == TokenStatus::Active, 'Should be Active');
+    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
 
     let amount = 100;
     usdc.approve(token_bridge.contract_address, amount);
@@ -102,66 +88,6 @@ fn withdraw_ok() {
     );
 }
 
-
-#[test]
-#[should_panic(expected: ('Invalid recipient',))]
-fn withdraw_zero_recipient() {
-    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
-    let usdc = IERC20Dispatcher { contract_address: usdc_address };
-
-    snf::start_cheat_caller_address(usdc_address, OWNER());
-    usdc.transfer(snf::test_address(), 100);
-    snf::stop_cheat_caller_address(usdc_address);
-
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Unknown, 'Should be Unknown');
-
-    token_bridge.enroll_token(usdc_address);
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Pending, 'Should be Pending');
-
-    // Settles the message sent to appchain
-    messaging_mock
-        .process_last_message_to_appchain(
-            L3_BRIDGE_ADDRESS(),
-            constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
-            message_payloads::deployment_message_payload(usdc_address)
-        );
-
-    token_bridge.check_deployment_status(usdc_address);
-
-    let final_status = token_bridge.get_status(usdc_address);
-    assert(final_status == TokenStatus::Active, 'Should be Active');
-
-    let amount = 100;
-    usdc.approve(token_bridge.contract_address, amount);
-    token_bridge.deposit(usdc_address, amount, snf::test_address());
-    messaging_mock
-        .process_last_message_to_appchain(
-            L3_BRIDGE_ADDRESS(),
-            constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
-            message_payloads::deposit_message_payload(
-                usdc_address,
-                amount,
-                snf::test_address(),
-                snf::test_address(),
-                false,
-                array![].span()
-            )
-        );
-
-    // Register a withdraw message from appchain to piltover
-    messaging_mock
-        .process_message_to_starknet(
-            L3_BRIDGE_ADDRESS(),
-            token_bridge.contract_address,
-            message_payloads::withdraw_message_payload_from_appchain(
-                usdc_address, amount, snf::test_address()
-            )
-        );
-
-    token_bridge.withdraw(usdc_address, 100, contract_address_const::<0>());
-}
-
 #[test]
 #[should_panic(expected: ('INVALID_MESSAGE_TO_CONSUME',))]
 fn withdraw_incorrect_recipient() {
@@ -173,23 +99,7 @@ fn withdraw_incorrect_recipient() {
     usdc.transfer(snf::test_address(), 100);
     snf::stop_cheat_caller_address(usdc_address);
 
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Unknown, 'Should be Unknown');
-
-    token_bridge.enroll_token(usdc_address);
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Pending, 'Should be Pending');
-
-    // Settles the message sent to appchain
-    messaging_mock
-        .process_last_message_to_appchain(
-            L3_BRIDGE_ADDRESS(),
-            constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
-            message_payloads::deployment_message_payload(usdc_address)
-        );
-
-    token_bridge.check_deployment_status(usdc_address);
-
-    let final_status = token_bridge.get_status(usdc_address);
-    assert(final_status == TokenStatus::Active, 'Should be Active');
+    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
 
     let amount = 100;
     usdc.approve(token_bridge.contract_address, amount);
@@ -236,23 +146,7 @@ fn withdraw_limit_reached() {
     usdc.transfer(snf::test_address(), 100);
     snf::stop_cheat_caller_address(usdc_address);
 
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Unknown, 'Should be Unknown');
-
-    token_bridge.enroll_token(usdc_address);
-    assert(token_bridge.get_status(usdc_address) == TokenStatus::Pending, 'Should be Pending');
-
-    // Settles the message sent to appchain
-    messaging_mock
-        .process_last_message_to_appchain(
-            L3_BRIDGE_ADDRESS(),
-            constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
-            message_payloads::deployment_message_payload(usdc_address)
-        );
-
-    token_bridge.check_deployment_status(usdc_address);
-
-    let final_status = token_bridge.get_status(usdc_address);
-    assert(final_status == TokenStatus::Active, 'Should be Active');
+    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
 
     let amount = 100;
     usdc.approve(token_bridge.contract_address, amount);
