@@ -49,8 +49,11 @@ fn deposit_reclaim_ok() {
     snf::start_cheat_block_timestamp_global(
         starknet::get_block_timestamp() + DELAY_TIME.try_into().unwrap() + 10
     );
-
+    let initial_user_balance = usdc.balance_of(snf::test_address());
     token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 2);
+    assert(
+        usdc.balance_of(snf::test_address()) == initial_user_balance + 100, 'deposit not recieved'
+    );
 
     let expected_deposit_cancel = TokenBridge::DepositCancelRequest {
         sender: snf::test_address(),
@@ -167,8 +170,12 @@ fn deposit_with_message_reclaim_ok() {
         starknet::get_block_timestamp() + DELAY_TIME.try_into().unwrap() + 10
     );
 
+    let initial_user_balance = usdc.balance_of(snf::test_address());
     token_bridge
         .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), calldata.span(), 2);
+    assert(
+        usdc.balance_of(snf::test_address()) == initial_user_balance + 100, 'deposit not recieved'
+    );
 
     let expected_deposit_cancel = TokenBridge::DepositWithMessageCancelRequest {
         sender: snf::test_address(),
