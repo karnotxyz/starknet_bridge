@@ -1,10 +1,12 @@
+use starknet_bridge::bridge::token_bridge::TokenBridge::__member_module_appchain_bridge::InternalContractMemberStateTrait;
 use starknet_bridge::bridge::token_bridge::TokenBridge::TokenBridgeInternal;
-use starknet_bridge::bridge::token_bridge::TokenBridge::__member_module_token_settings::InternalContractMemberStateTrait;
+use starknet_bridge::bridge::token_bridge::TokenBridge::__member_module_token_settings::InternalContractMemberStateTrait as tokenSettingsStateTrait;
 use snforge_std as snf;
 use starknet::{ContractAddress, storage::StorageMemberAccessTrait};
 use starknet_bridge::mocks::{
     messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, erc20::ERC20
 };
+use piltover::messaging::interface::IMessagingDispatcher;
 use starknet_bridge::bridge::{
     ITokenBridge, ITokenBridgeAdmin, ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait,
     ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, IWithdrawalLimitStatusDispatcher,
@@ -210,5 +212,6 @@ fn consume_message_zero_recipient() {
     let mut mock = mock_state_testing();
     let usdc_address = USDC_MOCK_ADDRESS();
 
+    mock.appchain_bridge.write(L3_BRIDGE_ADDRESS());
     mock.consume_message(usdc_address, 100, contract_address_const::<0>());
 }
