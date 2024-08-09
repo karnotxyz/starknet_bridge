@@ -330,6 +330,8 @@ pub mod TokenBridge {
         fn consume_message(
             self: @ContractState, token: ContractAddress, amount: u256, recipient: ContractAddress
         ) {
+            assert(recipient.is_non_zero(), Errors::INVALID_RECIPIENT);
+
             let appchain_bridge = self.appchain_bridge();
             assert(appchain_bridge.is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
             let mut payload = ArrayTrait::new();
@@ -615,10 +617,10 @@ pub mod TokenBridge {
             recipient: ContractAddress
         ) {
             self.reentrancy_guard.start();
-            assert(recipient.is_non_zero(), Errors::INVALID_RECIPIENT);
 
             self.consume_message(token, amount, recipient);
 
+            assert(recipient.is_non_zero(), Errors::INVALID_RECIPIENT);
             self.withdrawal.consume_withdrawal_quota(token, amount);
 
             let tokenDispatcher = IERC20Dispatcher { contract_address: token };
