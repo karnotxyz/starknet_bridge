@@ -32,6 +32,51 @@ pub fn mock_state_testing() -> TokenBridge::ContractState {
 }
 
 #[test]
+fn deactivate_token_ok() {
+    let mut mock = mock_state_testing();
+    let usdc_address = USDC_MOCK_ADDRESS();
+
+    mock.ownable.Ownable_owner.write(OWNER());
+    snf::start_cheat_caller_address_global(OWNER());
+
+    // Setting the token active
+    let old_settings = mock.token_settings.read(usdc_address);
+    mock
+        .token_settings
+        .write(usdc_address, TokenSettings { token_status: TokenStatus::Active, ..old_settings });
+
+    mock.deactivate_token(usdc_address);
+    assert(mock.get_status(usdc_address) == TokenStatus::Deactivated, 'Token not deactivated');
+}
+
+#[test]
+#[should_panic(expected: ('Token not active',))]
+fn deactivate_token_not_active() {
+    let mut mock = mock_state_testing();
+    let usdc_address = USDC_MOCK_ADDRESS();
+
+    mock.ownable.Ownable_owner.write(OWNER());
+    snf::start_cheat_caller_address_global(OWNER());
+
+    mock.deactivate_token(usdc_address);
+    assert(mock.get_status(usdc_address) == TokenStatus::Deactivated, 'Token not deactivated');
+}
+
+
+#[test]
+#[should_panic(expected: ('Caller is not the owner',))]
+fn deactivate_token_not_owner() {
+    let mut mock = mock_state_testing();
+    let usdc_address = USDC_MOCK_ADDRESS();
+
+    mock.ownable.Ownable_owner.write(OWNER());
+    snf::start_cheat_caller_address_global(snf::test_address());
+
+    mock.deactivate_token(usdc_address);
+    assert(mock.get_status(usdc_address) == TokenStatus::Deactivated, 'Token not deactivated');
+}
+
+#[test]
 fn block_token_ok() {
     let mut mock = mock_state_testing();
     let usdc_address = USDC_MOCK_ADDRESS();
