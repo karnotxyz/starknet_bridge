@@ -205,13 +205,15 @@ fn enroll_token_blocked() {
     snf::start_cheat_caller_address_global(OWNER());
     mock.enroll_token(usdc_address);
 }
-// #[test]
-// #[should_panic(expected: ('Invalid recipient',))]
-// fn consume_message_zero_recipient() {
-//     let mut mock = mock_state_testing();
-//     let usdc_address = USDC_MOCK_ADDRESS();
-//
-//     mock.appchain_bridge.write(L3_BRIDGE_ADDRESS());
-//     mock.consume_message(usdc_address, 100, contract_address_const::<0>());
-// }
+
+
+#[test]
+#[should_panic(expected: ('Invalid recipient',))]
+fn consume_message_zero_recipient() {
+    let mut mock = mock_state_testing();
+    let usdc_address = USDC_MOCK_ADDRESS();
+
+    mock.appchain_bridge.write(L3_BRIDGE_ADDRESS());
+    mock.consume_message(usdc_address, 100, contract_address_const::<0>());
+}
 
