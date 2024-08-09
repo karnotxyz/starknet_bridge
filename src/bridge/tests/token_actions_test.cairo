@@ -298,7 +298,7 @@ fn consume_message_ok() {
 
 #[test]
 #[should_panic(expected: ('INVALID_MESSAGE_TO_CONSUME',))]
-fn consume_message_no_message_ok() {
+fn consume_message_no_message() {
     let mut mock = mock_state_testing();
     let usdc_address = USDC_MOCK_ADDRESS();
 
