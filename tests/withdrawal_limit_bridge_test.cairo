@@ -152,7 +152,7 @@ fn is_withdrawal_limit_applied_ok() {
     };
 
     assert(
-        withdrawal_limit.is_withdrawal_limit_applied(usdc_address) == false, 'Limit not applied'
+        withdrawal_limit.is_withdrawal_limit_applied(usdc_address) == false, 'Limit already applied'
     );
 
     snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
