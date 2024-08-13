@@ -7,6 +7,7 @@ pub mod bridge {
     pub mod tests {
         pub mod constants;
         mod token_actions_test;
+        mod messaging_test;
         pub mod utils {
             pub mod message_payloads;
         }
