@@ -90,6 +90,7 @@ pub mod TokenBridge {
         pub const NOT_SERVICING: felt252 = 'Only servicing tokens';
         pub const INVALID_RECIPIENT: felt252 = 'Invalid recipient';
         pub const MAX_BALANCE_EXCEEDED: felt252 = 'Max Balance Exceeded';
+        pub const TOKENS_NOT_TRANSFERRED: felt252 = 'Tokens not transferred';
     }
 
 
@@ -272,7 +273,7 @@ pub mod TokenBridge {
 
 
     #[constructor]
-    fn constructor(
+    pub fn constructor(
         ref self: ContractState,
         appchain_bridge: ContractAddress,
         messaging_contract: ContractAddress,
@@ -353,12 +354,19 @@ pub mod TokenBridge {
             let current_balance: u256 = dispatcher.balance_of(get_contract_address());
             let max_total_balance = self.get_max_total_balance(token);
             assert(current_balance + amount < max_total_balance, Errors::MAX_BALANCE_EXCEEDED);
-            dispatcher.transfer_from(caller, get_contract_address(), amount);
+
+            let this_address = get_contract_address();
+            let initial_balance = dispatcher.balance_of(this_address);
+            dispatcher.transfer_from(caller, this_address, amount);
+            assert(
+                dispatcher.balance_of(this_address) == initial_balance + amount,
+                Errors::TOKENS_NOT_TRANSFERRED
+            );
         }
     }
 
 
-    fn deposit_message_payload(
+    pub fn deposit_message_payload(
         token: ContractAddress,
         amount: u256,
         appchain_recipient: ContractAddress,
@@ -379,7 +387,7 @@ pub mod TokenBridge {
     }
 
 
-    fn deployment_message_payload(token: ContractAddress) -> Span<felt252> {
+    pub fn deployment_message_payload(token: ContractAddress) -> Span<felt252> {
         // Create the calldata that will be sent to on_receive. l2_token, amount and
         // depositor are the fields from the deposit context.
         let mut calldata = ArrayTrait::new();
