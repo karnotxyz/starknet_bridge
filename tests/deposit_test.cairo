@@ -32,15 +32,18 @@ use super::setup::{
     deploy_erc20, deploy_token_bridge_with_messaging, deploy_token_bridge, enroll_token_and_settle
 };
 
+fn setup() -> (ITokenBridgeDispatcher, EventSpy, ContractAddress, IMockMessagingDispatcher) {
+    let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
+    let usdc_address = deploy_erc20("usdc", "usdc");
+    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
+    (token_bridge, spy, usdc_address, messaging_mock)
+}
 
 #[test]
 fn deposit_ok() {
-    let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let (token_bridge, mut spy, usdc_address, _) = setup();
+
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
-
     let initial_bridge_balance = usdc.balance_of(token_bridge.contract_address);
     usdc.approve(token_bridge.contract_address, 100);
     token_bridge.deposit(usdc_address, 100, snf::test_address());
@@ -65,11 +68,8 @@ fn deposit_ok() {
 #[test]
 #[should_panic(expected: ('ERC20: insufficient balance',))]
 fn deposit_insufficient_balance() {
-    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let (token_bridge, _, usdc_address, _) = setup();
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
 
     usdc.approve(token_bridge.contract_address, 200);
     token_bridge.deposit(usdc_address, 200, snf::test_address());
@@ -78,11 +78,7 @@ fn deposit_insufficient_balance() {
 #[test]
 #[should_panic(expected: ('ERC20: insufficient allowance',))]
 fn deposit_insufficient_allowance() {
-    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
-
+    let (token_bridge, _, usdc_address, _) = setup();
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 }
 
@@ -90,13 +86,10 @@ fn deposit_insufficient_allowance() {
 #[test]
 #[should_panic(expected: ('Only servicing tokens',))]
 fn deposit_deactivated() {
-    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let (token_bridge, _, usdc_address, _) = setup();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
         contract_address: token_bridge.contract_address
     };
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
 
     snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
     token_bridge_admin.deactivate_token(usdc_address);
@@ -108,12 +101,9 @@ fn deposit_deactivated() {
 
 #[test]
 fn deposit_with_message_ok() {
-    let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let (token_bridge, mut spy, usdc_address, _) = setup();
+
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
-
     let mut calldata = ArrayTrait::new();
     'param1'.serialize(ref calldata);
     'param2'.serialize(ref calldata);
@@ -149,11 +139,8 @@ fn deposit_with_message_ok() {
 
 #[test]
 fn deposit_with_message_empty_message_ok() {
-    let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let (token_bridge, mut spy, usdc_address, _) = setup();
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
 
     let mut calldata = ArrayTrait::new();
     'param1'.serialize(ref calldata);
@@ -191,12 +178,9 @@ fn deposit_with_message_empty_message_ok() {
 #[test]
 #[should_panic(expected: ('ERC20: insufficient balance',))]
 fn deposit_with_message_insufficient_balance() {
-    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let (token_bridge, _, usdc_address, _) = setup();
+
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
-
     usdc.approve(token_bridge.contract_address, 200);
 
     let mut calldata = ArrayTrait::new();
@@ -208,11 +192,7 @@ fn deposit_with_message_insufficient_balance() {
 #[test]
 #[should_panic(expected: ('ERC20: insufficient allowance',))]
 fn deposit_with_message_insufficient_allowance() {
-    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
-
+    let (token_bridge, _, usdc_address, _) = setup();
     let mut calldata = ArrayTrait::new();
     'param1'.serialize(ref calldata);
     'param2'.serialize(ref calldata);
@@ -222,13 +202,10 @@ fn deposit_with_message_insufficient_allowance() {
 #[test]
 #[should_panic(expected: ('Only servicing tokens',))]
 fn deposit_with_message_deactivated() {
-    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let (token_bridge, _, usdc_address, _) = setup();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
         contract_address: token_bridge.contract_address
     };
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
 
     snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
     token_bridge_admin.deactivate_token(usdc_address);
@@ -243,11 +220,8 @@ fn deposit_with_message_deactivated() {
 
 #[test]
 fn deposit_cancel_request_ok() {
-    let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let (token_bridge, mut spy, usdc_address, _) = setup();
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
 
     usdc.approve(token_bridge.contract_address, 100);
     token_bridge.deposit(usdc_address, 100, snf::test_address());
@@ -277,22 +251,15 @@ fn deposit_cancel_request_ok() {
 #[test]
 #[should_panic(expected: ('NO_MESSAGE_TO_CANCEL',))]
 fn deposit_cancel_request_no_deposit() {
-    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
-
+    let (token_bridge, _, usdc_address, _) = setup();
     token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 2);
 }
 
 #[test]
 #[should_panic(expected: ('NO_MESSAGE_TO_CANCEL',))]
 fn deposit_cancel_request_different_user() {
-    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let (token_bridge, _, usdc_address, _) = setup();
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
 
     usdc.approve(token_bridge.contract_address, 100);
     token_bridge.deposit(usdc_address, 100, snf::test_address());
@@ -306,11 +273,8 @@ fn deposit_cancel_request_different_user() {
 
 #[test]
 fn deposit_with_message_cancel_request_ok() {
-    let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let (token_bridge, mut spy, usdc_address, _) = setup();
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
 
     let mut calldata = ArrayTrait::new();
     'param1'.serialize(ref calldata);
@@ -348,10 +312,7 @@ fn deposit_with_message_cancel_request_ok() {
 #[test]
 #[should_panic(expected: ('NO_MESSAGE_TO_CANCEL',))]
 fn deposit_with_message_cancel_request_no_deposit() {
-    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
+    let (token_bridge, _, usdc_address, _) = setup();
 
     let mut calldata = ArrayTrait::new();
     'param1'.serialize(ref calldata);
@@ -366,11 +327,8 @@ fn deposit_with_message_cancel_request_no_deposit() {
 #[test]
 #[should_panic(expected: ('NO_MESSAGE_TO_CANCEL',))]
 fn deposit_with_message_cancel_request_different_user() {
-    let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let (token_bridge, _, usdc_address, _) = setup();
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
-
-    enroll_token_and_settle(token_bridge, messaging_mock, usdc_address);
 
     let mut calldata = ArrayTrait::new();
     'param1'.serialize(ref calldata);
