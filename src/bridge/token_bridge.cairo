@@ -283,6 +283,7 @@ pub mod TokenBridge {
         self
             .messaging_contract
             .write(IMessagingDispatcher { contract_address: messaging_contract });
+        self.withdrawal.initialize(5);
         self.ownable.initializer(owner);
     }
 

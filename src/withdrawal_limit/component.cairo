@@ -45,6 +45,8 @@ pub mod WithdrawalLimitComponent {
                 return BoundedInt::max();
             }
             let remaining_quota = self.read_withdrawal_quota_slot(:token);
+
+            // if remaining_quota is 0 then quota is not initialised
             if remaining_quota == 0 {
                 return self.get_daily_withdrawal_limit(:token);
             }
@@ -56,6 +58,11 @@ pub mod WithdrawalLimitComponent {
     pub impl InternalImpl<
         TContractState, +HasComponent<TContractState>, +IWithdrawalLimitStatus<TContractState>
     > of InternalTrait<TContractState> {
+        // This initializes the withdrawal_limit component
+        fn initialize(ref self: ComponentState<TContractState>, daily_withdrawal_limit_pct: u8) {
+            self.daily_withdrawal_limit_pct.write(daily_withdrawal_limit_pct);
+        }
+
         // Sets the remaining withdrawal quota for today.
         fn set_remaining_withdrawal_quota(
             ref self: ComponentState<TContractState>, token: ContractAddress, amount: u256
