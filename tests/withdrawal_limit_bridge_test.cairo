@@ -143,6 +143,7 @@ fn disable_withdrawal_limit_not_owner() {
 #[test]
 fn is_withdrawal_limit_applied_ok() {
     let (token_bridge, _) = deploy_token_bridge();
+    let usdc_address = USDC_MOCK_ADDRESS();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
         contract_address: token_bridge.contract_address
     };
@@ -150,8 +151,11 @@ fn is_withdrawal_limit_applied_ok() {
         contract_address: token_bridge.contract_address
     };
 
+    assert(
+        withdrawal_limit.is_withdrawal_limit_applied(usdc_address) == false, 'Limit not applied'
+    );
+
     snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
-    let usdc_address = USDC_MOCK_ADDRESS();
     token_bridge_admin.enable_withdrawal_limit(usdc_address);
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
