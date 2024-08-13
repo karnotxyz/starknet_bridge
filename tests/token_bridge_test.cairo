@@ -21,7 +21,7 @@ use openzeppelin::access::ownable::{
     interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait}
 };
 use starknet::contract_address::{contract_address_const};
-use super::setup::{deploy_erc20, deploy_token_bridge, mock_state_testing};
+use super::setup::{deploy_erc20, deploy_token_bridge};
 use super::constants::{OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS, DELAY_TIME};
 
 
@@ -83,25 +83,8 @@ fn set_appchain_bridge_not_owner() {
     // Set and check new bridge
     let new_appchain_bridge_address = contract_address_const::<'l3_bridge_address_new'>();
     token_bridge_admin.set_appchain_token_bridge(new_appchain_bridge_address);
-    assert(
-        token_bridge.appchain_bridge() == new_appchain_bridge_address, 'Appchain bridge not set'
-    );
 }
 
-#[test]
-fn enroll_token_ok() {
-    let (token_bridge, _) = deploy_token_bridge();
-
-    let usdc_address = deploy_erc20("USDC", "USDC");
-
-    let old_status = token_bridge.get_status(usdc_address);
-    assert(old_status == TokenStatus::Unknown, 'Should be unknown before');
-
-    token_bridge.enroll_token(usdc_address);
-
-    let new_status = token_bridge.get_status(usdc_address);
-    assert(new_status == TokenStatus::Pending, 'Should be pending now');
-}
 
 #[test]
 #[should_panic(expected: ('Caller is not the owner',))]
@@ -111,7 +94,7 @@ fn set_max_total_balance_not_owner() {
         contract_address: token_bridge.contract_address
     };
 
-    let usdc_address = deploy_erc20("USDC", "USDC");
+    let usdc_address = USDC_MOCK_ADDRESS();
     let decimals = 1000_000;
     token_bridge_admin.set_max_total_balance(usdc_address, 50 * decimals);
 }
@@ -124,7 +107,7 @@ fn set_max_total_balance_ok() {
         contract_address: token_bridge.contract_address
     };
 
-    let usdc_address = deploy_erc20("usdc", "usdc");
+    let usdc_address = USDC_MOCK_ADDRESS();
 
     let owner = OWNER();
     // Cheat for the owner

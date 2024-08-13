@@ -81,14 +81,16 @@ pub mod TokenBridge {
     pub mod Errors {
         pub const APPCHAIN_BRIDGE_NOT_SET: felt252 = 'L3 bridge not set';
         pub const ZERO_DEPOSIT: felt252 = 'Zero amount';
-        pub const ALREADY_ENROLLED: felt252 = 'Already enrolled';
+        pub const ALREADY_ENROLLED: felt252 = 'Incorrect token status';
         pub const DEPLOYMENT_MESSAGE_DOES_NOT_EXIST: felt252 = 'Deployment message inexistent';
         pub const NOT_ACTIVE: felt252 = 'Token not active';
         pub const NOT_DEACTIVATED: felt252 = 'Token not deactivated';
         pub const NOT_BLOCKED: felt252 = 'Token not blocked';
         pub const NOT_UNKNOWN: felt252 = 'Only unknown can be blocked';
+        pub const NOT_SERVICING: felt252 = 'Only servicing tokens';
         pub const INVALID_RECIPIENT: felt252 = 'Invalid recipient';
         pub const MAX_BALANCE_EXCEEDED: felt252 = 'Max Balance Exceeded';
+        pub const TOKENS_NOT_TRANSFERRED: felt252 = 'Tokens not transferred';
     }
 
 
@@ -182,7 +184,7 @@ pub mod TokenBridge {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct DepositCancelRequest {
+    pub struct DepositCancelRequest {
         #[key]
         pub sender: ContractAddress,
         #[key]
@@ -194,7 +196,7 @@ pub mod TokenBridge {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct DepositWithMessageCancelRequest {
+    pub struct DepositWithMessageCancelRequest {
         #[key]
         pub sender: ContractAddress,
         #[key]
@@ -271,7 +273,7 @@ pub mod TokenBridge {
 
 
     #[constructor]
-    fn constructor(
+    pub fn constructor(
         ref self: ContractState,
         appchain_bridge: ContractAddress,
         messaging_contract: ContractAddress,
@@ -286,7 +288,7 @@ pub mod TokenBridge {
 
 
     #[generate_trait]
-    impl TokenBridgeInternalImpl of TokenBridgeInternal {
+    pub impl TokenBridgeInternalImpl of TokenBridgeInternal {
         fn send_deploy_message(self: @ContractState, token: ContractAddress) -> felt252 {
             assert(self.appchain_bridge().is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
 
@@ -323,16 +325,18 @@ pub mod TokenBridge {
                         token, amount, appchain_recipient, is_with_message, message
                     )
                 );
-            return nonce;
+            nonce
         }
 
         fn consume_message(
             self: @ContractState, token: ContractAddress, amount: u256, recipient: ContractAddress
         ) {
+            assert(recipient.is_non_zero(), Errors::INVALID_RECIPIENT);
+
             let appchain_bridge = self.appchain_bridge();
             assert(appchain_bridge.is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
             let mut payload = ArrayTrait::new();
-            constants::TRANSFER_FROM_STARKNET.serialize(ref payload);
+            constants::TRANSFER_FROM_APPCHAIN.serialize(ref payload);
             recipient.serialize(ref payload);
             token.serialize(ref payload);
             amount.serialize(ref payload);
@@ -343,19 +347,26 @@ pub mod TokenBridge {
         }
 
         fn accept_deposit(self: @ContractState, token: ContractAddress, amount: u256) {
-            self.is_servicing_token(token);
+            assert(self.is_servicing_token(token), Errors::NOT_SERVICING);
             let caller = get_caller_address();
             let dispatcher = IERC20Dispatcher { contract_address: token };
 
             let current_balance: u256 = dispatcher.balance_of(get_contract_address());
             let max_total_balance = self.get_max_total_balance(token);
             assert(current_balance + amount < max_total_balance, Errors::MAX_BALANCE_EXCEEDED);
-            dispatcher.transfer_from(caller, get_contract_address(), amount);
+
+            let this_address = get_contract_address();
+            let initial_balance = dispatcher.balance_of(this_address);
+            dispatcher.transfer_from(caller, this_address, amount);
+            assert(
+                dispatcher.balance_of(this_address) == initial_balance + amount,
+                Errors::TOKENS_NOT_TRANSFERRED
+            );
         }
     }
 
 
-    fn deposit_message_payload(
+    pub fn deposit_message_payload(
         token: ContractAddress,
         amount: u256,
         appchain_recipient: ContractAddress,
@@ -376,7 +387,7 @@ pub mod TokenBridge {
     }
 
 
-    fn deployment_message_payload(token: ContractAddress) -> Span<felt252> {
+    pub fn deployment_message_payload(token: ContractAddress) -> Span<felt252> {
         // Create the calldata that will be sent to on_receive. l2_token, amount and
         // depositor are the fields from the deposit context.
         let mut calldata = ArrayTrait::new();
@@ -543,17 +554,7 @@ pub mod TokenBridge {
                 );
 
             let caller = get_caller_address();
-            self
-                .emit(
-                    DepositWithMessage {
-                        sender: caller,
-                        token,
-                        amount,
-                        appchain_recipient,
-                        message: no_message,
-                        nonce,
-                    }
-                );
+            self.emit(Deposit { sender: caller, token, amount, appchain_recipient, nonce });
 
             self.check_deployment_status(token);
             self.reentrancy_guard.end();
@@ -624,10 +625,10 @@ pub mod TokenBridge {
             recipient: ContractAddress
         ) {
             self.reentrancy_guard.start();
-            assert(recipient.is_non_zero(), Errors::INVALID_RECIPIENT);
 
             self.consume_message(token, amount, recipient);
 
+            assert(recipient.is_non_zero(), Errors::INVALID_RECIPIENT);
             self.withdrawal.consume_withdrawal_quota(token, amount);
 
             let tokenDispatcher = IERC20Dispatcher { contract_address: token };

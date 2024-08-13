@@ -6,8 +6,11 @@ pub mod bridge {
     #[cfg(test)]
     pub mod tests {
         pub mod constants;
-        mod test_bridge;
         mod token_actions_test;
+        mod messaging_test;
+        pub mod utils {
+            pub mod message_payloads;
+        }
     }
 
     pub use token_bridge::TokenBridge;
@@ -29,5 +32,6 @@ pub mod constants;
 pub mod mocks {
     pub mod erc20;
     pub mod messaging;
+    pub mod hash;
 }
 
