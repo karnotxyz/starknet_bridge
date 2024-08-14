@@ -4,6 +4,8 @@ use starknet::ContractAddress;
 pub trait IMockWithdrawalLimit<TState> {
     fn change_withdrawal_limit_token(ref self: TState, token: ContractAddress, is_applied: bool);
     fn consume_quota(ref self: TState, token: ContractAddress, amount: u256);
+    fn write_daily_withdrawal_limit_pct(ref self: TState, limit_percent: u8);
+    fn get_daily_withdrawal_limit_pct(self: @TState) -> u8;
 }
 
 #[starknet::contract]
@@ -35,7 +37,7 @@ pub mod withdrawal_limit_mock {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event {
+    pub enum Event {
         #[flat]
         WithdrawalEvent: WithdrawalLimitComponent::Event,
     }
@@ -56,6 +58,14 @@ pub mod withdrawal_limit_mock {
 
         fn consume_quota(ref self: ContractState, token: ContractAddress, amount: u256) {
             self.withdrawal.consume_withdrawal_quota(token, amount);
+        }
+
+        fn write_daily_withdrawal_limit_pct(ref self: ContractState, limit_percent: u8) {
+            self.withdrawal.write_daily_withdrawal_limit_pct(limit_percent);
+        }
+
+        fn get_daily_withdrawal_limit_pct(self: @ContractState) -> u8 {
+            self.withdrawal.daily_withdrawal_limit_pct.read()
         }
     }
 
