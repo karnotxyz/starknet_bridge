@@ -68,7 +68,7 @@ fn get_remaining_withdrawal_quota_ok() {
         contract_address: withdrawal_limit.contract_address
     };
 
-    // Should return 0 when withdrawal limit not applied
+    // Should return BoundedInt::max() when withdrawal limit not applied
     assert(
         withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == BoundedInt::max(),
         'Quota should be 0'
