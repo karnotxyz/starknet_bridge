@@ -71,3 +71,34 @@ fn enroll_token_already_enrolled() {
     token_bridge.enroll_token(usdc_address);
 }
 
+#[test]
+#[should_panic(expected: ('Deployment message inexistent',))]
+fn enroll_token_nonce_not_updated() {
+    // Deploy messaging mock with 5 days cancellation delay
+    let messaging_mock_class_hash = snf::declare("messaging_malicious").unwrap();
+    // Deploying with 5 days as the delay time (5 * 86400 = 432000)
+    let (messaging_contract_address, _) = messaging_mock_class_hash.deploy(@array![]).unwrap();
+
+    // Declare l3 bridge address
+    let appchain_bridge_address = L3_BRIDGE_ADDRESS();
+
+    // Declare owner
+    let owner = OWNER();
+
+    let token_bridge_class_hash = snf::declare("TokenBridge").unwrap();
+
+    // Deploy the bridge
+    let mut calldata = ArrayTrait::new();
+    appchain_bridge_address.serialize(ref calldata);
+    messaging_contract_address.serialize(ref calldata);
+    owner.serialize(ref calldata);
+
+    let (token_bridge_address, _) = token_bridge_class_hash.deploy(@calldata).unwrap();
+
+    let token_bridge = ITokenBridgeDispatcher { contract_address: token_bridge_address };
+
+    let usdc_address = deploy_erc20("USDC", "USDC");
+
+    token_bridge.enroll_token(usdc_address);
+}
+
