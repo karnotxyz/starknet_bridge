@@ -50,7 +50,7 @@ pub mod withdrawal_limit_mock {
 
     #[abi(embed_v0)]
     impl MockWithdrawalLimitImpl of super::IMockWithdrawalLimit<ContractState> {
-        fn change_withdrawal_limit_token(
+        fn toggle_withdrawal_limit_for_token(
             ref self: ContractState, token: ContractAddress, is_applied: bool
         ) {
             self.limits.write(token, is_applied);
