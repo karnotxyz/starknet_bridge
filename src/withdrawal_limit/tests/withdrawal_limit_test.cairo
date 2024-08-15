@@ -71,7 +71,7 @@ fn get_remaining_withdrawal_quota_ok() {
     // Should return BoundedInt::max() when withdrawal limit not applied
     assert(
         withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == BoundedInt::max(),
-        'Quota should be 0'
+        'Quota should be BoundedInt::max()'
     );
     withdrawal_limit_mock.change_withdrawal_limit_token(usdc_address, true);
 
