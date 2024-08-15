@@ -62,7 +62,7 @@ fn get_remaining_withdrawal_quota_ok() {
     let usdc_address = deploy_erc20("USDC", "USDC");
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
     // Mocking deposits with the contract
-    usdc.transfer(withdrawal_limit.contract_address, 1000_000);
+    usdc.transfer(withdrawal_limit.contract_address, 1_000_000);
 
     let withdrawal_limit_mock = IMockWithdrawalLimitDispatcher {
         contract_address: withdrawal_limit.contract_address
