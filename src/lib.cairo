@@ -38,6 +38,7 @@ pub mod constants;
 pub mod mocks {
     pub mod erc20;
     pub mod messaging;
+    pub mod messaging_malicious;
     pub mod hash;
 }
 
