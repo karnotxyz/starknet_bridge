@@ -77,7 +77,7 @@ fn get_remaining_withdrawal_quota_ok() {
 
     // Should return the default 5% of the balance of contract when limit applied
     assert(
-        withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == 5000_0,
+        withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == 50_000,
         'Quota should not be 0'
     );
 }
