@@ -101,7 +101,7 @@ fn consume_withdrawal_quota_ok() {
         withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == 5000_0,
         'Quota should not be 0'
     );
-    withdrawal_limit_mock.consume_quota(usdc_address, 10000);
+    withdrawal_limit_mock.consume_quota(usdc_address, 10_000);
 
     // The daily quota should reduce by the exact amount after consumption
     assert(
