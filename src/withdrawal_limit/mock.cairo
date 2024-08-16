@@ -2,7 +2,9 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IMockWithdrawalLimit<TState> {
-    fn change_withdrawal_limit_token(ref self: TState, token: ContractAddress, is_applied: bool);
+    fn toggle_withdrawal_limit_for_token(
+        ref self: TState, token: ContractAddress, is_applied: bool
+    );
     fn consume_quota(ref self: TState, token: ContractAddress, amount: u256);
     fn write_daily_withdrawal_limit_pct(ref self: TState, limit_percent: u8);
     fn get_daily_withdrawal_limit_pct(self: @TState) -> u8;

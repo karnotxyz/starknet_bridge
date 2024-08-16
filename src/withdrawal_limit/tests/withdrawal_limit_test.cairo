@@ -71,9 +71,9 @@ fn get_remaining_withdrawal_quota_ok() {
     // Should return BoundedInt::max() when withdrawal limit not applied
     assert(
         withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == BoundedInt::max(),
-        'Quota should be BoundedInt::max()'
+        'Quota is not BoundedInt::max()'
     );
-    withdrawal_limit_mock.change_withdrawal_limit_token(usdc_address, true);
+    withdrawal_limit_mock.toggle_withdrawal_limit_for_token(usdc_address, true);
 
     // Should return the default 5% of the balance of contract when limit applied
     assert(
@@ -95,7 +95,7 @@ fn consume_withdrawal_quota_ok() {
         contract_address: withdrawal_limit.contract_address
     };
 
-    withdrawal_limit_mock.change_withdrawal_limit_token(usdc_address, true);
+    withdrawal_limit_mock.toggle_withdrawal_limit_for_token(usdc_address, true);
 
     assert(
         withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == 5000_0,
@@ -135,7 +135,7 @@ fn consume_withdrawal_quota_limit_exceeded() {
         contract_address: withdrawal_limit.contract_address
     };
 
-    withdrawal_limit_mock.change_withdrawal_limit_token(usdc_address, true);
+    withdrawal_limit_mock.toggle_withdrawal_limit_for_token(usdc_address, true);
 
     assert(
         withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == 5000_0,
@@ -157,7 +157,7 @@ fn get_remaining_withdrawal_quota_should_reset_after_1_day_ok() {
         contract_address: withdrawal_limit.contract_address
     };
 
-    withdrawal_limit_mock.change_withdrawal_limit_token(usdc_address, true);
+    withdrawal_limit_mock.toggle_withdrawal_limit_for_token(usdc_address, true);
 
     assert(
         withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == 5000_0,
