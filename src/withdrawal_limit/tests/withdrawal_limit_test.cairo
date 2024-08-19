@@ -7,12 +7,14 @@ use snforge_std::{
 use starknet_bridge::bridge::tests::constants::{
     OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS, DELAY_TIME
 };
-use starknet_bridge::withdrawal_limit::{
-    mock::{
-        withdrawal_limit_mock, withdrawal_limit_mock::Event::WithdrawalEvent,
-        IMockWithdrawalLimitDispatcher, IMockWithdrawalLimitDispatcherTrait
-    },
-    interface::{IWithdrawalLimit, IWithdrawalLimitDispatcher, IWithdrawalLimitDispatcherTrait}
+use starknet_bridge::mocks::withdrawal_limit_mock::{
+    withdrawal_limit_mock, withdrawal_limit_mock::Event::WithdrawalEvent,
+    IMockWithdrawalLimitDispatcher, IMockWithdrawalLimitDispatcherTrait
+};
+
+
+use starknet_bridge::withdrawal_limit::interface::{
+    IWithdrawalLimit, IWithdrawalLimitDispatcher, IWithdrawalLimitDispatcherTrait
 };
 use starknet_bridge::withdrawal_limit::component::{
     WithdrawalLimitComponent,

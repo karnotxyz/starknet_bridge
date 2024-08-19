@@ -25,7 +25,6 @@ pub mod bridge {
 pub mod withdrawal_limit {
     pub mod component;
     pub mod interface;
-    pub mod mock;
 
     #[cfg(test)]
     mod tests {
@@ -39,6 +38,7 @@ pub mod mocks {
     pub mod erc20;
     pub mod messaging;
     pub mod messaging_malicious;
+    pub mod withdrawal_limit_mock;
     pub mod hash;
 }
 
