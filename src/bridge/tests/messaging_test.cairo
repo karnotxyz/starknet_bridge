@@ -25,30 +25,10 @@ use openzeppelin::{
         interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait}
     }
 };
+use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, mock_state_testing};
 use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet::contract_address::{contract_address_const};
 use starknet_bridge::constants;
-
-
-/// Returns the state of a contract for testing. This must be used
-/// to test internal functions or directly access the storage.
-/// You can't spy event with this. Use deploy instead.
-pub fn mock_state_testing() -> TokenBridge::ContractState {
-    TokenBridge::contract_state_for_testing()
-}
-
-fn deploy_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
-    let erc20_class_hash = snf::declare("ERC20").unwrap();
-    let mut constructor_args = ArrayTrait::new();
-    name.serialize(ref constructor_args);
-    symbol.serialize(ref constructor_args);
-    let fixed_supply: u256 = 1000000000;
-    fixed_supply.serialize(ref constructor_args);
-    OWNER().serialize(ref constructor_args);
-
-    let (usdc, _) = erc20_class_hash.deploy(@constructor_args).unwrap();
-    return usdc;
-}
 
 
 #[test]

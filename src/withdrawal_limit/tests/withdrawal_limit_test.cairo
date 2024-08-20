@@ -21,6 +21,8 @@ use starknet_bridge::withdrawal_limit::component::{
     WithdrawalLimitComponent::{RemainingQuotaUpdated, DailyWithdrawalPercentageUpdated}
 };
 use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
+use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, mock_state_testing};
+
 
 fn deploy_withdrawal_limit() -> (IWithdrawalLimitDispatcher, EventSpy) {
     let withdrawal_limit_mock_class_hash = snf::declare("withdrawal_limit_mock").unwrap();
@@ -35,27 +37,6 @@ fn deploy_withdrawal_limit() -> (IWithdrawalLimitDispatcher, EventSpy) {
     (withdrawal_limit_mock, spy)
 }
 
-
-pub fn deploy_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
-    let erc20_class_hash = snf::declare("ERC20").unwrap();
-    let mut constructor_args = ArrayTrait::new();
-    name.serialize(ref constructor_args);
-    symbol.serialize(ref constructor_args);
-    let fixed_supply: u256 = 1000000000;
-    fixed_supply.serialize(ref constructor_args);
-    OWNER().serialize(ref constructor_args);
-
-    let (usdc, _) = erc20_class_hash.deploy(@constructor_args).unwrap();
-
-    let usdc_token = IERC20Dispatcher { contract_address: usdc };
-
-    // Transfering usdc to test address for testing
-    snf::start_cheat_caller_address(usdc, OWNER());
-    usdc_token.transfer(snf::test_address(), 1000_000_000);
-    snf::stop_cheat_caller_address(usdc);
-
-    return usdc;
-}
 
 #[test]
 fn get_remaining_withdrawal_quota_ok() {
