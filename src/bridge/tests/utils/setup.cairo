@@ -46,14 +46,6 @@ pub fn deploy_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
     return usdc;
 }
 
-/// Returns the state of a contract for testing. This must be used
-/// to test internal functions or directly access the storage.
-/// You can't spy event with this. Use deploy instead.
-pub fn mock_state_testing() -> TokenBridge::ContractState {
-    TokenBridge::contract_state_for_testing()
-}
-
-
 pub fn deploy_token_bridge_with_messaging() -> (
     ITokenBridgeDispatcher, EventSpy, IMockMessagingDispatcher
 ) {

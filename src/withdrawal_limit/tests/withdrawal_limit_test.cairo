@@ -44,6 +44,12 @@ fn get_remaining_withdrawal_quota_ok() {
 
     let usdc_address = deploy_erc20("USDC", "USDC");
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
+
+    // Transfering usdc to test address for testing
+    snf::start_cheat_caller_address(usdc.contract_address, OWNER());
+    usdc.transfer(snf::test_address(), 10_000_000);
+    snf::stop_cheat_caller_address(usdc.contract_address);
+
     // Mocking deposits with the contract
     usdc.transfer(withdrawal_limit.contract_address, 1_000_000);
 
@@ -71,6 +77,12 @@ fn consume_withdrawal_quota_ok() {
 
     let usdc_address = deploy_erc20("USDC", "USDC");
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
+
+    // Transfering usdc to test address for testing
+    snf::start_cheat_caller_address(usdc.contract_address, OWNER());
+    usdc.transfer(snf::test_address(), 10_000_000);
+    snf::stop_cheat_caller_address(usdc.contract_address);
+
     // Mocking deposits with the contract
     usdc.transfer(withdrawal_limit.contract_address, 1000_000);
 
@@ -111,6 +123,11 @@ fn consume_withdrawal_quota_limit_exceeded() {
 
     let usdc_address = deploy_erc20("USDC", "USDC");
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
+    // Transfering usdc to test address for testing
+    snf::start_cheat_caller_address(usdc.contract_address, OWNER());
+    usdc.transfer(snf::test_address(), 10_000_000);
+    snf::stop_cheat_caller_address(usdc.contract_address);
+
     // Mocking deposits with the contract
     usdc.transfer(withdrawal_limit.contract_address, 1000_000);
 
@@ -133,9 +150,14 @@ fn get_remaining_withdrawal_quota_should_reset_after_1_day_ok() {
 
     let usdc_address = deploy_erc20("USDC", "USDC");
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
+
+    // Transfering usdc to test address for testing
+    snf::start_cheat_caller_address(usdc.contract_address, OWNER());
+    usdc.transfer(snf::test_address(), 10_000_000);
+    snf::stop_cheat_caller_address(usdc.contract_address);
+
     // Mocking deposits with the contract
     usdc.transfer(withdrawal_limit.contract_address, 1000_000);
-
     let withdrawal_limit_mock = IMockWithdrawalLimitDispatcher {
         contract_address: withdrawal_limit.contract_address
     };
