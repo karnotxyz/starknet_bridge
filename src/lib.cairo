@@ -8,6 +8,8 @@ pub mod bridge {
         pub mod constants;
         mod token_actions_test;
         mod messaging_test;
+
+        mod deposit_test;
         pub mod utils {
             pub mod message_payloads;
             pub mod setup;
