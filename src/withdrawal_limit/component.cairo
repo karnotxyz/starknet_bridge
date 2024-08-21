@@ -21,14 +21,21 @@ pub mod WithdrawalLimitComponent {
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
-        RemainingQuotaUpdated: RemainingQuotaUpdated
+        RemainingQuotaUpdated: RemainingQuotaUpdated,
+        DailyWithdrawalPercentageUpdated: DailyWithdrawalPercentageUpdated
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct RemainingQuotaUpdated {
-        new_quota: u256
+        pub token: ContractAddress,
+        pub day: u64,
+        pub new_quota: u256
     }
 
+    #[derive(Drop, starknet::Event)]
+    pub struct DailyWithdrawalPercentageUpdated {
+        pub new_percentage: u8
+    }
 
     #[embeddable_as(WithdrawalLimitImpl)]
     pub impl WithdrawalLimit<
@@ -45,6 +52,8 @@ pub mod WithdrawalLimitComponent {
                 return BoundedInt::max();
             }
             let remaining_quota = self.read_withdrawal_quota_slot(:token);
+
+            // if remaining_quota is 0 then quota is not initialised
             if remaining_quota == 0 {
                 return self.get_daily_withdrawal_limit(:token);
             }
@@ -56,6 +65,11 @@ pub mod WithdrawalLimitComponent {
     pub impl InternalImpl<
         TContractState, +HasComponent<TContractState>, +IWithdrawalLimitStatus<TContractState>
     > of InternalTrait<TContractState> {
+        // This initializes the withdrawal_limit component
+        fn initialize(ref self: ComponentState<TContractState>, daily_withdrawal_limit_pct: u8) {
+            self.daily_withdrawal_limit_pct.write(daily_withdrawal_limit_pct);
+        }
+
         // Sets the remaining withdrawal quota for today.
         fn set_remaining_withdrawal_quota(
             ref self: ComponentState<TContractState>, token: ContractAddress, amount: u256
@@ -65,6 +79,8 @@ pub mod WithdrawalLimitComponent {
             self
                 .remaining_intraday_withdraw_quota
                 .write((token, day), amount + constants::REMAINING_QUOTA_OFFSET);
+
+            self.emit(RemainingQuotaUpdated { token: token, day: day, new_quota: amount });
         }
 
         // Returns the remaining withdrawal quota for today.
@@ -118,6 +134,11 @@ pub mod WithdrawalLimitComponent {
         ) {
             assert(daily_withdrawal_limit_pct <= 100, 'LIMIT_PCT_TOO_HIGH');
             self.daily_withdrawal_limit_pct.write(daily_withdrawal_limit_pct);
+
+            self
+                .emit(
+                    DailyWithdrawalPercentageUpdated { new_percentage: daily_withdrawal_limit_pct }
+                );
         }
     }
 }
