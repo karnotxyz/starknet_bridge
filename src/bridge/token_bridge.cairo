@@ -409,10 +409,12 @@ pub mod TokenBridge {
             self.emit(SetAppchainBridge { appchain_bridge });
         }
 
-        // @param token The address of the token contract to be deactivated.
+        // @dev Only Unknown tokens can be blocked, for stopping deposits on an
+        // `Active` token check `deactivate_token()`
+        // @param token The address of the token contract to be blocked
         // No return value, but it updates the token's status to 'Blocked'.
-        // Emits a `TokenBlocked` event when the deactivation is successful.
-        // Throws an error if the token is not enrolled or if the sender is not the manager.
+        // Emits a `TokenBlocked` event when the blocking is successful.
+        // Throws an error if the token is not `Unknown` or if the sender is not the owner.
         fn block_token(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::NOT_UNKNOWN);
@@ -424,6 +426,8 @@ pub mod TokenBridge {
             self.emit(TokenBlocked { token });
         }
 
+        // @dev This unblocks a token which can be enrolled now
+        // @param token The address of the token to unblock
         fn unblock_token(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
             assert(self.get_status(token) == TokenStatus::Blocked, Errors::NOT_BLOCKED);
@@ -435,7 +439,9 @@ pub mod TokenBridge {
             self.emit(TokenUnblocked { token });
         }
 
-
+        // @dev Only `Active` tokens can be deactivated. For `Unknown` tokens
+        // check `block_token()`
+        // @param token The token to be deactivated
         fn deactivate_token(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
             let status = self.get_status(token);
@@ -449,6 +455,8 @@ pub mod TokenBridge {
             self.emit(TokenDeactivated { token });
         }
 
+        // @dev This is reactivates back a token to `Active` that was deactivated
+        // @param token The address of the token to be reactivated
         fn reactivate_token(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
             let status = self.get_status(token);
@@ -463,6 +471,8 @@ pub mod TokenBridge {
         }
 
 
+        // @dev This can be used to enable daily withdrawal limits on a token, 
+        // @param token The address of the token on which to enable withdrawal limit
         fn enable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
             let new_settings = TokenSettings {
@@ -481,6 +491,9 @@ pub mod TokenBridge {
             self.emit(WithdrawalLimitDisabled { sender: get_caller_address(), token });
         }
 
+        // Use this to add a max total balance on the token. Beyond this value no more deposits
+        // will be accepted. In case of L3 this would mean the maximum supply of token that
+        // can be taken from L2 to L3
         fn set_max_total_balance(
             ref self: ContractState, token: ContractAddress, max_total_balance: u256
         ) {
@@ -507,6 +520,19 @@ pub mod TokenBridge {
             constants::CONTRACT_VERSION
         }
 
+
+        //    Initiates the enrollment of a token into the system.
+        //    This function is used to initiate the enrollment process of a token.
+        //    The token is marked as 'Pending' because the success of the deployment is uncertain at this stage.
+        //    The deployment message's existence is checked, indicating that deployment has been attempted.
+        //    The success of the deployment is determined at a later stage during the application's lifecycle.
+        //    The function is permissionless and can be called by anyone
+        //
+        //    @param token The address of the token contract to be enrolled.
+        //    No return value, but it updates the token's status to 'Pending' and records the deployment message and expiration time.
+        //    Emits a `TokenEnrollmentInitiated` event when the enrollment is initiated.
+        //    Throws an error if the sender is not the manager or if the deployment message does not exist.
+
         fn enroll_token(ref self: ContractState, token: ContractAddress) {
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::ALREADY_ENROLLED);
 
@@ -521,7 +547,6 @@ pub mod TokenBridge {
 
             // Reading existing settings as withdrawal_limit_applied and max_total_balance
             // can be set before the token is enrolled.
-
             let old_settings = self.token_settings.read(token);
             let new_settings = TokenSettings {
                 token_status: TokenStatus::Pending,
@@ -535,6 +560,11 @@ pub mod TokenBridge {
             self.emit(TokenEnrollmentInitiated { token, deployment_message_hash });
         }
 
+        // @dev Used to create a deposit of for the token, 
+        // which sends a l2-l3 message to mint the user `amount` tokens
+        // @param token: Address of the token to deposit
+        // @param amount: quantity of tokens
+        // @param appchain_recipient: address of the recipient on l3
         fn deposit(
             ref self: ContractState,
             token: ContractAddress,
@@ -560,7 +590,9 @@ pub mod TokenBridge {
             self.reentrancy_guard.end();
         }
 
-
+        // @dev This is function is used if one intends to make a contract call 
+        // post the deposit on l3. The calldata can be passed in `message` parameter
+        // `deposit()` funciton is maintained to diverge as less as possible from Starkgate(L1-L2 bridges)
         fn deposit_with_message(
             ref self: ContractState,
             token: ContractAddress,
@@ -590,12 +622,10 @@ pub mod TokenBridge {
             self.reentrancy_guard.end();
         }
 
-        //
         //     checks token deployment status.
-        //     relies on starknet clearing l1-l2 message upon successful completion of deployment.
-        //     processing: check the l1-l2 deployment message. set status to `active` if consumed.
-        //     if not consumed after the expected duration, it returns the status to unknown.
-        //
+        //     relies on l3 clearing l2-l3 message upon successful completion of deployment.
+        //     processing: check the l2-l3 deployment message. set status to `Active` if consumed.
+        //     if not consumed after the expected duration, it returns the status to `Unknown`.
         fn check_deployment_status(ref self: ContractState, token: ContractAddress) {
             let settings = self.token_settings.read(token);
             if (settings.token_status != TokenStatus::Pending) {
@@ -618,6 +648,12 @@ pub mod TokenBridge {
         }
 
 
+        // For withdrawing 
+        // 1. the user burns the tokens on l3, which registers
+        // a message on the messaging contract (piltover).
+        //
+        // 2. Calls `withdraw()` which consumes the message in the piltover
+        // and transfers the tokens to the `recipient`
         fn withdraw(
             ref self: ContractState,
             token: ContractAddress,
@@ -640,13 +676,13 @@ pub mod TokenBridge {
 
         // /*
         //   A deposit cancellation requires two steps:
-        //   1. The depositor should send a depositCancelRequest request with deposit details & nonce.
+        //   1. The depositor should send a `deposit_cancel_request()` request with deposit details & nonce.
         //   2. After a predetermined time (cancellation delay), the depositor can claim back the funds by
-        //      calling depositReclaim (using the same arguments).
+        //      calling `deposit_reclaim` (using the same arguments).
         //
-        //   Note: As long as the depositReclaim was not performed, the deposit may be processed, even if
+        //   Note: As long as the `deposit_reclaim` was not performed, the deposit may be processed, even if
         //         the cancellation delay time has already passed. Only the depositor is allowed to cancel
-        //         a deposit, and only before depositReclaim was performed.
+        //         a deposit, and only before `deposit_reclaim` was performed.
         // */
         fn deposit_cancel_request(
             ref self: ContractState,
@@ -673,6 +709,8 @@ pub mod TokenBridge {
                 );
         }
 
+        // @dev If the deposit was initiated by `deposit_with_message()` then use this.
+        // If not check `deposit_cancel_request()`
         fn deposit_with_message_cancel_request(
             ref self: ContractState,
             token: ContractAddress,
@@ -703,6 +741,7 @@ pub mod TokenBridge {
                 );
         }
 
+        // Similar to `deposit_reclaim()` with the difference of deposit initiated with `deposit_with_message()`
         fn deposit_with_message_reclaim(
             ref self: ContractState,
             token: ContractAddress,
@@ -740,6 +779,8 @@ pub mod TokenBridge {
                 );
         }
 
+        // After the `cancellation delay time` has passed of the generating the cancellation request 
+        // a valid message can be cancelled. 
         fn deposit_reclaim(
             ref self: ContractState,
             token: ContractAddress,
