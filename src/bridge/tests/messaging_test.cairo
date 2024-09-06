@@ -24,14 +24,14 @@ fn deploy_message_payload_ok() {
     let calldata = TokenBridge::deployment_message_payload(usdc_address);
 
     let expected_calldata: Span<felt252> = array![
-        327360033215303420453874031627788877836422131767619347074434581266068999983,
+        327360033215303420453874031627788877836422131767619347074434581266068999983, // usdc_address
         0,
-        1431520323,
+        1431520323, // -- USDC
         4,
         0,
-        1431520323,
+        1431520323, // USDC
         4,
-        18
+        18 // Decimals
     ]
         .span();
     assert(calldata == expected_calldata, 'Incorrect serialisation');
