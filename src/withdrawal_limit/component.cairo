@@ -2,7 +2,8 @@
 pub mod WithdrawalLimitComponent {
     use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
     use starknet_bridge::{constants, bridge::IWithdrawalLimitStatus};
-    use core::integer::BoundedInt;
+    use core::num::traits::Bounded;
+    use starknet::storage::Map;
 
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet_bridge::withdrawal_limit::interface::IWithdrawalLimit;
@@ -13,7 +14,7 @@ pub mod WithdrawalLimitComponent {
         // in this day (if the value is x, the amount left to withdraw is x-1). 0 means that
         // currently there was no withdrawal from this token in this day or there were withdrawals
         // but the limit flag was turned off.
-        remaining_intraday_withdraw_quota: LegacyMap<(ContractAddress, u64), u256>,
+        remaining_intraday_withdraw_quota: Map<(ContractAddress, u64), u256>,
         // The daily withdrawal limit percentage.
         daily_withdrawal_limit_pct: u8,
     }
@@ -49,7 +50,7 @@ pub mod WithdrawalLimitComponent {
         ) -> u256 {
             // If there is no limt, return max uint256.
             if self.get_contract().is_withdrawal_limit_applied(:token) == false {
-                return BoundedInt::max();
+                return Bounded::MAX;
             }
             let remaining_quota = self.read_withdrawal_quota_slot(:token);
 

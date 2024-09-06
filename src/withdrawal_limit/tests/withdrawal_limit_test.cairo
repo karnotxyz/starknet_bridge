@@ -1,27 +1,21 @@
-use starknet::ContractAddress;
-use core::integer::BoundedInt;
+use core::num::traits::Bounded;
 use snforge_std as snf;
-use snforge_std::{
-    ContractClassTrait, EventSpy, EventSpyTrait, EventsFilterTrait, EventSpyAssertionsTrait
-};
-use starknet_bridge::bridge::tests::constants::{
-    OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS, DELAY_TIME
-};
+use snforge_std::{ContractClassTrait, EventSpy, EventSpyAssertionsTrait};
+use starknet_bridge::bridge::tests::constants::{OWNER,};
 use starknet_bridge::mocks::withdrawal_limit_mock::{
-    withdrawal_limit_mock, withdrawal_limit_mock::Event::WithdrawalEvent,
     IMockWithdrawalLimitDispatcher, IMockWithdrawalLimitDispatcherTrait
 };
 
 
 use starknet_bridge::withdrawal_limit::interface::{
-    IWithdrawalLimit, IWithdrawalLimitDispatcher, IWithdrawalLimitDispatcherTrait
+    IWithdrawalLimitDispatcher, IWithdrawalLimitDispatcherTrait,
 };
 use starknet_bridge::withdrawal_limit::component::{
     WithdrawalLimitComponent,
     WithdrawalLimitComponent::{RemainingQuotaUpdated, DailyWithdrawalPercentageUpdated}
 };
-use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
-use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, mock_state_testing};
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+use starknet_bridge::bridge::tests::utils::setup::deploy_erc20;
 
 
 fn deploy_withdrawal_limit() -> (IWithdrawalLimitDispatcher, EventSpy) {
@@ -59,7 +53,7 @@ fn get_remaining_withdrawal_quota_ok() {
 
     // Should return BoundedInt::max() when withdrawal limit not applied
     assert(
-        withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == BoundedInt::max(),
+        withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == Bounded::MAX,
         'Quota is not BoundedInt::max()'
     );
     withdrawal_limit_mock.toggle_withdrawal_limit_for_token(usdc_address, true);

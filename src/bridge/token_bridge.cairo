@@ -3,10 +3,12 @@ pub mod TokenBridge {
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
     use core::option::OptionTrait;
     use core::traits::TryInto;
+    use core::panic_with_felt252;
     use core::starknet::event::EventEmitter;
-    use core::traits::PanicDestruct;
+    use starknet::storage::Map;
     use core::array::ArrayTrait;
     use core::serde::Serde;
+    use core::num::traits::Bounded;
     use openzeppelin::token::erc20::interface::{
         IERC20Dispatcher, IERC20MetadataDispatcher, IERC20DispatcherTrait,
         IERC20MetadataDispatcherTrait
@@ -19,6 +21,9 @@ pub mod TokenBridge {
         ReentrancyGuardComponent,
         ReentrancyGuardComponent::InternalTrait as InternalReentrancyGuardImpl
     };
+
+    use piltover::messaging::types::MessageToAppchainStatus;
+
 
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent;
 
@@ -64,7 +69,7 @@ pub mod TokenBridge {
         // the core messaging contract deployed on starknet used for l2 - l3 messsaging
         messaging_contract: IMessagingDispatcher,
         // All token related settings and its status
-        token_settings: LegacyMap<ContractAddress, TokenSettings>,
+        token_settings: Map<ContractAddress, TokenSettings>,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
@@ -75,8 +80,8 @@ pub mod TokenBridge {
         reentrancy_guard: ReentrancyGuardComponent::Storage,
     }
 
-    // 
-    // Errors 
+    //
+    // Errors
     //
     pub mod Errors {
         pub const APPCHAIN_BRIDGE_NOT_SET: felt252 = 'L3 bridge not set';
@@ -472,7 +477,7 @@ pub mod TokenBridge {
         }
 
 
-        // @dev This can be used to enable daily withdrawal limits on a token, 
+        // @dev This can be used to enable daily withdrawal limits on a token,
         // @param token The address of the token on which to enable withdrawal limit
         fn enable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
@@ -524,15 +529,20 @@ pub mod TokenBridge {
 
         //    Initiates the enrollment of a token into the system.
         //    This function is used to initiate the enrollment process of a token.
-        //    The token is marked as 'Pending' because the success of the deployment is uncertain at this stage.
-        //    The deployment message's existence is checked, indicating that deployment has been attempted.
-        //    The success of the deployment is determined at a later stage during the application's lifecycle.
+        //    The token is marked as 'Pending' because the success of the deployment is uncertain at
+        //    this stage.
+        //    The deployment message's existence is checked, indicating that deployment has been
+        //    attempted.
+        //    The success of the deployment is determined at a later stage during the application's
+        //    lifecycle.
         //    The function is permissionless and can be called by anyone
         //
         //    @param token The address of the token contract to be enrolled.
-        //    No return value, but it updates the token's status to 'Pending' and records the deployment message and expiration time.
+        //    No return value, but it updates the token's status to 'Pending' and records the
+        //    deployment message and expiration time.
         //    Emits a `TokenEnrollmentInitiated` event when the enrollment is initiated.
-        //    Throws an error if the sender is not the manager or if the deployment message does not exist.
+        //    Throws an error if the sender is not the manager or if the deployment message does not
+        //    exist.
 
         fn enroll_token(ref self: ContractState, token: ContractAddress) {
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::ALREADY_ENROLLED);
@@ -540,11 +550,17 @@ pub mod TokenBridge {
             // Send message to appchain
             let deployment_message_hash = self.send_deploy_message(token);
 
-            let nonce = self
+            let message_status = self
                 .messaging_contract
                 .read()
                 .sn_to_appchain_messages(deployment_message_hash);
-            assert(nonce.is_non_zero(), Errors::DEPLOYMENT_MESSAGE_DOES_NOT_EXIST);
+
+            match message_status {
+                MessageToAppchainStatus::Pending => {},
+                MessageToAppchainStatus::SealedOrNotSent => {
+                    panic_with_felt252(Errors::DEPLOYMENT_MESSAGE_DOES_NOT_EXIST)
+                }
+            };
 
             // Reading existing settings as withdrawal_limit_applied and max_total_balance
             // can be set before the token is enrolled.
@@ -561,7 +577,7 @@ pub mod TokenBridge {
             self.emit(TokenEnrollmentInitiated { token, deployment_message_hash });
         }
 
-        // @dev Used to create a deposit of for the token, 
+        // @dev Used to create a deposit of for the token,
         // which sends a l2-l3 message to mint the user `amount` tokens
         // @param token: Address of the token to deposit
         // @param amount: quantity of tokens
@@ -591,9 +607,10 @@ pub mod TokenBridge {
             self.reentrancy_guard.end();
         }
 
-        // @dev This is function is used if one intends to make a contract call 
+        // @dev This is function is used if one intends to make a contract call
         // post the deposit on l3. The calldata can be passed in `message` parameter
-        // `deposit()` funciton is maintained to diverge as less as possible from Starkgate(L1-L2 bridges)
+        // `deposit()` funciton is maintained to diverge as less as possible from Starkgate(L1-L2
+        // bridges)
         fn deposit_with_message(
             ref self: ContractState,
             token: ContractAddress,
@@ -633,12 +650,12 @@ pub mod TokenBridge {
                 return;
             }
 
-            let nonce = self
+            let message_status = self
                 .messaging_contract
                 .read()
                 .sn_to_appchain_messages(settings.deployment_message_hash);
 
-            if (nonce.is_zero()) {
+            if (message_status == MessageToAppchainStatus::SealedOrNotSent) {
                 let new_settings = TokenSettings { token_status: TokenStatus::Active, ..settings };
                 self.token_settings.write(token, new_settings);
                 self.emit(TokenActivated { token });
@@ -649,7 +666,7 @@ pub mod TokenBridge {
         }
 
 
-        // For withdrawing 
+        // For withdrawing
         // 1. the user burns the tokens on l3, which registers
         // a message on the messaging contract (piltover).
         //
@@ -677,13 +694,16 @@ pub mod TokenBridge {
 
         // /*
         //   A deposit cancellation requires two steps:
-        //   1. The depositor should send a `deposit_cancel_request()` request with deposit details & nonce.
-        //   2. After a predetermined time (cancellation delay), the depositor can claim back the funds by
+        //   1. The depositor should send a `deposit_cancel_request()` request with deposit details
+        //   & nonce.
+        //   2. After a predetermined time (cancellation delay), the depositor can claim back the
+        //   funds by
         //      calling `deposit_reclaim` (using the same arguments).
         //
-        //   Note: As long as the `deposit_reclaim` was not performed, the deposit may be processed, even if
-        //         the cancellation delay time has already passed. Only the depositor is allowed to cancel
-        //         a deposit, and only before `deposit_reclaim` was performed.
+        //   Note: As long as the `deposit_reclaim` was not performed, the deposit may be processed,
+        //   even if
+        //         the cancellation delay time has already passed. Only the depositor is allowed to
+        //         cancel a deposit, and only before `deposit_reclaim` was performed.
         // */
         fn deposit_cancel_request(
             ref self: ContractState,
@@ -742,7 +762,8 @@ pub mod TokenBridge {
                 );
         }
 
-        // Similar to `deposit_reclaim()` with the difference of deposit initiated with `deposit_with_message()`
+        // Similar to `deposit_reclaim()` with the difference of deposit initiated with
+        // `deposit_with_message()`
         fn deposit_with_message_reclaim(
             ref self: ContractState,
             token: ContractAddress,
@@ -780,8 +801,8 @@ pub mod TokenBridge {
                 );
         }
 
-        // After the `cancellation delay time` has passed of the generating the cancellation request 
-        // a valid message can be cancelled. 
+        // After the `cancellation delay time` has passed of the generating the cancellation request
+        // a valid message can be cancelled.
         fn deposit_reclaim(
             ref self: ContractState,
             token: ContractAddress,
@@ -826,7 +847,7 @@ pub mod TokenBridge {
         fn get_max_total_balance(self: @ContractState, token: ContractAddress) -> u256 {
             let max_total_balance = self.token_settings.read(token).max_total_balance;
             if (max_total_balance == 0) {
-                return core::integer::BoundedInt::max();
+                return Bounded::MAX;
             }
             return max_total_balance;
         }

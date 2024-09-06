@@ -1,4 +1,3 @@
-use piltover::messaging::output_process::MessageToAppchain;
 use starknet::ContractAddress;
 #[starknet::interface]
 pub trait IMockMessaging<TState> {
@@ -13,13 +12,9 @@ pub trait IMockMessaging<TState> {
 
 #[starknet::contract]
 mod messaging_mock {
-    use piltover::messaging::{
-        output_process::MessageToAppchain, messaging_cpt,
-        messaging_cpt::InternalTrait as MessagingInternal, IMessaging
-    };
+    use piltover::messaging::{messaging_cpt, messaging_cpt::InternalTrait as MessagingInternal,};
     use starknet::ContractAddress;
     use starknet_bridge::mocks::hash;
-    use starknet_bridge::constants;
     use super::IMockMessaging;
 
     component!(path: messaging_cpt, storage: messaging, event: MessagingEvent);

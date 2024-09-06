@@ -1,33 +1,8 @@
-use piltover::messaging::interface::IMessagingDispatcherTrait;
-use starknet_bridge::bridge::token_bridge::TokenBridge::__member_module_appchain_bridge::InternalContractMemberStateTrait;
-use starknet_bridge::bridge::token_bridge::TokenBridge::TokenBridgeInternal;
-use starknet_bridge::bridge::token_bridge::TokenBridge::__member_module_token_settings::InternalContractMemberStateTrait as tokenSettingsStateTrait;
 use snforge_std as snf;
-use snforge_std::ContractClassTrait;
-use starknet::{ContractAddress, storage::StorageMemberAccessTrait};
-use starknet_bridge::mocks::{
-    messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, erc20::ERC20
-};
-use piltover::messaging::interface::IMessagingDispatcher;
-use starknet_bridge::bridge::{
-    ITokenBridge, ITokenBridgeAdmin, ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait,
-    ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, IWithdrawalLimitStatusDispatcher,
-    IWithdrawalLimitStatusDispatcherTrait, TokenBridge, TokenBridge::Event,
-    types::{TokenStatus, TokenSettings}
-};
-use openzeppelin::access::ownable::{
-    OwnableComponent, OwnableComponent::Event as OwnableEvent,
-    interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait}
-};
-use starknet_bridge::bridge::tests::utils::message_payloads;
-use starknet_bridge::mocks::hash;
-use starknet::contract_address::{contract_address_const};
-use starknet_bridge::constants;
-use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, mock_state_testing};
+use starknet_bridge::bridge::{ITokenBridge, ITokenBridgeAdmin, types::{TokenStatus, TokenSettings}};
+use starknet_bridge::bridge::tests::utils::setup::mock_state_testing;
 
-use starknet_bridge::bridge::tests::constants::{
-    OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS, DELAY_TIME
-};
+use starknet_bridge::bridge::tests::constants::{OWNER, USDC_MOCK_ADDRESS,};
 
 #[test]
 fn deactivate_token_ok() {

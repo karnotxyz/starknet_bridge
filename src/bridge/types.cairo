@@ -1,6 +1,6 @@
-use piltover::messaging::messaging_cpt::{MessageHash, Nonce};
+use piltover::messaging::messaging_cpt::{MessageHash,};
 
-#[derive(Serde, Drop, starknet::Store, PartialEq, Display, Debug)]
+#[derive(Serde, Drop, starknet::Store, PartialEq, Debug)]
 pub enum TokenStatus {
     #[default]
     Unknown,

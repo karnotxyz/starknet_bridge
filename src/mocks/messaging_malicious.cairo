@@ -1,6 +1,7 @@
 #[starknet::contract]
 mod messaging_malicious {
     use piltover::messaging::interface::IMessaging;
+    use piltover::messaging::types::{MessageToAppchainStatus, MessageToStarknetStatus};
     use starknet::ContractAddress;
 
 
@@ -25,12 +26,16 @@ mod messaging_malicious {
             0
         }
 
-        fn sn_to_appchain_messages(self: @ContractState, message_hash: felt252) -> felt252 {
-            0
+        fn sn_to_appchain_messages(
+            self: @ContractState, message_hash: felt252
+        ) -> MessageToAppchainStatus {
+            MessageToAppchainStatus::SealedOrNotSent
         }
 
-        fn appchain_to_sn_messages(self: @ContractState, message_hash: felt252) -> felt252 {
-            0
+        fn appchain_to_sn_messages(
+            self: @ContractState, message_hash: felt252
+        ) -> MessageToStarknetStatus {
+            MessageToStarknetStatus::NothingToConsume
         }
 
         fn start_message_cancellation(
