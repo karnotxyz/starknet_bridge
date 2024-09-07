@@ -1,4 +1,5 @@
-// These constants have been take from this [Starkgate Bridge contract constants](https://github.com/starknet-io/starkgate-contracts/blob/cairo-1/src/solidity/StarkgateConstants.sol#L4)
+// These constants have been take from this [Starkgate Bridge contract
+// constants](https://github.com/starknet-io/starkgate-contracts/blob/cairo-1/src/solidity/StarkgateConstants.sol#L4)
 
 // Starknet L1 handler selectors.
 pub const HANDLE_TOKEN_DEPOSIT_SELECTOR: felt252 =

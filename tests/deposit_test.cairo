@@ -1,5 +1,4 @@
 use core::num::traits::zero::Zero;
-use starknet_bridge::bridge::token_bridge::TokenBridge::__member_module_token_settings::InternalContractMemberStateTrait;
 use core::array::ArrayTrait;
 use core::serde::Serde;
 use core::result::ResultTrait;
@@ -9,7 +8,7 @@ use snforge_std as snf;
 use snforge_std::{
     ContractClassTrait, EventSpy, EventSpyTrait, EventsFilterTrait, EventSpyAssertionsTrait
 };
-use starknet::{ContractAddress, storage::StorageMemberAccessTrait};
+use starknet::ContractAddress;
 use starknet_bridge::mocks::{
     messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, erc20::ERC20
 };

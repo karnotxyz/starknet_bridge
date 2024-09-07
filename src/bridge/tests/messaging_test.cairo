@@ -1,30 +1,17 @@
 use piltover::messaging::interface::IMessagingDispatcherTrait;
-use starknet_bridge::bridge::token_bridge::TokenBridge::{
-    __member_module_appchain_bridge::InternalContractMemberStateTrait,
-    __member_module_token_settings::InternalContractMemberStateTrait as tokenSettingsStateTrait,
-    TokenBridgeInternal
-};
+use starknet_bridge::bridge::token_bridge::TokenBridge::{TokenBridgeInternal};
 use snforge_std as snf;
 use snforge_std::ContractClassTrait;
-use starknet::{ContractAddress, storage::StorageMemberAccessTrait};
 use starknet_bridge::mocks::{
-    messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, erc20::ERC20, hash
+    messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, hash
 };
+use starknet_bridge::bridge::TokenBridge;
 use piltover::messaging::interface::IMessagingDispatcher;
 use starknet_bridge::bridge::{
-    ITokenBridge, ITokenBridgeAdmin, ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait,
-    ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, IWithdrawalLimitStatusDispatcher,
-    IWithdrawalLimitStatusDispatcherTrait, TokenBridge, TokenBridge::Event,
-    types::{TokenStatus, TokenSettings},
-    tests::constants::{OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS, DELAY_TIME}
+    tests::constants::{L3_BRIDGE_ADDRESS, OWNER, USDC_MOCK_ADDRESS, DELAY_TIME}
 };
-use openzeppelin::{
-    token::erc20::interface::{IERC20MetadataDispatcher, IERC20MetadataDispatcherTrait},
-    access::ownable::{
-        OwnableComponent, OwnableComponent::Event as OwnableEvent,
-        interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait}
-    }
-};
+
+use piltover::messaging::types::MessageToAppchainStatus;
 use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, mock_state_testing};
 use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet::contract_address::{contract_address_const};
@@ -37,7 +24,7 @@ fn deploy_message_payload_ok() {
     let calldata = TokenBridge::deployment_message_payload(usdc_address);
 
     let expected_calldata: Span<felt252> = array![
-        3346236667719676623895870229889359551507408296949803518172317961543243553075, // usdc_address
+        327360033215303420453874031627788877836422131767619347074434581266068999983, // usdc_address
         0,
         1431520323, // -- USDC
         4,
@@ -89,7 +76,10 @@ fn send_deploy_message_ok() {
         constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
         message_payloads::deployment_message_payload(usdc_address)
     );
-    assert(messaging.sn_to_appchain_messages(hash) == 1, 'Message not recieved');
+    assert(
+        messaging.sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(1),
+        'Message not recieved'
+    );
 }
 
 #[test]
@@ -135,7 +125,10 @@ fn send_deposit_message_ok() {
         )
     );
 
-    assert(messaging.sn_to_appchain_messages(hash) == 1, 'Message not recieved');
+    assert(
+        messaging.sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(1),
+        'Message not recieved'
+    );
 }
 
 #[test]

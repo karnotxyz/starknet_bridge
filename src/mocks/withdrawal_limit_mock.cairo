@@ -13,12 +13,10 @@ pub trait IMockWithdrawalLimit<TState> {
 #[starknet::contract]
 pub mod withdrawal_limit_mock {
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
-    use starknet_bridge::withdrawal_limit::{
-        component::WithdrawalLimitComponent,
-        interface::{IWithdrawalLimitDispatcher, IWithdrawalLimitDispatcherTrait, IWithdrawalLimit}
-    };
+    use starknet_bridge::withdrawal_limit::{component::WithdrawalLimitComponent};
     use starknet_bridge::bridge::interface::IWithdrawalLimitStatus;
     use starknet::ContractAddress;
+    use starknet::storage::Map;
 
 
     component!(path: WithdrawalLimitComponent, storage: withdrawal, event: WithdrawalEvent);
@@ -32,7 +30,7 @@ pub mod withdrawal_limit_mock {
 
     #[storage]
     struct Storage {
-        limits: LegacyMap<ContractAddress, bool>,
+        limits: Map<ContractAddress, bool>,
         #[substorage(v0)]
         withdrawal: WithdrawalLimitComponent::Storage,
     }
