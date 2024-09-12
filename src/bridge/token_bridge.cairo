@@ -1,5 +1,6 @@
 #[starknet::contract]
 pub mod TokenBridge {
+    use starknet::SyscallResultTrait;
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
     use core::option::OptionTrait;
     use core::traits::TryInto;
@@ -13,6 +14,7 @@ pub mod TokenBridge {
         IERC20Dispatcher, IERC20MetadataDispatcher, IERC20DispatcherTrait,
         IERC20MetadataDispatcherTrait
     };
+    use starknet::syscalls::call_contract_syscall;
 
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::upgrades::UpgradeableComponent;
@@ -399,8 +401,17 @@ pub mod TokenBridge {
         let mut calldata = ArrayTrait::new();
         let dispatcher = IERC20MetadataDispatcher { contract_address: token };
         token.serialize(ref calldata);
-        dispatcher.name().serialize(ref calldata);
-        dispatcher.symbol().serialize(ref calldata);
+
+        let name_selector = selector!("name");
+        let name = call_contract_syscall(token, name_selector, array![].span()).unwrap_syscall();
+        name.serialize(ref calldata);
+
+        // dispatcher.name().serialize(ref calldata);
+        let symbol_selector = selector!("symbol");
+        let symbol = call_contract_syscall(token, symbol_selector, array![].span())
+            .unwrap_syscall();
+        symbol.serialize(ref calldata);
+
         dispatcher.decimals().serialize(ref calldata);
         calldata.span()
     }
