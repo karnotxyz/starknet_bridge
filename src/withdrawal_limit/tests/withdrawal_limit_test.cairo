@@ -1,7 +1,7 @@
 use core::num::traits::Bounded;
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, EventSpy, EventSpyAssertionsTrait};
-use starknet_bridge::bridge::tests::constants::{OWNER,};
+use starknet_bridge::bridge::tests::constants::{OWNER};
 use starknet_bridge::mocks::withdrawal_limit_mock::{
     IMockWithdrawalLimitDispatcher, IMockWithdrawalLimitDispatcherTrait
 };

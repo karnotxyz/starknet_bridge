@@ -3,7 +3,7 @@ use snforge_std::EventSpy;
 use starknet_bridge::mocks::{messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher},};
 use starknet_bridge::bridge::{
     ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, ITokenBridgeAdminDispatcher,
-    ITokenBridgeAdminDispatcherTrait, IWithdrawalLimitStatusDispatcher,
+    ITokenBridgeAdminDispatcherTrait,
 };
 
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};

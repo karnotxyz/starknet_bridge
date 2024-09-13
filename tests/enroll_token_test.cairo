@@ -1,21 +1,11 @@
 use snforge_std as snf;
-use snforge_std::{ContractClassTrait, EventSpy, EventSpyTrait, EventSpyAssertionsTrait};
-use starknet::ContractAddress;
-use starknet_bridge::mocks::{
-    messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, erc20::ERC20, hash
-};
+use snforge_std::{ContractClassTrait, EventSpyAssertionsTrait};
+use starknet_bridge::mocks::{hash};
 use starknet_bridge::bridge::{
-    ITokenBridge, ITokenBridgeAdmin, ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait,
-    ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, IWithdrawalLimitStatusDispatcher,
-    IWithdrawalLimitStatusDispatcherTrait, TokenBridge, TokenBridge::Event,
-    types::{TokenStatus, TokenSettings}
+    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge, TokenBridge::Event,
+    types::TokenStatus
 };
-use openzeppelin::access::ownable::{
-    OwnableComponent, OwnableComponent::Event as OwnableEvent,
-    interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait}
-};
-use starknet::contract_address::{contract_address_const};
-use super::constants::{OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS, DELAY_TIME};
+use super::constants::{OWNER, L3_BRIDGE_ADDRESS};
 use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, deploy_token_bridge};
 use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet_bridge::constants;
