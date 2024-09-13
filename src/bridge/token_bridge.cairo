@@ -395,6 +395,18 @@ pub mod TokenBridge {
         return payload.span();
     }
 
+    fn deserialize_and_append(
+        mut value: Span<felt252>, mut calldata: Array<felt252>
+    ) -> Array<felt252> {
+        if (value.len() == 1) {
+            let value_byte_array = value[0].format_as_byte_array(10);
+            value_byte_array.serialize(ref calldata);
+        } else {
+            let value_byte_array = Serde::<ByteArray>::deserialize(ref value).unwrap();
+            value_byte_array.serialize(ref calldata);
+        }
+        calldata
+    }
 
     pub fn deployment_message_payload(token: ContractAddress) -> Span<felt252> {
         // Create the calldata that will be sent to on_receive. l2_token, amount and
@@ -412,25 +424,12 @@ pub mod TokenBridge {
         let name_selector = selector!("name");
         let mut name = call_contract_syscall(token, name_selector, array![].span())
             .unwrap_syscall();
-        if (name.len() == 1) {
-            let name_deserialised = name[0].format_as_byte_array(10);
-            name_deserialised.serialize(ref calldata);
-        } else {
-            let name_deserialised = Serde::<ByteArray>::deserialize(ref name).unwrap();
-            name_deserialised.serialize(ref calldata);
-        }
+        calldata = deserialize_and_append(name, calldata);
 
         let symbol_selector = selector!("symbol");
         let mut symbol = call_contract_syscall(token, symbol_selector, array![].span())
             .unwrap_syscall();
-
-        if (symbol.len() == 1) {
-            let symbol_deserialised = symbol[0].format_as_byte_array(10);
-            symbol_deserialised.serialize(ref calldata);
-        } else {
-            let symbol_deserialised = Serde::<ByteArray>::deserialize(ref symbol).unwrap();
-            symbol_deserialised.serialize(ref calldata);
-        }
+        calldata = deserialize_and_append(symbol, calldata);
 
         dispatcher.decimals().serialize(ref calldata);
         calldata.span()
