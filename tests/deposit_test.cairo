@@ -1,34 +1,17 @@
-use core::num::traits::zero::Zero;
-use core::array::ArrayTrait;
-use core::serde::Serde;
-use core::result::ResultTrait;
-use core::option::OptionTrait;
-use core::traits::TryInto;
 use snforge_std as snf;
-use snforge_std::{
-    ContractClassTrait, EventSpy, EventSpyTrait, EventsFilterTrait, EventSpyAssertionsTrait
-};
+use snforge_std::{EventSpy, EventSpyAssertionsTrait};
 use starknet::ContractAddress;
-use starknet_bridge::mocks::{
-    messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, erc20::ERC20
-};
-use piltover::messaging::{IMessaging, IMessagingDispatcher, IMessagingDispatcherTrait};
+use starknet_bridge::mocks::messaging::IMockMessagingDispatcher;
 use starknet_bridge::bridge::{
-    ITokenBridge, ITokenBridgeAdmin, ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait,
-    ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, IWithdrawalLimitStatusDispatcher,
-    IWithdrawalLimitStatusDispatcherTrait, TokenBridge, TokenBridge::Event,
-    types::{TokenStatus, TokenSettings}
-};
-use openzeppelin::access::ownable::{
-    OwnableComponent, OwnableComponent::Event as OwnableEvent,
-    interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait}
+    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, ITokenBridgeAdminDispatcher,
+    ITokenBridgeAdminDispatcherTrait, TokenBridge, TokenBridge::Event,
 };
 
-use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use starknet::contract_address::{contract_address_const};
-use super::constants::{OWNER, L3_BRIDGE_ADDRESS, DELAY_TIME};
+use super::constants::{OWNER};
 use starknet_bridge::bridge::tests::utils::setup::{
-    deploy_erc20, deploy_token_bridge_with_messaging, deploy_token_bridge, enroll_token_and_settle
+    deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle
 };
 
 fn setup() -> (ITokenBridgeDispatcher, EventSpy, ContractAddress, IMockMessagingDispatcher) {

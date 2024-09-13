@@ -15,6 +15,7 @@ pub mod TokenBridge {
         IERC20MetadataDispatcherTrait
     };
     use starknet::syscalls::call_contract_syscall;
+    use core::to_byte_array::FormatAsByteArray;
 
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::upgrades::UpgradeableComponent;
@@ -402,15 +403,34 @@ pub mod TokenBridge {
         let dispatcher = IERC20MetadataDispatcher { contract_address: token };
         token.serialize(ref calldata);
 
+        // Openzeppelin erc20 used felt252 as return types for `name()` and `symbol()` before while
+        // `ByteArray` is used currently.
+        // So we use underlying syscalls, to support both the interface.
+        // The returned span is deserialized into to a ByteArray in both cases to make it consistent
+        // In case of ByteArray the length of returned span will be at least 3, while exactly 1 for
+        // felt252
         let name_selector = selector!("name");
-        let name = call_contract_syscall(token, name_selector, array![].span()).unwrap_syscall();
-        name.serialize(ref calldata);
-
-        // dispatcher.name().serialize(ref calldata);
-        let symbol_selector = selector!("symbol");
-        let symbol = call_contract_syscall(token, symbol_selector, array![].span())
+        let mut name = call_contract_syscall(token, name_selector, array![].span())
             .unwrap_syscall();
-        symbol.serialize(ref calldata);
+        if (name.len() == 1) {
+            let name_deserialised = name[0].format_as_byte_array(10);
+            name_deserialised.serialize(ref calldata);
+        } else {
+            let name_deserialised = Serde::<ByteArray>::deserialize(ref name).unwrap();
+            name_deserialised.serialize(ref calldata);
+        }
+
+        let symbol_selector = selector!("symbol");
+        let mut symbol = call_contract_syscall(token, symbol_selector, array![].span())
+            .unwrap_syscall();
+
+        if (symbol.len() == 1) {
+            let symbol_deserialised = symbol[0].format_as_byte_array(10);
+            symbol_deserialised.serialize(ref calldata);
+        } else {
+            let symbol_deserialised = Serde::<ByteArray>::deserialize(ref symbol).unwrap();
+            symbol_deserialised.serialize(ref calldata);
+        }
 
         dispatcher.decimals().serialize(ref calldata);
         calldata.span()
