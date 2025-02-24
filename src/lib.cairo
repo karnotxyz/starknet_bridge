@@ -57,6 +57,7 @@ pub mod mocks {
 
     #[cfg(target: 'test')]
     pub mod messaging;
+
     #[cfg(test)]
     pub mod messaging_malicious;
 

@@ -1,3 +1,4 @@
+use snforge_std::DeclareResultTrait;
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait};
 use starknet_bridge::bridge::TokenBridge::Event;

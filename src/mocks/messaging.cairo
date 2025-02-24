@@ -25,6 +25,7 @@ mod messaging_mock {
     use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet_bridge::mocks::hash;
+    use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess, StorageMapReadAccess};
     use super::IMockMessaging;
 
     component!(path: messaging_cpt, storage: messaging, event: MessagingEvent);
