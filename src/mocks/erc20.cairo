@@ -30,14 +30,14 @@ pub mod ERC20 {
     #[storage]
     struct Storage {
         #[substorage(v0)]
-        erc20: ERC20Component::Storage
+        erc20: ERC20Component::Storage,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         #[flat]
-        ERC20Event: ERC20Component::Event
+        ERC20Event: ERC20Component::Event,
     }
 
     const DECIMALS: u256 = 1000000000000000000;
@@ -50,7 +50,7 @@ pub mod ERC20 {
         name: ByteArray,
         symbol: ByteArray,
         fixed_supply: u256,
-        recipient: ContractAddress
+        recipient: ContractAddress,
     ) {
         self.erc20.initializer(name, symbol);
         self.erc20.mint(recipient, fixed_supply);

@@ -1,9 +1,10 @@
+use snforge_std::DeclareResultTrait;
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, EventSpyAssertionsTrait};
 use starknet_bridge::mocks::{hash};
 use starknet_bridge::bridge::{
     ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge, TokenBridge::Event,
-    types::TokenStatus
+    types::TokenStatus,
 };
 use super::constants::{OWNER, L3_BRIDGE_ADDRESS};
 use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, deploy_token_bridge};
@@ -24,11 +25,11 @@ fn enroll_token_ok() {
 
     let payload = message_payloads::deployment_message_payload(usdc_address);
     let message_hash = hash::compute_message_hash_sn_to_appc(
-        1, L3_BRIDGE_ADDRESS(), constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR, payload
+        1, L3_BRIDGE_ADDRESS(), constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR, payload,
     );
 
     let expected_event = TokenBridge::TokenEnrollmentInitiated {
-        token: usdc_address, deployment_message_hash: message_hash
+        token: usdc_address, deployment_message_hash: message_hash,
     };
 
     let new_status = token_bridge.get_status(usdc_address);
@@ -36,8 +37,8 @@ fn enroll_token_ok() {
     spy
         .assert_emitted(
             @array![
-                (token_bridge.contract_address, Event::TokenEnrollmentInitiated(expected_event))
-            ]
+                (token_bridge.contract_address, Event::TokenEnrollmentInitiated(expected_event)),
+            ],
         );
 }
 
@@ -59,7 +60,7 @@ fn enroll_token_already_enrolled() {
 #[should_panic(expected: ('Deployment message inexistent',))]
 fn enroll_token_nonce_not_updated() {
     // Deploy messaging mock with 5 days cancellation delay
-    let messaging_mock_class_hash = snf::declare("messaging_malicious").unwrap();
+    let messaging_mock_class_hash = snf::declare("messaging_malicious").unwrap().contract_class();
     // Deploying with 5 days as the delay time (5 * 86400 = 432000)
     let (messaging_contract_address, _) = messaging_mock_class_hash.deploy(@array![]).unwrap();
 
@@ -69,7 +70,7 @@ fn enroll_token_nonce_not_updated() {
     // Declare owner
     let owner = OWNER();
 
-    let token_bridge_class_hash = snf::declare("TokenBridge").unwrap();
+    let token_bridge_class_hash = snf::declare("TokenBridge").unwrap().contract_class();
 
     // Deploy the bridge
     let mut calldata = ArrayTrait::new();

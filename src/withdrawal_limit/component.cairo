@@ -18,9 +18,9 @@ pub mod WithdrawalLimitComponent {
         // in this day (if the value is x, the amount left to withdraw is x-1). 0 means that
         // currently there was no withdrawal from this token in this day or there were withdrawals
         // but the limit flag was turned off.
-        remaining_intraday_withdraw_quota: Map<(ContractAddress, u64), u256>,
+        pub remaining_intraday_withdraw_quota: Map<(ContractAddress, u64), u256>,
         // The daily withdrawal limit percentage.
-        daily_withdrawal_limit_pct: u8,
+        pub daily_withdrawal_limit_pct: u8,
     }
 
     #[event]

@@ -3,7 +3,7 @@ use starknet::ContractAddress;
 #[starknet::interface]
 pub trait IMockWithdrawalLimit<TState> {
     fn toggle_withdrawal_limit_for_token(
-        ref self: TState, token: ContractAddress, is_applied: bool
+        ref self: TState, token: ContractAddress, is_applied: bool,
     );
     fn consume_quota(ref self: TState, token: ContractAddress, amount: u256);
     fn write_daily_withdrawal_limit_pct(ref self: TState, limit_percent: u8);
@@ -17,7 +17,7 @@ pub mod withdrawal_limit_mock {
     use starknet_bridge::bridge::interface::IWithdrawalLimitStatus;
     use starknet::ContractAddress;
     use starknet::storage::Map;
-
+    use starknet::storage::{StoragePointerReadAccess, StorageMapWriteAccess, StorageMapReadAccess};
 
     component!(path: WithdrawalLimitComponent, storage: withdrawal, event: WithdrawalEvent);
 
@@ -32,7 +32,7 @@ pub mod withdrawal_limit_mock {
     struct Storage {
         limits: Map<ContractAddress, bool>,
         #[substorage(v0)]
-        withdrawal: WithdrawalLimitComponent::Storage,
+        pub withdrawal: WithdrawalLimitComponent::Storage,
     }
 
     #[event]
@@ -51,7 +51,7 @@ pub mod withdrawal_limit_mock {
     #[abi(embed_v0)]
     impl MockWithdrawalLimitImpl of super::IMockWithdrawalLimit<ContractState> {
         fn toggle_withdrawal_limit_for_token(
-            ref self: ContractState, token: ContractAddress, is_applied: bool
+            ref self: ContractState, token: ContractAddress, is_applied: bool,
         ) {
             self.limits.write(token, is_applied);
         }

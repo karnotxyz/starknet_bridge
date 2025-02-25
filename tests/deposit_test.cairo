@@ -11,7 +11,7 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use starknet::contract_address::{contract_address_const};
 use super::constants::{OWNER};
 use starknet_bridge::bridge::tests::utils::setup::{
-    deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle
+    deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle,
 };
 
 fn setup() -> (ITokenBridgeDispatcher, EventSpy, ContractAddress, IMockMessagingDispatcher) {
@@ -32,7 +32,7 @@ fn deposit_ok() {
 
     assert(
         usdc.balance_of(token_bridge.contract_address) == initial_bridge_balance + 100,
-        'incorrect amount recieved'
+        'incorrect amount recieved',
     );
 
     let expected_deposit = TokenBridge::Deposit {
@@ -40,7 +40,7 @@ fn deposit_ok() {
         token: usdc_address,
         amount: 100,
         appchain_recipient: snf::test_address(),
-        nonce: 2
+        nonce: 2,
     };
 
     spy.assert_emitted(@array![(token_bridge.contract_address, Event::Deposit(expected_deposit))]);
@@ -70,7 +70,7 @@ fn deposit_insufficient_allowance() {
 fn deposit_deactivated() {
     let (token_bridge, _, usdc_address, _) = setup();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
 
     snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
@@ -96,7 +96,7 @@ fn deposit_with_message_ok() {
 
     assert(
         usdc.balance_of(token_bridge.contract_address) == initial_bridge_balance + 100,
-        'incorrect amount recieved'
+        'incorrect amount recieved',
     );
 
     let expected_deposit_with_message = TokenBridge::DepositWithMessage {
@@ -105,7 +105,7 @@ fn deposit_with_message_ok() {
         amount: 100,
         appchain_recipient: snf::test_address(),
         message: calldata.span(),
-        nonce: 2
+        nonce: 2,
     };
 
     spy
@@ -113,9 +113,9 @@ fn deposit_with_message_ok() {
             @array![
                 (
                     token_bridge.contract_address,
-                    Event::DepositWithMessage(expected_deposit_with_message)
-                )
-            ]
+                    Event::DepositWithMessage(expected_deposit_with_message),
+                ),
+            ],
         );
 }
 
@@ -134,7 +134,7 @@ fn deposit_with_message_empty_message_ok() {
 
     assert(
         usdc.balance_of(token_bridge.contract_address) == initial_bridge_balance + 100,
-        'incorrect amount recieved'
+        'incorrect amount recieved',
     );
 
     let expected_deposit_with_message = TokenBridge::DepositWithMessage {
@@ -143,7 +143,7 @@ fn deposit_with_message_empty_message_ok() {
         amount: 100,
         appchain_recipient: snf::test_address(),
         message: calldata.span(),
-        nonce: 2
+        nonce: 2,
     };
 
     spy
@@ -151,9 +151,9 @@ fn deposit_with_message_empty_message_ok() {
             @array![
                 (
                     token_bridge.contract_address,
-                    Event::DepositWithMessage(expected_deposit_with_message)
-                )
-            ]
+                    Event::DepositWithMessage(expected_deposit_with_message),
+                ),
+            ],
         );
 }
 
@@ -186,7 +186,7 @@ fn deposit_with_message_insufficient_allowance() {
 fn deposit_with_message_deactivated() {
     let (token_bridge, _, usdc_address, _) = setup();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
 
     snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
@@ -215,7 +215,7 @@ fn deposit_cancel_request_ok() {
         token: usdc_address,
         amount: 100,
         appchain_recipient: snf::test_address(),
-        nonce: 2
+        nonce: 2,
     };
 
     spy
@@ -223,9 +223,9 @@ fn deposit_cancel_request_ok() {
             @array![
                 (
                     token_bridge.contract_address,
-                    Event::DepostiCancelRequest(expected_deposit_cancel)
-                )
-            ]
+                    Event::DepostiCancelRequest(expected_deposit_cancel),
+                ),
+            ],
         );
 }
 
@@ -247,7 +247,7 @@ fn deposit_cancel_request_different_user() {
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 
     snf::start_cheat_caller_address(
-        token_bridge.contract_address, contract_address_const::<'user2'>()
+        token_bridge.contract_address, contract_address_const::<'user2'>(),
     );
     token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 2);
 }
@@ -267,7 +267,7 @@ fn deposit_with_message_cancel_request_ok() {
 
     token_bridge
         .deposit_with_message_cancel_request(
-            usdc_address, 100, snf::test_address(), calldata.span(), 2
+            usdc_address, 100, snf::test_address(), calldata.span(), 2,
         );
 
     let expected_deposit_cancel = TokenBridge::DepositWithMessageCancelRequest {
@@ -276,7 +276,7 @@ fn deposit_with_message_cancel_request_ok() {
         amount: 100,
         appchain_recipient: snf::test_address(),
         message: calldata.span(),
-        nonce: 2
+        nonce: 2,
     };
 
     spy
@@ -284,9 +284,9 @@ fn deposit_with_message_cancel_request_ok() {
             @array![
                 (
                     token_bridge.contract_address,
-                    Event::DepositWithMessageCancelRequest(expected_deposit_cancel)
-                )
-            ]
+                    Event::DepositWithMessageCancelRequest(expected_deposit_cancel),
+                ),
+            ],
         );
 }
 
@@ -302,7 +302,7 @@ fn deposit_with_message_cancel_request_no_deposit() {
 
     token_bridge
         .deposit_with_message_cancel_request(
-            usdc_address, 100, snf::test_address(), calldata.span(), 2
+            usdc_address, 100, snf::test_address(), calldata.span(), 2,
         );
 }
 
@@ -320,11 +320,11 @@ fn deposit_with_message_cancel_request_different_user() {
     token_bridge.deposit_with_message(usdc_address, 100, snf::test_address(), calldata.span());
 
     snf::start_cheat_caller_address(
-        token_bridge.contract_address, contract_address_const::<'user2'>()
+        token_bridge.contract_address, contract_address_const::<'user2'>(),
     );
     token_bridge
         .deposit_with_message_cancel_request(
-            usdc_address, 100, snf::test_address(), calldata.span(), 2
+            usdc_address, 100, snf::test_address(), calldata.span(), 2,
         );
 }
 

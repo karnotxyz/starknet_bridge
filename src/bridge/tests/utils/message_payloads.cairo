@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 use starknet_bridge::constants;
 
 use openzeppelin::token::erc20::interface::{
-    IERC20MetadataDispatcher, IERC20MetadataDispatcherTrait
+    IERC20MetadataDispatcher, IERC20MetadataDispatcherTrait,
 };
 
 pub fn deposit_message_payload(
@@ -11,7 +11,7 @@ pub fn deposit_message_payload(
     caller: ContractAddress,
     appchain_recipient: ContractAddress,
     is_with_message: bool,
-    message: Span<felt252>
+    message: Span<felt252>,
 ) -> Span<felt252> {
     let mut payload = ArrayTrait::new();
     token.serialize(ref payload);
@@ -38,7 +38,7 @@ pub fn deployment_message_payload(token: ContractAddress) -> Span<felt252> {
 }
 
 pub fn withdraw_message_payload_from_appchain(
-    token: ContractAddress, amount: u256, recipient: ContractAddress
+    token: ContractAddress, amount: u256, recipient: ContractAddress,
 ) -> Span<felt252> {
     let mut message_payload = ArrayTrait::new();
     constants::TRANSFER_FROM_APPCHAIN.serialize(ref message_payload);

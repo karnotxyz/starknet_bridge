@@ -71,13 +71,13 @@ pub mod TokenBridge {
     #[storage]
     struct Storage {
         // corresponding bridge contract_address deployed on the appchain
-        appchain_bridge: ContractAddress,
+        pub appchain_bridge: ContractAddress,
         // the core messaging contract deployed on starknet used for l2 - l3 messsaging
-        messaging_contract: IMessagingDispatcher,
+        pub messaging_contract: IMessagingDispatcher,
         // All token related settings and its status
-        token_settings: Map<ContractAddress, TokenSettings>,
+        pub token_settings: Map<ContractAddress, TokenSettings>,
         #[substorage(v0)]
-        ownable: OwnableComponent::Storage,
+        pub ownable: OwnableComponent::Storage,
         #[substorage(v0)]
         upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
