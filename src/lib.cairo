@@ -3,7 +3,6 @@ pub mod bridge {
     pub mod interface;
     pub mod types;
 
-    #[cfg(test)]
     pub mod tests {
         pub mod constants;
         mod token_actions_test;
@@ -37,17 +36,11 @@ pub mod constants;
 
 pub mod mocks {
     pub mod erc20;
-
-    #[cfg(test)]
     pub mod messaging;
-
     #[cfg(test)]
     pub mod messaging_malicious;
-
     #[cfg(test)]
     pub mod withdrawal_limit_mock;
-
-    #[cfg(test)]
     pub mod hash;
 }
 
