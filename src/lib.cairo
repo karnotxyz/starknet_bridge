@@ -3,6 +3,7 @@ pub mod bridge {
     pub mod interface;
     pub mod types;
 
+    #[cfg(target: 'test')]
     pub mod tests {
         pub mod constants;
         mod token_actions_test;
