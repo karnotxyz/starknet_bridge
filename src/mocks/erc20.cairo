@@ -49,11 +49,15 @@ pub mod ERC20 {
         ref self: ContractState,
         name: ByteArray,
         symbol: ByteArray,
-        fixed_supply: u256,
-        recipient: ContractAddress,
+        decimals: u8,
+        initial_supply: u256,
+        initial_recipient: ContractAddress,
+        permitted_minter: ContractAddress,
+        l2_token_governance: ContractAddress,
+        upgrade_delay: u64,
     ) {
         self.erc20.initializer(name, symbol);
-        self.erc20.mint(recipient, fixed_supply);
+        self.erc20.mint(initial_recipient, initial_supply);
     }
 
 
@@ -61,7 +65,7 @@ pub mod ERC20 {
     #[abi(per_item)]
     impl IERC20Impl of IERC20Trait {
         #[external(v0)]
-        fn mint(ref self: ContractState, recipient: ContractAddress, amount: u256) {
+        fn permissioned_mint(ref self: ContractState, recipient: ContractAddress, amount: u256) {
             assert(amount < 100 * DECIMALS, 'Max 100 tokens only.');
             self.erc20.mint(recipient, amount);
         }

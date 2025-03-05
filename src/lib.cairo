@@ -36,11 +36,16 @@ pub mod constants;
 
 pub mod mocks {
     pub mod erc20;
+
+    #[cfg(test)]
     pub mod messaging;
     #[cfg(test)]
     pub mod messaging_malicious;
+
     #[cfg(test)]
     pub mod withdrawal_limit_mock;
+
+    #[cfg(test)]
     pub mod hash;
 }
 
