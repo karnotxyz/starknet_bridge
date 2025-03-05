@@ -3,7 +3,11 @@ use starknet::ContractAddress;
 pub trait IMockMessaging<TState> {
     fn update_state_for_message(ref self: TState, message_hash: felt252);
     fn process_last_message_to_appchain(
-        ref self: TState, to_address: ContractAddress, selector: felt252, payload: Span<felt252>,
+        ref self: TState,
+        from_address: ContractAddress,
+        to_address: ContractAddress,
+        selector: felt252,
+        payload: Span<felt252>,
     );
     fn process_message_to_starknet(
         ref self: TState,
@@ -49,18 +53,20 @@ mod messaging_mock {
     #[abi(embed_v0)]
     impl MockMessagingImpl of IMockMessaging<ContractState> {
         fn update_state_for_message(ref self: ContractState, message_hash: felt252) {
+            // let current_status = self.messaging.sn_to_appc_messages.read(message_hash);
             self.messaging.sn_to_appc_messages.write(message_hash, MessageToAppchainStatus::Sealed);
         }
 
         fn process_last_message_to_appchain(
             ref self: ContractState,
+            from_address: ContractAddress,
             to_address: ContractAddress,
             selector: felt252,
             payload: Span<felt252>,
         ) {
             let nonce = self.messaging.sn_to_appc_nonce.read();
             let message_hash = hash::compute_message_hash_sn_to_appc(
-                nonce, to_address, selector, payload,
+                from_address, to_address, selector, payload, nonce - 1,
             );
             self.update_state_for_message(message_hash);
         }

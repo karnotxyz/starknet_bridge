@@ -92,6 +92,7 @@ pub fn enroll_token_and_settle(
     // Settles the message sent to appchain
     messaging_mock
         .process_last_message_to_appchain(
+            token_bridge.contract_address,
             L3_BRIDGE_ADDRESS(),
             constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
             message_payloads::deployment_message_payload(token),

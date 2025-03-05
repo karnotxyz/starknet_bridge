@@ -25,7 +25,11 @@ fn enroll_token_ok() {
 
     let payload = message_payloads::deployment_message_payload(usdc_address);
     let message_hash = hash::compute_message_hash_sn_to_appc(
-        1, L3_BRIDGE_ADDRESS(), constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR, payload,
+        token_bridge.contract_address,
+        L3_BRIDGE_ADDRESS(),
+        constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
+        payload,
+        0,
     );
 
     let expected_event = TokenBridge::TokenEnrollmentInitiated {

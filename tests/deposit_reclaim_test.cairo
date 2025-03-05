@@ -32,7 +32,7 @@ fn deposit_reclaim_ok() {
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 
     snf::start_cheat_block_timestamp_global(5);
-    token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 2);
+    token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 1);
 
     snf::start_cheat_block_timestamp_global(
         starknet::get_block_timestamp() + DELAY_TIME.try_into().unwrap() + 10,
