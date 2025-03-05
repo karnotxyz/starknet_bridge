@@ -31,6 +31,7 @@ fn setup() -> (ITokenBridgeDispatcher, EventSpy, IERC20Dispatcher, IMockMessagin
     token_bridge.deposit(usdc_address, amount, snf::test_address());
     messaging_mock
         .process_last_message_to_appchain(
+            token_bridge.contract_address,
             L3_BRIDGE_ADDRESS(),
             constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
             message_payloads::deposit_message_payload(

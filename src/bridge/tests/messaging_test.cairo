@@ -73,10 +73,11 @@ fn send_deploy_message_ok() {
 
     mock.send_deploy_message(usdc_address);
     let hash = hash::compute_message_hash_sn_to_appc(
-        1,
+        snf::test_address(),
         L3_BRIDGE_ADDRESS(),
         constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
         message_payloads::deployment_message_payload(usdc_address),
+        0,
     );
     assert(
         messaging.sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(1),
@@ -119,12 +120,13 @@ fn send_deposit_message_ok() {
         );
 
     let hash = hash::compute_message_hash_sn_to_appc(
-        1,
+        snf::test_address(),
         L3_BRIDGE_ADDRESS(),
         constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
         message_payloads::deposit_message_payload(
             usdc_address, 100, snf::test_address(), snf::test_address(), false, array![].span(),
         ),
+        0,
     );
 
     assert(
