@@ -60,7 +60,7 @@ export function getAccount(layer: Layer): Account {
     const privateKey = process.env.ACCOUNT_L2_PRIVATE_KEY as string;
     const accountAddress: string = process.env.ACCOUNT_L2_ADDRESS as string;
     return new Account(provider, accountAddress, privateKey);
-  } else if(layer == Layer.L3) {
+  } else if (layer == Layer.L3) {
     const privateKey = process.env.ACCOUNT_L3_PRIVATE_KEY as string;
     const accountAddress: string = process.env.ACCOUNT_L3_ADDRESS as string;
     return new Account(provider, accountAddress, privateKey);
@@ -84,18 +84,23 @@ export async function declareContract(contract_name: string, package_name: strin
     contract: compiledSierra,
     casm: compiledCasm
   };
-
-  const fee = await acc.estimateDeclareFee({
-    contract: compiledSierra,
-    casm: compiledCasm,
-  })
-  console.log('declare fee', Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
+  //
+  // const fee = await acc.estimateDeclareFee({
+  //   contract: compiledSierra,
+  //   casm: compiledCasm,
+  // })
+  // console.log('declare fee', Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
   const result = extractContractHashes(payload);
   console.log("classhash:", result.classHash);
 
   try {
 
-    const tx = await acc.declareIfNot(payload)
+    let tx;
+    if (layer === Layer.L3) {
+      tx = await acc.declareIfNot(payload, { maxFee: 0 });
+    } else {
+      tx = await acc.declareIfNot(payload);
+    }
     await provider.waitForTransaction(tx.transaction_hash, {
       successStates: [TransactionFinalityStatus.ACCEPTED_ON_L2]
     })
@@ -126,10 +131,18 @@ export async function deployContract(contract_name: string, classHash: string, c
   })
   console.log("Deploy fee", contract_name, Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
 
-  const tx = await acc.deployContract({
-    classHash,
-    constructorCalldata: constructorData,
-  })
+  let tx;
+  if (layer === Layer.L3) {
+    tx = await acc.deployContract({
+      classHash,
+      constructorCalldata: constructorData,
+    }, { maxFee: 0 });
+  } else {
+    tx = await acc.deployContract({
+      classHash,
+      constructorCalldata: constructorData,
+    });
+  }
   console.log('Deploy tx: ', tx.transaction_hash);
 
   await provider.waitForTransaction(tx.transaction_hash, {
