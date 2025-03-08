@@ -6,9 +6,10 @@ import {
   Account,
   // ByteArray, RawArgs, uint256,
   // RpcProvider, TransactionExecutionStatus,
-  // extractContractHashes, num hash, json, provider,
-  byteArray, Contract, num
+  // extractContractHashes,
+  json, byteArray, Contract, num, hash
 } from 'starknet'
+import { readFileSync, existsSync, writeFileSync } from 'fs'
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -218,6 +219,50 @@ async function deposit(acc_l2: Account) {
   }
 }
 
+
+async function depositWithMessage(acc_l2: Account) {
+  const gridTokenAddress = getContracts().contracts["ERC20_starknet_bridge"];
+  const tokenBridge = getContracts().contracts["TokenBridge_starknet_bridge"];
+
+
+
+  // Approval
+  {
+    const gridCls = await acc_l2.getClassAt(gridTokenAddress);
+    const gridToken = new Contract(gridCls.abi, gridTokenAddress, acc_l2);
+
+    const call = gridToken.populate('approve', {
+      spender: tokenBridge,
+      amount: 12n * 10n ** 18n
+    });
+    let result = await acc_l2.execute([call]);
+    console.log("Approval success !!", result);
+  }
+  await sleep(4000);
+
+
+
+  // Deposit
+  {
+    const Bridgecls = await acc_l2.getClassAt(tokenBridge);
+    const tokenBridgeContract = new Contract(Bridgecls.abi, tokenBridge, acc_l2);
+    const l3Registry = getContracts().contracts["L3Registry"];
+
+    const call = tokenBridgeContract.populate('deposit_with_message', {
+      token: gridTokenAddress,
+      amount: 11n * 10n ** 18n,
+      appchain_recipient: l3Registry,
+      message: [
+        process.env.ACCOUNT_L2_ADDRESS as string, // Player in game
+        2n // Initial location to mine
+      ]
+    });
+    let result = await acc_l2.execute([call]);
+    console.log("Deposit success !!", result);
+    await sleep(10000);
+  }
+}
+
 async function getNameAndSymbol(acc: Account) {
   const gridTokenAddress = getContracts().contracts["ERC20_starknet_bridge"];
   let provider = getProvider(Layer.L2);
@@ -302,6 +347,64 @@ async function getL3Balance(address: string) {
   }
 }
 
+async function getGameState(acc_l3: Account) {
+  const game = getContracts().contracts["Game"];
+  const cls = await acc_l3.getClassAt(game);
+  const gameContract = new Contract(cls.abi, game, acc_l3);
+
+  const call = await gameContract.call('get_total_bots_of_player', [
+    process.env.ACCOUNT_L2_ADDRESS as string
+  ])
+  console.log("Total bots of player: ", call);
+
+  const botAddress = await gameContract.call('get_bot_of_player', [
+    process.env.ACCOUNT_L2_ADDRESS as string,
+    1
+  ]);
+
+  console.log("Bot address: ", num.toHex(botAddress as string));
+}
+
+async function declareAndUpgradeL2Bridge(acc_l2: Account) {
+  await declareContract("TokenBridge", "starknet_bridge", Layer.L2);
+  console.log("TokenBridge declared !!");
+  await sleep(1000);
+  const tokenBridge = getContracts().contracts["TokenBridge_starknet_bridge"];
+  const cls = await acc_l2.getClassAt(tokenBridge);
+  let tokenBridgeContract = new Contract(cls.abi, tokenBridge, acc_l2);
+  const upgradeCall = tokenBridgeContract.populate('upgrade', {
+    new_class_hash: getContracts().class_hashes["TokenBridge_starknet_bridge"]
+  });
+  let result = await acc_l2.execute([upgradeCall]);
+  console.log("Upgrade success !!", result);
+  await sleep(5000);
+  tokenBridgeContract = new Contract(getContracts().class_hashes["TokenBridge_starkgate_contracts"], tokenBridge, acc_l2);
+  const messaging_contract = await tokenBridgeContract.call('get_messaging_contract');
+  console.log("Messaging contract: ", num.toHex(messaging_contract as string));
+  await sleep(1000);
+}
+
+
+async function declareAndUpgradeL3Bridge(acc_l3: Account) {
+  await declareContract("TokenBridge", "starkgate_contracts", Layer.L3);
+  console.log("TokenBridge declared !!");
+  await sleep(1000);
+  const tokenBridge = getContracts().contracts["TokenBridge_starknet_bridge"];
+  const cls = await acc_l3.getClassAt(tokenBridge);
+  let tokenBridgeContract = new Contract(cls.abi, tokenBridge, acc_l3);
+  const upgradeCall = tokenBridgeContract.populate('upgrade', {
+    new_class_hash: getContracts().class_hashes["TokenBridge_starknet_bridge"]
+  });
+  let result = await acc_l3.execute([upgradeCall]);
+  console.log("Upgrade success !!", result);
+  await sleep(5000);
+  tokenBridgeContract = new Contract(getContracts().class_hashes["TokenBridge_starkgate_contracts"], tokenBridge, acc_l3);
+  const messaging_contract = await tokenBridgeContract.call('get_messaging_contract');
+  console.log("Messaging contract: ", num.toHex(messaging_contract as string));
+  await sleep(1000);
+}
+
+
 async function requestWithdrawalFromAppchain(acc_l3: Account) {
   const tokenBridge = getContracts().contracts["TokenBridge_starkgate_contracts"];
   const Bridgecls = await acc_l3.getClassAt(tokenBridge);
@@ -322,9 +425,45 @@ async function withdrawFromStarknet(acc_l2: Account) {
   const coreContract = getContracts().contracts["appchain_starknet_bridge"];
   const cls = await acc_l2.getClassAt(coreContract);
   const coreContractInstance = new Contract(cls.abi, coreContract, acc_l2);
+  const call = coreContractInstance.populate('process_message_to_starknet', {});
+}
+
+async function checkClass(acc_l3: Account) {
+  // // Locally calculated class hash after building the contract
+  // const compiledSierra = json.parse(
+  //   readFileSync(`./starkgate-contracts/cairo_contracts/starkgate_contracts_TokenBridge.contract_class.json`).toString("ascii")
+  // )
+  // let calculated_class_hash = hash.computeContractClassHash(compiledSierra);
+  // // Class hash saved in the contracts.json file
+  // let local_class_hash = getContracts().class_hashes["TokenBridge_starkgate_contracts"];
+  //
+  // // Class hash of the deployed contract
+  // let appchainBridge = getContracts().contracts["TokenBridge_starkgate_contracts"];
+  // let class_hash = await acc_l3.getClassHashAt(appchainBridge);
+  //
+  //
+  // console.log("class_hash of contract: ", class_hash);
+  // console.log("class_hash_local: ", calculated_class_hash);
+  // console.log("class_hash_saved: ", local_class_hash);
+
+
+  let l3Registry = getContracts().contracts["L3Registry"];
+  let cls = await acc_l3.getClassAt(l3Registry);
+  let l3RegistryContract = new Contract(cls.abi, l3Registry, acc_l3);
+
+  let on_receive_call = l3RegistryContract.populate('on_receive', [
+    "0xc811e776b41e5bb5e80e992d64c4ac1eb52c5a16c32d1882b1341b9344186c",
+    1,
+    "0x05bcf773a0bb4e867826f47aabacb6c6371cfbb76cc29e82c33e91cc3b3e0b42",
+    []
+  ]);
+
+  let result = await acc_l3.execute([on_receive_call]);
+  console.log("on_receive_call: ", result);
 
 
 }
+
 
 async function setup() {
   const acc_l3 = getAccount(Layer.L3);
@@ -349,15 +488,20 @@ async function main() {
   const acc_l2 = getAccount(Layer.L2);
   const acc_l3 = getAccount(Layer.L3);
 
-  await deployCoreContract(acc_l2);
-
+  // await deployCoreContract(acc_l2);
+  //
   await setup();
   await enrollandActivate(acc_l2);
 
 
-  await deposit(acc_l2);
-  await getL3Balance(acc_l3.address);
+  await declareAndUpgradeL2Bridge(acc_l2);
+  // await deposit(acc_l2);
+  // await getL3Balance(acc_l3.address);
 
+  // await depositWithMessage(acc_l2);
+  // await getGameState(acc_l3);
+
+  // await checkClass(acc_l3);
 
   // await getAppchainBridge();
   // await deployTestingContract();

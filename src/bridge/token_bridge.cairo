@@ -300,6 +300,23 @@ pub mod TokenBridge {
         self.ownable.initializer(owner);
     }
 
+    #[external(v0)]
+    pub fn activate_token(ref self: ContractState, token: ContractAddress) {
+        self
+            .token_settings
+            .write(
+                token,
+                TokenSettings {
+                    token_status: TokenStatus::Active, ..self.token_settings.read(token),
+                },
+            );
+    }
+
+    #[external(v0)]
+    pub fn get_messaging_contract(self: @ContractState) -> ContractAddress {
+        self.messaging_contract.read().contract_address
+    }
+
 
     #[generate_trait]
     pub impl TokenBridgeInternalImpl of TokenBridgeInternal {
