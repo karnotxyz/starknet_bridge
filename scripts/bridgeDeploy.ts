@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { deployContract, getAccount, declareContract, getContracts, getProvider, Layer } from "./utils";
+import { deployContract, getAccount, declareContract, getContracts, getProvider, Layer, getEthereumClient } from "./utils";
 import {
   Account,
   // ByteArray, RawArgs, uint256,
@@ -9,7 +9,11 @@ import {
   // extractContractHashes,
   json, byteArray, Contract, num, hash
 } from 'starknet'
-import { readFileSync, existsSync, writeFileSync } from 'fs'
+import { parseAbi, WalletClient } from "viem";
+import { sepolia } from "viem/chains";
+import { Account as EthAccount } from "viem";
+
+
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -220,6 +224,67 @@ async function deposit(acc_l2: Account) {
 }
 
 
+async function depositWithMessageL1(acc_l1: WalletClient) {
+  const l1StrkToken = getContracts().contracts["L1StrkToken"];
+  const tokenBridge = getContracts().contracts["L1TokenBridge"];
+
+
+  // Approval
+  {
+
+    const strkAbi = parseAbi([
+      'function approve(address spender, uint256 amount) returns (bool)',
+    ])
+
+    const approveTx = await acc_l1.writeContract({
+      address: l1StrkToken,
+      abi: strkAbi,
+      functionName: 'approve',
+      args: [tokenBridge, 10n ** 15n],
+      chain: sepolia,
+      account: acc_l1.account as EthAccount
+    });
+
+    console.log('Approval transaction hash:', approveTx);
+  }
+  await sleep(2000);
+  // Deposit
+  {
+    const l2Registry = getContracts().contracts["L2Registry"];
+
+    const depositWithMessageAbi = parseAbi([
+      'function deposit_with_message(address token, uint256 amount, address appchain_recipient, uint256[] memory message) returns (uint256)',
+    ]);
+
+
+
+    const depositWithMessasgeTx = await acc_l1.writeContract({
+      address: tokenBridge,
+      abi: depositWithMessageAbi,
+      functionName: 'deposit_with_message',
+      args: [l1StrkToken, 10n ** 15n, l2Registry, [BigInt(process.env.ACCOUNT_L2_ADDRESS as string), 4n]],
+      account: acc_l1.account as EthAccount,
+      chain: sepolia
+    });
+
+
+
+    // const call = tokenBridgeContract.populate('deposit_with_message', {
+    //   token: gridTokenAddress,
+    //   amount: 10n ** 15n,
+    //   appchain_recipient: l3Registry,
+    //   message: [
+    //     process.env.ACCOUNT_L2_ADDRESS as string, // Player in game
+    //     4n // Initial location to mine
+    //   ]
+    // });
+    // let result = await acc_l1.execute([call]);
+    // console.log("Deposit success !!", result);
+    // await sleep(10000);
+  }
+}
+
+
 async function depositWithMessage(acc_l2: Account) {
   const gridTokenAddress = getContracts().contracts["ERC20_starknet_bridge"];
   const tokenBridge = getContracts().contracts["TokenBridge_starknet_bridge"];
@@ -254,7 +319,7 @@ async function depositWithMessage(acc_l2: Account) {
       appchain_recipient: l3Registry,
       message: [
         process.env.ACCOUNT_L2_ADDRESS as string, // Player in game
-        2n // Initial location to mine
+        4n // Initial location to mine
       ]
     });
     let result = await acc_l2.execute([call]);
@@ -359,7 +424,7 @@ async function getGameState(acc_l3: Account) {
 
   const botAddress = await gameContract.call('get_bot_of_player', [
     process.env.ACCOUNT_L2_ADDRESS as string,
-    1
+    2
   ]);
 
   console.log("Bot address: ", num.toHex(botAddress as string));
@@ -460,8 +525,6 @@ async function checkClass(acc_l3: Account) {
 
   let result = await acc_l3.execute([on_receive_call]);
   console.log("on_receive_call: ", result);
-
-
 }
 
 
@@ -487,19 +550,21 @@ async function enrollandActivate(acc_l2: Account) {
 async function main() {
   const acc_l2 = getAccount(Layer.L2);
   const acc_l3 = getAccount(Layer.L3);
+  const acc_l1 = getEthereumClient();
 
   // await deployCoreContract(acc_l2);
   //
-  await setup();
-  await enrollandActivate(acc_l2);
+  // await setup();
+  // await enrollandActivate(acc_l2);
+  //
 
-
-  await declareAndUpgradeL2Bridge(acc_l2);
+  // await declareAndUpgradeL2Bridge(acc_l2);
   // await deposit(acc_l2);
   // await getL3Balance(acc_l3.address);
 
   // await depositWithMessage(acc_l2);
-  // await getGameState(acc_l3);
+  await depositWithMessageL1(acc_l1);
+  await getGameState(acc_l3);
 
   // await checkClass(acc_l3);
 

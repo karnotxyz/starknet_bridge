@@ -3,12 +3,17 @@ dotenv.config();
 import assert from 'assert'
 import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContractHashes, hash, json, provider } from 'starknet'
 import { readFileSync, existsSync, writeFileSync } from 'fs'
+import { http, createWalletClient, WalletClient } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts';
+import { sepolia } from 'viem/chains'
+
 
 
 assert(process.env.RPC_L2_URL, 'invalid RPC_L2_URL');
 assert(process.env.RPC_L3_URL, 'invalid RPC_L3_URL');
 assert(process.env.ACCOUNT_L2_ADDRESS, 'invalid ACCOUNT_L2_ADDRESS');
 assert(process.env.ACCOUNT_L3_ADDRESS, 'invalid ACCOUNT_L3_ADDRESS');
+assert(process.env.ACCOUNT_L1_PRIVATE_KEY, 'invalid ACCOUNT_L2_PRIVATE_KEY');
 assert(process.env.ACCOUNT_L2_PRIVATE_KEY, 'invalid ACCOUNT_L2_PRIVATE_KEY');
 assert(process.env.ACCOUNT_L3_PRIVATE_KEY, 'invalid ACCOUNT_L3_PRIVATE_KEY');
 
@@ -43,27 +48,38 @@ function saveContracts(contracts: any) {
 
 export function getProvider(layer: Layer): RpcProvider {
   if (layer === Layer.L2) {
-    assert(process.env.RPC_L2_URL, 'invalid RPC_URL');
     return new RpcProvider({ nodeUrl: process.env.RPC_L2_URL as string, retries: 5 });
   } else if (layer === Layer.L3) {
-    assert(process.env.RPC_L3_URL, 'invalid RPC_URL');
     return new RpcProvider({ nodeUrl: process.env.RPC_L3_URL as string, retries: 5 });
   } else {
     throw new Error('Invalid layer');
   }
 }
 
-export function getAccount(layer: Layer): Account {
+export function getEthereumClient(): WalletClient {
+  assert(process.env.ACCOUNT_L1_PRIVATE_KEY, 'invalid ACCOUNT_L1_PRIVATE_KEY');
+  const privateKey = process.env.ACCOUNT_L1_PRIVATE_KEY as string;
+  const account = privateKeyToAccount(`0x${privateKey}`);
+  return createWalletClient({
+    chain: sepolia,
+    transport: http(),
+    account
+  })
+}
+
+
+
+export function getAccount<T extends Layer>(layer: T): Account {
   // initialize provider
   const provider = getProvider(layer);
   if (layer == Layer.L2) {
     const privateKey = process.env.ACCOUNT_L2_PRIVATE_KEY as string;
     const accountAddress: string = process.env.ACCOUNT_L2_ADDRESS as string;
-    return new Account(provider, accountAddress, privateKey);
+    return new Account(provider, accountAddress, privateKey, undefined, "0x3");
   } else if (layer == Layer.L3) {
     const privateKey = process.env.ACCOUNT_L3_PRIVATE_KEY as string;
     const accountAddress: string = process.env.ACCOUNT_L3_ADDRESS as string;
-    return new Account(provider, accountAddress, privateKey);
+    return new Account(provider, accountAddress, privateKey, undefined, "0x3");
   } else {
     throw new Error('Invalid layer');
   }
@@ -95,7 +111,7 @@ export async function declareContract(contract_name: string, package_name: strin
 
   try {
 
-    let tx;
+    let tx: { transaction_hash: string; class_hash: string; };
     if (layer === Layer.L3) {
       tx = await acc.declareIfNot(payload, { maxFee: 0 });
     } else {
@@ -131,7 +147,7 @@ export async function deployContract(contract_name: string, classHash: string, c
   })
   console.log("Deploy fee", contract_name, Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
 
-  let tx;
+  let tx: { transaction_hash: any; contract_address: any; address?: string; deployer?: string; unique?: string; classHash?: string; calldata_len?: string; calldata?: string[]; salt?: string; };
   if (layer === Layer.L3) {
     tx = await acc.deployContract({
       classHash,
