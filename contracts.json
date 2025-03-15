@@ -1,0 +1,22 @@
+{
+  "class_hashes": {
+    "appchain_starknet_bridge": "0x07e32e97ad7d1809358418ec553d61d0f537fba13d5b8ac3aa479ec9c632ef95",
+    "TokenBridge_starkgate_contracts": "0xd0cdfaddbc999d606cf98ed5bb5812a07490fdc0ef947e0c8c0f3e41595aff",
+    "TokenBridge_starknet_bridge": "0x68fe0356504c739832891d82baad76d77081bddebc73507ed4132d7906bf154",
+    "ERC20_starknet_bridge": "0x7174b1faca96d55df56277c24b047c8e8bffa3e28947c31039892228e46ce23"
+  },
+  "contracts": {
+    "appchain_starknet_bridge": "0x0637224c42be5e0601981113985e365869d39e135fc633f7bbe866f963d6586e",
+    "TokenBridge_starkgate_contracts": "0x774063ca6c16021b2967ff77020a43cbcdb08bd23540e6ea12cddf69d48a7e9",
+    "TokenBridge_starknet_bridge": "0x68a7cf80bd038300bc7455f8d12b07442a2b08694e173d26c48c77495e23fd4",
+    "ERC20_starknet_bridge": "0xc811e776b41e5bb5e80e992d64c4ac1eb52c5a16c32d1882b1341b9344186c",
+    "L3Registry": "0x450208ff76cef4e025dc19806ecce5b203d035220be641ba06bb1bd3390ee1b",
+    "L2Registry": "0x498ec35baa793f1b9a527cf8ce4371273c579d0cae6a2845e44b3c34b3e7f5d",
+    "Game": "0x3316bcc1ff919bf8f2f14b980cfe625ce5d9176a23eab9819b26e22eb0e89f5",
+    "L1TokenBridge": "0xF6217de888fD6E6b2CbFBB2370973BE4c36a152D",
+    "MyL1GameToken": "0x2196d41378b9332682aAB47C5e5aE342b4429060",
+    "MyL2GameToken": "0x03821bdc7aaa3c501cc6bba524ecfe79937692b74417bb6f996593c6b065cbe1",
+    "L1StrkToken": "0xCa14007Eff0dB1f8135f4C25B34De49AB0d42766",
+    "L2StrkToken": "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"
+  }
+}

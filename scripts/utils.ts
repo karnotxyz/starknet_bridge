@@ -9,13 +9,13 @@ import { sepolia } from 'viem/chains'
 
 
 
-assert(process.env.RPC_L2_URL, 'invalid RPC_L2_URL');
-assert(process.env.RPC_L3_URL, 'invalid RPC_L3_URL');
-assert(process.env.ACCOUNT_L2_ADDRESS, 'invalid ACCOUNT_L2_ADDRESS');
-assert(process.env.ACCOUNT_L3_ADDRESS, 'invalid ACCOUNT_L3_ADDRESS');
-assert(process.env.ACCOUNT_L1_PRIVATE_KEY, 'invalid ACCOUNT_L2_PRIVATE_KEY');
-assert(process.env.ACCOUNT_L2_PRIVATE_KEY, 'invalid ACCOUNT_L2_PRIVATE_KEY');
-assert(process.env.ACCOUNT_L3_PRIVATE_KEY, 'invalid ACCOUNT_L3_PRIVATE_KEY');
+assert(process.env.RPC_L2_URL, 'RPC_L2_URL not set in .env');
+assert(process.env.RPC_L3_URL, 'RPC_L3_UR not set in .env');;
+assert(process.env.ACCOUNT_L2_ADDRESS, 'ACCOUNT_L2_ADDRESS not set in .env');
+assert(process.env.ACCOUNT_L3_ADDRESS, 'ACCOUNT_L3_ADDRESS not set in .env');
+assert(process.env.ACCOUNT_L1_PRIVATE_KEY, 'ACCOUNT_L1_PRIVATE_KEY not set in .env');
+assert(process.env.ACCOUNT_L2_PRIVATE_KEY, 'ACCOUNT_L2_PRIVATE_KEY not set in .env');
+assert(process.env.ACCOUNT_L3_PRIVATE_KEY, 'ACCOUNT_L3_PRIVATE_KEY not set in .env');
 
 
 console.log('===============================')

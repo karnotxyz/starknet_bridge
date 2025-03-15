@@ -9,7 +9,7 @@ import {
   // extractContractHashes,
   json, byteArray, Contract, num, hash
 } from 'starknet'
-import { parseAbi, WalletClient } from "viem";
+import { parseAbi, parseEther, WalletClient } from "viem";
 import { sepolia } from "viem/chains";
 import { Account as EthAccount } from "viem";
 
@@ -153,8 +153,8 @@ async function declareAndSetERC20L3(acc_l3: Account) {
   }
 }
 
-async function enrollToken(acc_l2: Account) {
-  const gridTokenAddress = getContracts().contracts["ERC20_starknet_bridge"];
+async function enrollToken(acc_l2: Account, token: string = "ERC20_starknet_bridge") {
+  const gridTokenAddress = getContracts().contracts[token];
   const tokenBridge = getContracts().contracts["TokenBridge_starknet_bridge"];
 
   const cls = await acc_l2.getClassAt(tokenBridge);
@@ -224,21 +224,21 @@ async function deposit(acc_l2: Account) {
 }
 
 
-async function depositWithMessageL1(acc_l1: WalletClient) {
-  const l1StrkToken = getContracts().contracts["L1StrkToken"];
+async function depositWithMessageL1(acc_l1: WalletClient, token: string = "MyL1GameToken") {
+  const l1GameToken = getContracts().contracts[token];
   const tokenBridge = getContracts().contracts["L1TokenBridge"];
 
 
   // Approval
   {
 
-    const strkAbi = parseAbi([
+    const tokenAbi = parseAbi([
       'function approve(address spender, uint256 amount) returns (bool)',
     ])
 
     const approveTx = await acc_l1.writeContract({
-      address: l1StrkToken,
-      abi: strkAbi,
+      address: l1GameToken,
+      abi: tokenAbi,
       functionName: 'approve',
       args: [tokenBridge, 10n ** 15n],
       chain: sepolia,
@@ -246,30 +246,69 @@ async function depositWithMessageL1(acc_l1: WalletClient) {
     });
 
     console.log('Approval transaction hash:', approveTx);
+    await sleep(2000);
   }
-  await sleep(2000);
+
+
   // Deposit
   {
     const l2Registry = getContracts().contracts["L2Registry"];
+    const l2GameToken = getContracts().contracts["MyL2GameToken"];
+    const l3Registry = getContracts().contracts["L3Registry"];
+    const player = process.env.ACCOUNT_L2_ADDRESS as string;
 
     const depositWithMessageAbi = parseAbi([
-      'function deposit_with_message(address token, uint256 amount, address appchain_recipient, uint256[] memory message) returns (uint256)',
+      'function depositWithMessage(address token, uint256 amount, uint256 l2Recipient, uint256[] memory message) external payable',
     ]);
 
+    // function depositWithMessage(
+    //   address token,
+    //   uint256 amount,
+    //   uint256 l2Recipient,
+    //   uint256[] calldata message
+    // ) external payable onlyServicingToken(token)
+
+
+    // args: [
+    //   l1GameToken,  // l1 token
+    //   10n ** 15n,   // amount
+    //   l2Registry,   // l2Recipient
+    //   [
+    //     l2GameToken,
+    //     10n ** 15n,
+    //     l3Registry,
+    //     player,
+    //     4n
+    //   ]
+    // ],
 
 
     const depositWithMessasgeTx = await acc_l1.writeContract({
       address: tokenBridge,
       abi: depositWithMessageAbi,
-      functionName: 'deposit_with_message',
-      args: [l1StrkToken, 10n ** 15n, l2Registry, [BigInt(process.env.ACCOUNT_L2_ADDRESS as string), 4n]],
+      functionName: 'depositWithMessage',
+      args: [
+        l1GameToken,  // l1 token
+        10n ** 15n,   // amount
+        l2Registry,   // l2Recipient
+        [
+          // l2GameToken,
+          // 10n ** 15n,
+          // l3Registry,
+          BigInt(player),
+          15n
+        ]
+      ],
+      value: parseEther('0.01'),
       account: acc_l1.account as EthAccount,
-      chain: sepolia
+      chain: sepolia,
     });
 
+    console.log("Deposit transaction hash: ", depositWithMessasgeTx);
 
 
-    // const call = tokenBridgeContract.populate('deposit_with_message', {
+
+    // const call = tokenBridgeContract.populate('d0x7725795d6837a4ab1c6f9229d09540d8f06f1bc3f7c6217f4c76666116b1777eposit_with_message', {
     //   token: gridTokenAddress,
     //   amount: 10n ** 15n,
     //   appchain_recipient: l3Registry,
@@ -375,14 +414,14 @@ async function snToAppchainMessages() {
   console.log("sn_to_appchain_messages: ", call);
 }
 
-async function activateToken(acc: Account) {
+async function activateToken(acc: Account, token: string = "ERC20_starknet_bridge") {
 
   const tokenBridge = getContracts().contracts["TokenBridge_starknet_bridge"];
   const Bridgecls = await acc.getClassAt(tokenBridge);
   const tokenBridgeContract = new Contract(Bridgecls.abi, tokenBridge, acc);
 
   const call = tokenBridgeContract.populate('activate_token', {
-    token: getContracts().contracts["ERC20_starknet_bridge"]
+    token: getContracts().contracts[token]
   });
 
   let result = await acc.execute([call]);
@@ -391,16 +430,16 @@ async function activateToken(acc: Account) {
 
 }
 
-async function getL3Balance(address: string) {
-  const gridTokenAddress = getContracts().contracts["ERC20_starknet_bridge"];
+async function getL3Balance(address: string, token: string = "MyL2GameToken") {
+  const gameTokenAddress = getContracts().contracts[token];
   const appchainBridge = getContracts().contracts["TokenBridge_starkgate_contracts"];
   const providerL3 = getProvider(Layer.L3);
 
   const appchainBridgeCls = await providerL3.getClassAt(appchainBridge);
   const appchainBridgeContract = new Contract(appchainBridgeCls.abi, appchainBridge, providerL3);
 
-  const correspondingToken = await appchainBridgeContract.call('get_l2_token', [gridTokenAddress]);
-  console.log("Corresponding appchain token: ", correspondingToken);
+  const correspondingToken = await appchainBridgeContract.call('get_l2_token', [gameTokenAddress]);
+  // console.log("Corresponding appchain token: ", num.toHex(correspondingToken as string));
 
   if (correspondingToken != 0n) {
     const correspondingTokenAddress = num.toHex(correspondingToken as any);
@@ -540,10 +579,12 @@ async function setup() {
   console.log("Setup completed !!");
 }
 
-async function enrollandActivate(acc_l2: Account) {
-  await deployERC20();
-  await enrollToken(acc_l2);
-  await activateToken(acc_l2);
+async function enrollandActivate(acc_l2: Account, token: string = "ERC20_starknet_bridge", deploy: boolean = false) {
+  if (deploy) {
+    await deployERC20();
+  }
+  await enrollToken(acc_l2, token);
+  await activateToken(acc_l2, token);
 }
 
 
@@ -555,7 +596,7 @@ async function main() {
   // await deployCoreContract(acc_l2);
   //
   // await setup();
-  // await enrollandActivate(acc_l2);
+  // await enrollandActivate(acc_l2, "MyL2GameToken");
   //
 
   // await declareAndUpgradeL2Bridge(acc_l2);
@@ -564,7 +605,7 @@ async function main() {
 
   // await depositWithMessage(acc_l2);
   await depositWithMessageL1(acc_l1);
-  await getGameState(acc_l3);
+  // await getGameState(acc_l3);
 
   // await checkClass(acc_l3);
 
