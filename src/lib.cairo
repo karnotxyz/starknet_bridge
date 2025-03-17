@@ -46,7 +46,7 @@ pub mod mocks {
     #[cfg(test)]
     pub mod withdrawal_limit_mock;
 
-    #[cfg(test)]
+    #[cfg(target: 'test')]
     pub mod hash;
 }
 
