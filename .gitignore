@@ -3,3 +3,4 @@ target
 .snfoundry_cache/
 node_modules/
 .env
+scripts/debug.ts
