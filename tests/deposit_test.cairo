@@ -40,7 +40,7 @@ fn deposit_ok() {
         token: usdc_address,
         amount: 100,
         appchain_recipient: snf::test_address(),
-        nonce: 2,
+        nonce: 1,
     };
 
     spy.assert_emitted(@array![(token_bridge.contract_address, Event::Deposit(expected_deposit))]);
@@ -105,7 +105,7 @@ fn deposit_with_message_ok() {
         amount: 100,
         appchain_recipient: snf::test_address(),
         message: calldata.span(),
-        nonce: 2,
+        nonce: 1,
     };
 
     spy
@@ -143,7 +143,7 @@ fn deposit_with_message_empty_message_ok() {
         amount: 100,
         appchain_recipient: snf::test_address(),
         message: calldata.span(),
-        nonce: 2,
+        nonce: 1,
     };
 
     spy
@@ -208,14 +208,14 @@ fn deposit_cancel_request_ok() {
     usdc.approve(token_bridge.contract_address, 100);
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 
-    token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 2);
+    token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 1);
 
     let expected_deposit_cancel = TokenBridge::DepositCancelRequest {
         sender: snf::test_address(),
         token: usdc_address,
         amount: 100,
         appchain_recipient: snf::test_address(),
-        nonce: 2,
+        nonce: 1,
     };
 
     spy
@@ -267,7 +267,7 @@ fn deposit_with_message_cancel_request_ok() {
 
     token_bridge
         .deposit_with_message_cancel_request(
-            usdc_address, 100, snf::test_address(), calldata.span(), 2,
+            usdc_address, 100, snf::test_address(), calldata.span(), 1,
         );
 
     let expected_deposit_cancel = TokenBridge::DepositWithMessageCancelRequest {
@@ -276,7 +276,7 @@ fn deposit_with_message_cancel_request_ok() {
         amount: 100,
         appchain_recipient: snf::test_address(),
         message: calldata.span(),
-        nonce: 2,
+        nonce: 1,
     };
 
     spy

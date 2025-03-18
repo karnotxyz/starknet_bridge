@@ -77,6 +77,7 @@ pub trait ITokenBridge<TContractState> {
         nonce: felt252,
     );
     fn get_max_total_balance(self: @TContractState, token: ContractAddress) -> u256;
+    fn get_appchain_token_bridge(self: @TContractState) -> ContractAddress;
 }
 
 #[starknet::interface]

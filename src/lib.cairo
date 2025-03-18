@@ -38,7 +38,7 @@ pub mod constants;
 pub mod mocks {
     pub mod erc20;
 
-    #[cfg(test)]
+    #[cfg(target: 'test')]
     pub mod messaging;
     #[cfg(test)]
     pub mod messaging_malicious;

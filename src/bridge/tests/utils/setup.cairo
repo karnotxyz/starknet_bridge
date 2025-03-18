@@ -14,11 +14,16 @@ use starknet_bridge::bridge::tests::utils::message_payloads;
 pub fn deploy_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
     let erc20_class_hash = snf::declare("ERC20").unwrap().contract_class();
     let mut constructor_args = ArrayTrait::new();
+    let fixed_supply: u256 = 1000000000;
+
     name.serialize(ref constructor_args);
     symbol.serialize(ref constructor_args);
-    let fixed_supply: u256 = 1000000000;
+    18.serialize(ref constructor_args); // decimals
     fixed_supply.serialize(ref constructor_args);
     OWNER().serialize(ref constructor_args);
+    OWNER().serialize(ref constructor_args);
+    OWNER().serialize(ref constructor_args);
+    10.serialize(ref constructor_args);
 
     let (usdc, _) = erc20_class_hash.deploy(@constructor_args).unwrap();
 

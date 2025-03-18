@@ -4,7 +4,7 @@ use core::traits::TryInto;
 use snforge_std as snf;
 use snforge_std::{EventSpy, EventSpyAssertionsTrait};
 use starknet::ContractAddress;
-use starknet_bridge::mocks::{messaging::{IMockMessagingDispatcher}};
+use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher};
 use starknet_bridge::bridge::{
     ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge, TokenBridge::Event,
 };
@@ -38,7 +38,7 @@ fn deposit_reclaim_ok() {
         starknet::get_block_timestamp() + DELAY_TIME.try_into().unwrap() + 10,
     );
     let initial_user_balance = usdc.balance_of(snf::test_address());
-    token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 2);
+    token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 1);
     assert(
         usdc.balance_of(snf::test_address()) == initial_user_balance + 100, 'deposit not recieved',
     );
@@ -48,7 +48,7 @@ fn deposit_reclaim_ok() {
         token: usdc_address,
         amount: 100,
         appchain_recipient: snf::test_address(),
-        nonce: 2,
+        nonce: 1,
     };
 
     let expected_deposit_reclaim = TokenBridge::DepositReclaimed {
@@ -56,7 +56,7 @@ fn deposit_reclaim_ok() {
         token: usdc_address,
         amount: 100,
         appchain_recipient: snf::test_address(),
-        nonce: 2,
+        nonce: 1,
     };
 
     spy
@@ -81,9 +81,9 @@ fn deposit_reclaim_delay_not_reached() {
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 
     snf::start_cheat_block_timestamp_global(5);
-    token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 2);
+    token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 1);
 
-    token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 2);
+    token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 1);
 }
 
 
@@ -100,7 +100,7 @@ fn deposit_reclaim_not_cancelled() {
         starknet::get_block_timestamp() + DELAY_TIME.try_into().unwrap() + 10,
     );
 
-    token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 2);
+    token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 1);
 }
 
 #[test]
@@ -113,14 +113,14 @@ fn deposit_reclaim_different_user() {
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 
     snf::start_cheat_block_timestamp_global(5);
-    token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 2);
+    token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 1);
 
     snf::start_cheat_block_timestamp_global(
         starknet::get_block_timestamp() + DELAY_TIME.try_into().unwrap() + 10,
     );
 
     snf::start_cheat_caller_address_global(contract_address_const::<'user2'>());
-    token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 2);
+    token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 1);
 }
 
 
@@ -139,7 +139,7 @@ fn deposit_with_message_reclaim_ok() {
     snf::start_cheat_block_timestamp_global(5);
     token_bridge
         .deposit_with_message_cancel_request(
-            usdc_address, 100, snf::test_address(), calldata.span(), 2,
+            usdc_address, 100, snf::test_address(), calldata.span(), 1,
         );
 
     snf::start_cheat_block_timestamp_global(
@@ -148,7 +148,7 @@ fn deposit_with_message_reclaim_ok() {
 
     let initial_user_balance = usdc.balance_of(snf::test_address());
     token_bridge
-        .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), calldata.span(), 2);
+        .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), calldata.span(), 1);
     assert(
         usdc.balance_of(snf::test_address()) == initial_user_balance + 100, 'deposit not recieved',
     );
@@ -159,7 +159,7 @@ fn deposit_with_message_reclaim_ok() {
         amount: 100,
         appchain_recipient: snf::test_address(),
         message: calldata.span(),
-        nonce: 2,
+        nonce: 1,
     };
 
     let expected_deposit_reclaim = TokenBridge::DepositWithMessageReclaimed {
@@ -168,7 +168,7 @@ fn deposit_with_message_reclaim_ok() {
         amount: 100,
         appchain_recipient: snf::test_address(),
         message: calldata.span(),
-        nonce: 2,
+        nonce: 1,
     };
 
     spy
@@ -202,11 +202,11 @@ fn deposit_with_message_reclaim_delay_not_reached() {
     snf::start_cheat_block_timestamp_global(5);
     token_bridge
         .deposit_with_message_cancel_request(
-            usdc_address, 100, snf::test_address(), calldata.span(), 2,
+            usdc_address, 100, snf::test_address(), calldata.span(), 1,
         );
 
     token_bridge
-        .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), calldata.span(), 2);
+        .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), calldata.span(), 1);
 }
 
 
@@ -228,7 +228,7 @@ fn deposit_wtih_message_reclaim_not_cancelled() {
     );
 
     token_bridge
-        .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), calldata.span(), 2);
+        .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), calldata.span(), 1);
 }
 
 #[test]
@@ -247,7 +247,7 @@ fn deposit_reclaim_with_message_different_user() {
     snf::start_cheat_block_timestamp_global(5);
     token_bridge
         .deposit_with_message_cancel_request(
-            usdc_address, 100, snf::test_address(), calldata.span(), 2,
+            usdc_address, 100, snf::test_address(), calldata.span(), 1,
         );
 
     snf::start_cheat_block_timestamp_global(
@@ -256,5 +256,5 @@ fn deposit_reclaim_with_message_different_user() {
 
     snf::start_cheat_caller_address_global(contract_address_const::<'user2'>());
     token_bridge
-        .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), calldata.span(), 2);
+        .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), calldata.span(), 1);
 }

@@ -8,7 +8,6 @@ pub mod TokenBridge {
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
     use core::option::OptionTrait;
     use core::traits::TryInto;
-    use core::panic_with_felt252;
     use core::starknet::event::EventEmitter;
     use starknet::storage::Map;
     use core::array::ArrayTrait;
@@ -93,10 +92,9 @@ pub mod TokenBridge {
         pub const APPCHAIN_BRIDGE_NOT_SET: felt252 = 'L3 bridge not set';
         pub const ZERO_DEPOSIT: felt252 = 'Zero amount';
         pub const ALREADY_ENROLLED: felt252 = 'Incorrect token status';
-        pub const DEPLOYMENT_MESSAGE_DOES_NOT_EXIST: felt252 = 'Deployment message inexistent';
-        pub const DEPLOYMENT_MESSAGE_CANCELLED: felt252 = 'Deployment message cancelled';
-        pub const DEPLOYMENT_MESSAGE_SEALED: felt252 = 'Deployment message sealed';
         pub const NOT_ACTIVE: felt252 = 'Token not active';
+        pub const DEPLOY_MESSAGE_NOT_PENDING: felt252 = 'Deploy message not Pending';
+        pub const DEPOSIT_MESSAGE_NOT_PENDING: felt252 = 'Deposit message not Pending';
         pub const NOT_DEACTIVATED: felt252 = 'Token not deactivated';
         pub const NOT_BLOCKED: felt252 = 'Token not blocked';
         pub const NOT_UNKNOWN: felt252 = 'Only unknown can be blocked';
@@ -306,7 +304,7 @@ pub mod TokenBridge {
         fn send_deploy_message(self: @ContractState, token: ContractAddress) -> felt252 {
             assert(self.appchain_bridge().is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
 
-            let (hash, _nonce) = self
+            let (hash, nonce) = self
                 .messaging_contract
                 .read()
                 .send_message_to_appchain(
@@ -314,6 +312,14 @@ pub mod TokenBridge {
                     constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
                     deployment_message_payload(token),
                 );
+
+            assert(
+                self
+                    .messaging_contract
+                    .read()
+                    .sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(nonce),
+                Errors::DEPLOY_MESSAGE_NOT_PENDING,
+            );
             return hash;
         }
 
@@ -329,7 +335,7 @@ pub mod TokenBridge {
             assert(amount > 0, Errors::ZERO_DEPOSIT);
 
             let is_with_message = selector == constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR;
-            let (_, nonce) = self
+            let (hash, nonce) = self
                 .messaging_contract
                 .read()
                 .send_message_to_appchain(
@@ -339,6 +345,14 @@ pub mod TokenBridge {
                         token, amount, appchain_recipient, is_with_message, message,
                     ),
                 );
+
+            assert(
+                self
+                    .messaging_contract
+                    .read()
+                    .sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(nonce),
+                Errors::DEPOSIT_MESSAGE_NOT_PENDING,
+            );
             nonce
         }
 
@@ -448,7 +462,7 @@ pub mod TokenBridge {
     impl TokenBrdigeAdminImpl of ITokenBridgeAdmin<ContractState> {
         fn set_appchain_token_bridge(ref self: ContractState, appchain_bridge: ContractAddress) {
             self.ownable.assert_only_owner();
-            self.appchain_bridge.read();
+            self.appchain_bridge.write(appchain_bridge);
 
             self.emit(SetAppchainBridge { appchain_bridge });
         }
@@ -587,25 +601,6 @@ pub mod TokenBridge {
 
             // Send message to appchain
             let deployment_message_hash = self.send_deploy_message(token);
-
-            let message_status = self
-                .messaging_contract
-                .read()
-                .sn_to_appchain_messages(deployment_message_hash);
-
-            match message_status {
-                MessageToAppchainStatus::Pending => {},
-                MessageToAppchainStatus::Cancelled => {
-                    panic_with_felt252(Errors::DEPLOYMENT_MESSAGE_CANCELLED)
-                },
-                MessageToAppchainStatus::Sealed => {
-                    panic_with_felt252(Errors::DEPLOYMENT_MESSAGE_SEALED)
-                },
-                MessageToAppchainStatus::NotSent => {
-                    panic_with_felt252(Errors::DEPLOYMENT_MESSAGE_DOES_NOT_EXIST)
-                },
-            };
-
             // Reading existing settings as withdrawal_limit_applied and max_total_balance
             // can be set before the token is enrolled.
             let old_settings = self.token_settings.read(token);
@@ -894,6 +889,10 @@ pub mod TokenBridge {
                 return Bounded::MAX;
             }
             return max_total_balance;
+        }
+
+        fn get_appchain_token_bridge(self: @ContractState) -> ContractAddress {
+            self.appchain_bridge.read()
         }
     }
 

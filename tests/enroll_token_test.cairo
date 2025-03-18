@@ -61,7 +61,7 @@ fn enroll_token_already_enrolled() {
 }
 
 #[test]
-#[should_panic(expected: ('Deployment message inexistent',))]
+#[should_panic(expected: ('Deploy message not Pending',))]
 fn enroll_token_nonce_not_updated() {
     // Deploy messaging mock with 5 days cancellation delay
     let messaging_mock_class_hash = snf::declare("messaging_malicious").unwrap().contract_class();

@@ -13,9 +13,9 @@ async function deployCoreContract(acc: Account) {
   await sleep(2000);
   const contract = await deployContract("appchain_starknet_bridge", class_hash, [
     acc.address, // owner
-    1, // state_root,
-    1, // block_number,
-    1, // block_hash
+    0, // state_root,
+    0, // block_number,
+    0, // block_hash
   ], Layer.L2);
 
   await sleep(2000);
@@ -23,7 +23,7 @@ async function deployCoreContract(acc: Account) {
 }
 
 async function deployAppchainBridge() {
-  // await declareContract("TokenBridge", "starkgate_contracts", Layer.L3, "./starkgate-contracts/cairo_contracts");
+  await declareContract("TokenBridge", "starkgate_contracts", Layer.L3, "./starkgate-contracts/cairo_contracts");
   console.log("TokenBridge declared !!");
   const class_hash = await getContracts().class_hashes["TokenBridge_starkgate_contracts"];
   await sleep(2000);
@@ -102,12 +102,12 @@ async function setL2Bridge(acc_l3: Account) {
 }
 
 async function deployERC20() {
-  // await declareContract("ERC20", "starknet_bridge", Layer.L2);
+  await declareContract("ERC20", "starknet_bridge", Layer.L2);
   await sleep(5000);
   const saved_class_hash = await getContracts().class_hashes["ERC20_starknet_bridge"];
   const contract = await deployContract("ERC20_starknet_bridge", saved_class_hash, [
-    byteArray.byteArrayFromString("Gridy Token"), // name
-    byteArray.byteArrayFromString("GRD"),  // symbol
+    byteArray.byteArrayFromString("My token name"), // name
+    byteArray.byteArrayFromString("MTK"),  // symbol
     18,  // decimals
     10000n * 10n ** 18n, // initial_supply
     0,
@@ -161,17 +161,17 @@ async function enrollToken(acc_l2: Account, token: string = "ERC20_starknet_brid
 
 
 async function deposit(acc_l2: Account) {
-  const gridTokenAddress = getContracts().contracts["ERC20_starknet_bridge"];
+  const tokenAddress = getContracts().contracts["ERC20_starknet_bridge"];
   const tokenBridge = getContracts().contracts["TokenBridge_starknet_bridge"];
 
 
 
   // Approval
   {
-    const gridCls = await acc_l2.getClassAt(gridTokenAddress);
-    const gridToken = new Contract(gridCls.abi, gridTokenAddress, acc_l2);
+    const tokenCls = await acc_l2.getClassAt(tokenAddress);
+    const token = new Contract(tokenCls.abi, tokenAddress, acc_l2);
 
-    const call = gridToken.populate('approve', {
+    const call = token.populate('approve', {
       spender: tokenBridge,
       amount: 10n * 10n ** 18n
     });
@@ -188,7 +188,7 @@ async function deposit(acc_l2: Account) {
     const tokenBridgeContract = new Contract(Bridgecls.abi, tokenBridge, acc_l2);
 
     const call = tokenBridgeContract.populate('deposit', {
-      token: gridTokenAddress,
+      token: tokenAddress,
       amount: 10n * 10n ** 18n,
       appchain_recipient: process.env.ACCOUNT_L3_ADDRESS as string,
       message: 0
@@ -199,35 +199,16 @@ async function deposit(acc_l2: Account) {
   }
 }
 
-
-
-
-async function activateToken(acc: Account, token: string = "ERC20_starknet_bridge") {
-
-  const tokenBridge = getContracts().contracts["TokenBridge_starknet_bridge"];
-  const Bridgecls = await acc.getClassAt(tokenBridge);
-  const tokenBridgeContract = new Contract(Bridgecls.abi, tokenBridge, acc);
-
-  const call = tokenBridgeContract.populate('activate_token', {
-    token: getContracts().contracts[token]
-  });
-
-  let result = await acc.execute([call]);
-  await sleep(4000);
-  console.log("Token activated successfully !!", result);
-
-}
-
 async function getL3Balance(address: string, token: string = "MyL2GameToken") {
-  const gameTokenAddress = getContracts().contracts[token];
+  const enrolledTokenAddress = getContracts().contracts[token];
   const appchainBridge = getContracts().contracts["TokenBridge_starkgate_contracts"];
   const providerL3 = getProvider(Layer.L3);
 
   const appchainBridgeCls = await providerL3.getClassAt(appchainBridge);
   const appchainBridgeContract = new Contract(appchainBridgeCls.abi, appchainBridge, providerL3);
 
-  const correspondingToken = await appchainBridgeContract.call('get_l2_token', [gameTokenAddress]);
-  // console.log("Corresponding appchain token: ", num.toHex(correspondingToken as string));
+  const correspondingToken = await appchainBridgeContract.call('get_l2_token', [enrolledTokenAddress]);
+  console.log("Corresponding appchain token: ", num.toHex(correspondingToken as string));
 
   if (correspondingToken != 0n) {
     const correspondingTokenAddress = num.toHex(correspondingToken as any);
@@ -237,29 +218,6 @@ async function getL3Balance(address: string, token: string = "MyL2GameToken") {
     const balance = await appchainToken.call('balanceOf', [address]);
     console.log("Balance: ", balance);
   }
-}
-
-async function requestWithdrawalFromAppchain(acc_l3: Account) {
-  const tokenBridge = getContracts().contracts["TokenBridge_starkgate_contracts"];
-  const Bridgecls = await acc_l3.getClassAt(tokenBridge);
-  const tokenBridgeContract = new Contract(Bridgecls.abi, tokenBridge, acc_l3);
-
-  const call = tokenBridgeContract.populate('initiate_token_withdraw', {
-    l1_token: getContracts().contracts["ERC20_starknet_bridge"],  // l1_token
-    l1_recipient: process.env.ACCOUNT_L2_ADDRESS as string, // l1_recipient
-    amount: 10n * 10n ** 18n,
-  });
-
-  let result = await acc_l3.execute([call], { maxFee: 0 });
-  await sleep(4000);
-  console.log("Withdrawal request success !!", result);
-}
-
-async function withdrawFromStarknet(acc_l2: Account) {
-  const coreContract = getContracts().contracts["appchain_starknet_bridge"];
-  const cls = await acc_l2.getClassAt(coreContract);
-  const coreContractInstance = new Contract(cls.abi, coreContract, acc_l2);
-  const call = coreContractInstance.populate('process_message_to_starknet', {});
 }
 
 async function setup() {
@@ -274,32 +232,25 @@ async function setup() {
   console.log("Setup completed !!");
 }
 
-async function enrollandActivate(acc_l2: Account, token: string = "ERC20_starknet_bridge", deploy: boolean = false) {
+async function enroll(acc_l2: Account, token: string = "ERC20_starknet_bridge", deploy: boolean = false) {
   if (deploy) {
     await deployERC20();
   }
   await enrollToken(acc_l2, token);
-  await activateToken(acc_l2, token);
 }
 
 
 async function main() {
   const acc_l2 = getAccount(Layer.L2);
   const acc_l3 = getAccount(Layer.L3);
-  const acc_l1 = getEthereumClient();
-
+  // Deploys piltover appchain core contract
   await deployCoreContract(acc_l2);
 
   await setup();
-  await enrollandActivate(acc_l2, "MyL2GameToken");
-
+  await enroll(acc_l2, "MyL2GameToken");
 
   await deposit(acc_l2);
   await getL3Balance(acc_l3.address);
-
-  await depositWithMessageL2toL3(acc_l2);
-  await depositWithMessageL1toL3(acc_l1);
-  await getGameState(acc_l3);
 }
 
 main();

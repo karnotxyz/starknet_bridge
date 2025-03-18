@@ -25,7 +25,7 @@ fn deploy_message_payload_ok() {
     let calldata = TokenBridge::deployment_message_payload(usdc_address);
 
     let expected_calldata: Span<felt252> = array![
-        1395567803262486866641834792347783460559299057717595230314827200011451862040, // usdc_address
+        769299513418940568494320027142514425948403343722601616564599763124744795159, // usdc_address
         0,
         1431520323,
         4, // "USDC"
@@ -80,7 +80,7 @@ fn send_deploy_message_ok() {
         0,
     );
     assert(
-        messaging.sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(1),
+        messaging.sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(0),
         'Message not recieved',
     );
 }
@@ -130,7 +130,7 @@ fn send_deposit_message_ok() {
     );
 
     assert(
-        messaging.sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(1),
+        messaging.sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(0),
         'Message not recieved',
     );
 }

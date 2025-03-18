@@ -1,9 +1,11 @@
 use snforge_std as snf;
+use starknet::contract_address_const;
 use starknet::storage::{StoragePointerWriteAccess, StorageMapReadAccess, StorageMapWriteAccess};
 use starknet_bridge::bridge::{ITokenBridge, ITokenBridgeAdmin, types::{TokenStatus, TokenSettings}};
 use starknet_bridge::bridge::tests::utils::setup::mock_state_testing;
 
-use starknet_bridge::bridge::tests::constants::{OWNER, USDC_MOCK_ADDRESS};
+use starknet_bridge::bridge::TokenBridge;
+use starknet_bridge::bridge::tests::constants::{OWNER, USDC_MOCK_ADDRESS, L3_BRIDGE_ADDRESS};
 
 #[test]
 fn deactivate_token_ok() {
@@ -11,6 +13,9 @@ fn deactivate_token_ok() {
     let usdc_address = USDC_MOCK_ADDRESS();
     snf::start_cheat_caller_address_global(OWNER());
 
+    TokenBridge::constructor(
+        ref mock, L3_BRIDGE_ADDRESS(), contract_address_const::<'messaging_mock'>(), OWNER(),
+    );
     // Setting the token active
     let old_settings = mock.token_settings.read(usdc_address);
     mock
