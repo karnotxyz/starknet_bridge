@@ -450,9 +450,6 @@ pub mod TokenBridge {
             .unwrap_syscall();
         calldata = deserialize_and_append(symbol, calldata);
 
-        // dispatcher.name().serialize(ref calldata);
-        // dispatcher.symbol().serialize(ref calldata);
-
         dispatcher.decimals().serialize(ref calldata);
         calldata.span()
     }
