@@ -69,5 +69,11 @@ pub mod ERC20 {
             assert(amount < 100 * DECIMALS, 'Max 100 tokens only.');
             self.erc20.mint(recipient, amount);
         }
+
+
+        #[external(v0)]
+        fn permissioned_burn(ref self: ContractState, account: ContractAddress, amount: u256) {
+            self.erc20.burn(account, amount);
+        }
     }
 }

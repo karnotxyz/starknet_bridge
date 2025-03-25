@@ -5,6 +5,7 @@ import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContra
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
+import { Logger } from "./logger.ts";
 import { sepolia } from 'viem/chains'
 
 
@@ -18,12 +19,12 @@ assert(process.env.ACCOUNT_L2_PRIVATE_KEY, 'ACCOUNT_L2_PRIVATE_KEY not set in .e
 assert(process.env.ACCOUNT_L3_PRIVATE_KEY, 'ACCOUNT_L3_PRIVATE_KEY not set in .env');
 
 
-console.log('===============================')
-console.log(`L3 RPC: ${process.env.RPC_L3_URL}`);
-console.log(`L2 RPC: ${process.env.RPC_L2_URL}`);
-console.log(`L2 Account Address: ${process.env.ACCOUNT_L2_ADDRESS}`);
-console.log(`L3 Account Address: ${process.env.ACCOUNT_L3_ADDRESS}`);
-console.log('===============================')
+// console.log('===============================')
+// console.log(`L3 RPC: ${process.env.RPC_L3_URL}`);
+// console.log(`L2 RPC: ${process.env.RPC_L2_URL}`);
+// console.log(`L2 Account Address: ${process.env.ACCOUNT_L2_ADDRESS}`);
+// console.log(`L3 Account Address: ${process.env.ACCOUNT_L3_ADDRESS}`);
+// console.log('===============================')
 
 export enum Layer {
   L2,
@@ -113,8 +114,10 @@ export async function declareContract(contract_name: string, package_name: strin
 
     let tx: { transaction_hash: string; class_hash: string; };
     if (layer === Layer.L3) {
+      Logger.info('Declaring on L3')
       tx = await acc.declareIfNot(payload, { maxFee: 0 });
     } else {
+      Logger.info('Declaring on L2')
       tx = await acc.declareIfNot(payload);
     }
     await provider.waitForTransaction(tx.transaction_hash, {
