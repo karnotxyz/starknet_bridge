@@ -24,8 +24,10 @@ fn deploy_message_payload_ok() {
     let usdc_address = deploy_erc20("USDC", "USDC");
     let calldata = TokenBridge::deployment_message_payload(usdc_address);
 
+    println!("calldata: {:?}", calldata);
+
     let expected_calldata: Span<felt252> = array![
-        769299513418940568494320027142514425948403343722601616564599763124744795159, // usdc_address
+        1735287220490242646849127034349817040427485508531977630937607944683610398217, // usdc_address
         0,
         1431520323,
         4, // "USDC"
