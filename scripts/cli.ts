@@ -166,12 +166,8 @@ program
 
     Logger.step(1, "Starting full flow setup...");
 
-    // Deploy core contract
-    Logger.step(2, "Deploying core contract...");
-    await deployCoreContract(acc_l2);
-
     // Setup
-    Logger.step(3, "Setting up bridges...");
+    Logger.step(2, "Setting up bridges...");
     await deployAppchainBridge();
     await deployL2Brdige();
     await configureAppchainBridge(acc_l3);
@@ -179,23 +175,14 @@ program
     await declareAndSetERC20L3(acc_l3);
 
     // Deploy and enroll token
-    Logger.step(4, "Deploying and enrolling token...");
+    Logger.step(3, "Deploying and enrolling token...");
     await deployERC20();
-    await enrollToken(acc_l2, "MyL2GameToken");
+    await enrollToken(acc_l2, "L2TestToken");
 
     // Deposit and check balance
-    Logger.step(5, "Processing deposits and checking balances...");
+    Logger.step(4, "Processing deposits and checking balances...");
     await deposit(acc_l2);
     await getL3Balance(acc_l3.address);
-
-    // L1 to L3 deposit
-    // Logger.step(6, "Processing L1 to L3 deposit...");
-    // const acc_l1 = getEthereumClient();
-    // await depositWithMessageL1toL3(acc_l1, "MyL1GameToken");
-
-    // Withdrawal
-    // Logger.step(7, "Initiating withdrawal...");
-    // await initiateTokenL2toL3Withdrawal(acc_l3, 10n * 10n ** 18n, 'L2TestToken');
 
     Logger.success("Full flow completed successfully!");
   });

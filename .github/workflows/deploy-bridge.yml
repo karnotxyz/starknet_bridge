@@ -61,8 +61,8 @@ jobs:
       - name: Install tsx
         run: pnpm i -g tsx
 
-      - name: Run Bridge Deployment Script
-        run: tsx ./scripts/cli.ts deploy-core
+      - name: Run Core Contract Deployment Script
+        run: tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-core
 
       - name: Update Core Contract Address
         run: yq -i ".eth_core_contract_address = \"$(jq -r '.contracts.appchain_starknet_bridge' ./contracts.json)\"" ./madara-cli/deps/madara/configs/presets/devnet.yaml
@@ -78,3 +78,6 @@ jobs:
           --l1-endpoint http://localhost:9944 \
           --strk-gas-price 0 --strk-blob-gas-price 0 --gas-price 0 \
           --blob-gas-price 0 2>&1 | tee -a ./outputs/madara_output_8.log
+      
+      - name: Run Bridge Deployment Script
+        run: tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow 
