@@ -7,9 +7,8 @@ dotenv.config({
   override: true 
 });
 
-
 import { Command } from 'commander';
-import { getAccount, getEthereumClient, Layer } from './utils.ts';
+import { checkEnvVars, getAccount, getEthereumClient, Layer } from './utils.ts';
 import { Logger } from './logger.ts';
 import {
   deployCoreContract,
@@ -27,6 +26,8 @@ import {
 } from './bridgeDeploy.ts';
 
 const program = new Command();
+
+await checkEnvVars();
 
 program
   .name('bridge-cli')

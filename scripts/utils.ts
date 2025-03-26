@@ -6,21 +6,21 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { Logger } from "./logger.ts";
 import { sepolia } from 'viem/chains'
 
+export async function checkEnvVars() {
+  console.log('===============================')
+  console.log(`L3 RPC: ${process.env.RPC_L3_URL}`);
+  console.log(`L2 RPC: ${process.env.RPC_L2_URL}`);
+  console.log(`L2 Account Address: ${process.env.ACCOUNT_L2_ADDRESS}`);
+  console.log(`L3 Account Address: ${process.env.ACCOUNT_L3_ADDRESS}`);
+  console.log('===============================')
+  assert(process.env.RPC_L2_URL, 'RPC_L2_URL not set in .env');
+  assert(process.env.RPC_L3_URL, 'RPC_L3_UR not set in .env');;
+  assert(process.env.ACCOUNT_L2_ADDRESS, 'ACCOUNT_L2_ADDRESS not set in .env');
+  assert(process.env.ACCOUNT_L3_ADDRESS, 'ACCOUNT_L3_ADDRESS not set in .env');
+  assert(process.env.ACCOUNT_L2_PRIVATE_KEY, 'ACCOUNT_L2_PRIVATE_KEY not set in .env');
+  assert(process.env.ACCOUNT_L3_PRIVATE_KEY, 'ACCOUNT_L3_PRIVATE_KEY not set in .env');
+}
 
-assert(process.env.RPC_L2_URL, 'RPC_L2_URL not set in .env');
-assert(process.env.RPC_L3_URL, 'RPC_L3_UR not set in .env');;
-assert(process.env.ACCOUNT_L2_ADDRESS, 'ACCOUNT_L2_ADDRESS not set in .env');
-assert(process.env.ACCOUNT_L3_ADDRESS, 'ACCOUNT_L3_ADDRESS not set in .env');
-assert(process.env.ACCOUNT_L1_PRIVATE_KEY, 'ACCOUNT_L1_PRIVATE_KEY not set in .env');
-assert(process.env.ACCOUNT_L2_PRIVATE_KEY, 'ACCOUNT_L2_PRIVATE_KEY not set in .env');
-assert(process.env.ACCOUNT_L3_PRIVATE_KEY, 'ACCOUNT_L3_PRIVATE_KEY not set in .env');
-
-// console.log('===============================')
-// console.log(`L3 RPC: ${process.env.RPC_L3_URL}`);
-// console.log(`L2 RPC: ${process.env.RPC_L2_URL}`);
-// console.log(`L2 Account Address: ${process.env.ACCOUNT_L2_ADDRESS}`);
-// console.log(`L3 Account Address: ${process.env.ACCOUNT_L3_ADDRESS}`);
-// console.log('===============================')
 
 export enum Layer {
   L2,
