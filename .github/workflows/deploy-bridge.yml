@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with: 
+          submodules: 'true'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
@@ -48,9 +50,15 @@ jobs:
       - name: Setup asdf
         uses: asdf-vm/actions/install@v3
 
+
+      - name: Debug contracts
+        run: cd starkgate-contracts/scripts && ls -lah
+
       - name: Build Starkgate Contracts
-        run: cd starkgate-contracts && ls -lah \
-      - run: ./scripts/setup.sh && \
+        run: |
+          cd starkgate-contracts 
+          pwd 
+          ./scripts/setup.sh && \
           ./scripts/build-cairo.sh
 
       - name: Build bridge contracts
