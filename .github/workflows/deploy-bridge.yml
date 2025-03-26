@@ -49,7 +49,7 @@ jobs:
         uses: asdf-vm/actions/install@v3
 
       - name: Build Starkgate Contracts
-        run: cd starkgate-contract && ls -lah \
+        run: cd starkgate-contracts && ls -lah \
       - run: ./scripts/setup.sh && \
           ./scripts/build-cairo.sh
 
