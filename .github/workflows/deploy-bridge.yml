@@ -60,6 +60,12 @@ jobs:
 
       - name: Install tsx
         run: pnpm i -g tsx
+      
+      - name: Debug Environment
+        run: |
+          ls -la
+          echo "CI=${CI}"
+          cat .env.ci.test || echo "File not found!"
 
       - name: Run Bridge Deployment Script
         run: tsx ./scripts/cli.ts

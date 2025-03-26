@@ -20,7 +20,7 @@ import {
 
 // Load environment variables
 dotenv.config({
-  path: process.env.CI ? '.env.ci.test' : '.env',
+  path: (process.env.CI || process.env.GITHUB_ACTIONS) ? '.env.ci.test' : '.env',
   debug: true
 });
 
