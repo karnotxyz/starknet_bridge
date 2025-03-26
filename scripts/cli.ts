@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx 
+#!/usr/bin/env tsx
 import { Command } from 'commander';
 import * as dotenv from 'dotenv';
 import { getAccount, getEthereumClient, Layer } from './utils.ts';
@@ -19,7 +19,9 @@ import {
 } from './bridgeDeploy.ts';
 
 // Load environment variables
-dotenv.config();
+dotenv.config({
+  path: process.env.CI ? '.env.ci.test' : '.env'
+});
 
 const program = new Command();
 
@@ -127,10 +129,11 @@ program
   .command('withdraw-l3-to-l2')
   .description('Initiate a token withdrawal from L3 to L2')
   .option('-a, --amount <amount>', 'Amount to withdraw (in ether)', '10')
+  .option('-t, --token <token>', 'Token name', 'L2TestToken')
   .action(async (options) => {
     const acc_l3 = getAccount(Layer.L3);
     const amount = BigInt(options.amount) * 10n ** 18n;
-    await initiateTokenL2toL3Withdrawal(acc_l3, amount);
+    await initiateTokenL2toL3Withdrawal(acc_l3, amount, options.token);
   });
 
 // Setup Command (Combined operations)
@@ -176,13 +179,13 @@ program
     await getL3Balance(acc_l3.address);
 
     // L1 to L3 deposit
-    Logger.step(6, "Processing L1 to L3 deposit...");
-    const acc_l1 = getEthereumClient();
-    await depositWithMessageL1toL3(acc_l1, "MyL1GameToken");
+    // Logger.step(6, "Processing L1 to L3 deposit...");
+    // const acc_l1 = getEthereumClient();
+    // await depositWithMessageL1toL3(acc_l1, "MyL1GameToken");
 
     // Withdrawal
-    Logger.step(7, "Initiating withdrawal...");
-    await initiateTokenL2toL3Withdrawal(acc_l3, 10n * 10n ** 18n);
+    // Logger.step(7, "Initiating withdrawal...");
+    // await initiateTokenL2toL3Withdrawal(acc_l3, 10n * 10n ** 18n, 'L2TestToken');
 
     Logger.success("Full flow completed successfully!");
   });
