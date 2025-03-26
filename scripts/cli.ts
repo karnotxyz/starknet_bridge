@@ -20,8 +20,11 @@ import {
 
 // Load environment variables
 dotenv.config({
-  path: process.env.CI ? '.env.ci.test' : '.env'
+  path: process.env.CI ? '.env.ci.test' : '.env',
+  debug: true
 });
+
+console.log(process.env.CI);
 
 const program = new Command();
 
