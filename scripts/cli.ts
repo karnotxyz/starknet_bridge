@@ -1,6 +1,14 @@
 #!/usr/bin/env tsx
-import { Command } from 'commander';
 import * as dotenv from 'dotenv';
+// Load environment variables
+dotenv.config({
+  path: (process.env.CI || process.env.GITHUB_ACTIONS) ? '.env.ci.test' : '.env',
+  debug: true,
+  override: true 
+});
+
+
+import { Command } from 'commander';
 import { getAccount, getEthereumClient, Layer } from './utils.ts';
 import { Logger } from './logger.ts';
 import {
@@ -17,14 +25,6 @@ import {
   depositWithMessageL1toL3,
   initiateTokenL2toL3Withdrawal
 } from './bridgeDeploy.ts';
-
-// Load environment variables
-dotenv.config({
-  path: (process.env.CI || process.env.GITHUB_ACTIONS) ? '.env.ci.test' : '.env',
-  debug: true
-});
-
-console.log(process.env.CI);
 
 const program = new Command();
 
