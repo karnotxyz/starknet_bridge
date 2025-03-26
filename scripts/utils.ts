@@ -35,7 +35,7 @@ export function setDumpPath(path: string) {
 
 // TODO: Add layer as a param
 export function getContracts() {
-  const PATH = './contracts.json'
+  const PATH = dumpPath;
   if (existsSync(PATH)) {
     return JSON.parse(readFileSync(PATH, { encoding: 'utf-8' }))
   }
@@ -45,7 +45,7 @@ export function getContracts() {
 // TODO: Incorportate the layer also
 // TODO: Add layer as a param
 function saveContracts(contracts: any) {
-  const PATH = './contracts.json'
+  const PATH = dumpPath;
   writeFileSync(PATH, JSON.stringify(contracts));
 }
 

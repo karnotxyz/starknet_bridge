@@ -50,14 +50,9 @@ jobs:
       - name: Setup asdf
         uses: asdf-vm/actions/install@v3
 
-
-      - name: Debug contracts
-        run: cd starkgate-contracts/scripts && ls -lah
-
       - name: Build Starkgate Contracts
         run: |
           cd starkgate-contracts 
-          pwd 
           ./scripts/setup.sh && \
           ./scripts/build-cairo.sh
 
