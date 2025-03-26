@@ -58,6 +58,9 @@ jobs:
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_v1.log
 
 
+      - name: Install tsx
+        run: pnpm i -g tsx
+
       - name: Run Bridge Deployment Script
         run: tsx ./scripts/cli.ts
 
