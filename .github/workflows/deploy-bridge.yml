@@ -15,23 +15,26 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v2
 
-      - name: Build and Run Madara Docker Container
-        run: |
-          git clone https://github.com/madara-alliance/madara-cli.git
-          cd madara-cli/deps/madara
-          docker build -t madara-node -f Dockerfile .
+      # - name: Build and Run Madara Docker Container
+      #   run: |
+      #     git clone https://github.com/madara-alliance/madara-cli.git
+      #     cd madara-cli/deps/madara
+      #     docker build -t madara-node -f Dockerfile .
 
       - name: Install Node.js and Dependencies
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Install Dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Run Bridge Deployment Script
         run: npx ts-node ./scripts/bridgeDeploy.ts
