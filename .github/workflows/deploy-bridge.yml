@@ -48,13 +48,13 @@ jobs:
       - name: Setup asdf
         uses: asdf-vm/actions/install@v3
 
+      - name: Build Starkgate Contracts
+        run: cd starkgate-contract && ls -lah \
+      - run: ./scripts/setup.sh && \
+          ./scripts/build-cairo.sh
+
       - name: Build bridge contracts
         run: scarb build
-
-      - name: Build Starkgate Contracts
-        run: cd starkgate-contracts/ && \
-          ./scripts/setup.sh && \
-          ./scripts/build-cairo.sh
 
       - name: Run l2
         run: |
