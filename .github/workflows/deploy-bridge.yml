@@ -44,6 +44,17 @@ jobs:
           tags: madara:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      
+      - name: Setup asdf
+        uses: asdf-vm/actions/install@v3
+
+      - name: Build bridge contracts
+        run: scarb build
+
+      - name: Build Starkgate Contracts
+        run: cd starkgate-contracts/ && \
+          ./scripts/setup.sh && \
+          ./scripts/build-cairo.sh
 
       - name: Run l2
         run: |
