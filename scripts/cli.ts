@@ -3,12 +3,10 @@ import * as dotenv from 'dotenv';
 // Load environment variables
 dotenv.config({
   path: (process.env.CI || process.env.GITHUB_ACTIONS) ? '.env.ci.test' : '.env',
-  debug: true,
-  override: true 
 });
 
 import { Command } from 'commander';
-import { checkEnvVars, getAccount, getEthereumClient, Layer } from './utils.ts';
+import { checkEnvVars, dumpPath, getAccount, getEthereumClient, Layer, setDumpPath } from './utils.ts';
 import { Logger } from './logger.ts';
 import {
   deployCoreContract,
@@ -27,18 +25,26 @@ import {
 
 const program = new Command();
 
-await checkEnvVars();
-
 program
   .name('bridge-cli')
   .description('CLI tool for Starknet bridge operations')
-  .version('1.0.0');
+  .version('1.0.0')
+  .requiredOption('--dump-path <path>', 'Dump path for the script');
+
+program.hook('preAction', (thisCommand, actionCommand) => {
+  const options = program.opts()
+  setDumpPath(options.dumpPath);
+  Logger.info(`Using dump path: ${dumpPath}`)
+})
+
+await checkEnvVars();
 
 // Deploy Core Contract Command
 program
   .command('deploy-core')
   .description('Deploy the core contract to L2')
   .action(async () => {
+    const options = program.opts();
     const acc = getAccount(Layer.L2);
     await deployCoreContract(acc);
   });

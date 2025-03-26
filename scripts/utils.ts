@@ -7,12 +7,12 @@ import { Logger } from "./logger.ts";
 import { sepolia } from 'viem/chains'
 
 export async function checkEnvVars() {
-  console.log('===============================')
-  console.log(`L3 RPC: ${process.env.RPC_L3_URL}`);
-  console.log(`L2 RPC: ${process.env.RPC_L2_URL}`);
-  console.log(`L2 Account Address: ${process.env.ACCOUNT_L2_ADDRESS}`);
-  console.log(`L3 Account Address: ${process.env.ACCOUNT_L3_ADDRESS}`);
-  console.log('===============================')
+  // console.log('===============================')
+  // console.log(`L3 RPC: ${process.env.RPC_L3_URL}`);
+  // console.log(`L2 RPC: ${process.env.RPC_L2_URL}`);
+  // console.log(`L2 Account Address: ${process.env.ACCOUNT_L2_ADDRESS}`);
+  // console.log(`L3 Account Address: ${process.env.ACCOUNT_L3_ADDRESS}`);
+  // console.log('===============================')
   assert(process.env.RPC_L2_URL, 'RPC_L2_URL not set in .env');
   assert(process.env.RPC_L3_URL, 'RPC_L3_UR not set in .env');;
   assert(process.env.ACCOUNT_L2_ADDRESS, 'ACCOUNT_L2_ADDRESS not set in .env');
@@ -25,6 +25,12 @@ export async function checkEnvVars() {
 export enum Layer {
   L2,
   L3
+}
+
+export let dumpPath: string = '';
+
+export function setDumpPath(path: string) {
+  dumpPath = path;
 }
 
 // TODO: Add layer as a param

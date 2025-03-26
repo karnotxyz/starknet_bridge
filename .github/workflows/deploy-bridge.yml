@@ -62,7 +62,7 @@ jobs:
         run: pnpm i -g tsx
 
       - name: Run Bridge Deployment Script
-        run: tsx ./scripts/cli.ts
+        run: tsx ./scripts/cli.ts deploy-core
 
       - name: Update Core Contract Address
         run: yq -i ".eth_core_contract_address = \"$(jq -r '.contracts.appchain_starknet_bridge' ./contracts.json)\"" ./madara-cli/deps/madara/configs/presets/devnet.yaml

@@ -2,15 +2,15 @@ import chalk from 'chalk';
 
 export class Logger {
   static success(message: string): void {
-    console.log(chalk.green(`? ${message}`));
+    console.log(chalk.green(`✅  ${message}`));
   }
 
   static info(message: string): void {
-    console.log(chalk.blue(`? ${message}`));
+    console.log(chalk.blue(`ℹ️  ${message}`));
   }
 
   static error(message: string): void {
-    console.log(chalk.red(`? ${message}`));
+    console.log(chalk.red(`❌  ${message}`));
   }
 
   static step(stepNumber: number, message: string): void {
