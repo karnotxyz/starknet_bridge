@@ -61,7 +61,7 @@ jobs:
 
       - name: Run l2
         run: |
-          docker run -v ./deps/madara/configs/:/apps/configs/  madara:latest \
+          docker run -p 9944:9944 -v ./deps/madara/configs/:/apps/configs/  madara:latest \
             --base-path ./madara-l2-db \
             --rpc-external --rpc-admin --rpc-cors "*" \
             --rpc-port 9944 --rpc-admin-port 9943 \
@@ -82,7 +82,7 @@ jobs:
         run: yq -i ".eth_core_contract_address = \"$(jq -r '.contracts.appchain_starknet_bridge' ./contracts.json)\"" ./madara-cli/deps/madara/configs/presets/devnet.yaml
 
       - name: Run l3
-        run: docker run -v ./deps/madara/configs/:/apps/configs/  madara:latest \
+        run: docker run -p 9955:9955 -v ./deps/madara/configs/:/apps/configs/  madara:latest \
           --base-path ./madara-l3-db \
           --rpc-cors "*" --rpc-external --rpc-admin \
           --rpc-port 9955 --rpc-admin-port 9953 \

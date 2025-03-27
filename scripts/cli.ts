@@ -104,7 +104,7 @@ program
 program
   .command('enroll-token')
   .description('Enroll a token in the bridge')
-  .option('-t, --token <token>', 'Token name', 'ERC20_starknet_bridge')
+  .option('-t, --token <token>', 'Token name', 'L2TestToken')
   .option('-d, --deploy', 'Deploy the token first', false)
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);

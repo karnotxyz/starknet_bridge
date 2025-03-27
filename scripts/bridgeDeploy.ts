@@ -178,10 +178,9 @@ export async function deployERC20() {
  */
 export async function declareAndSetERC20L3(acc_l3: Account) {
   // await declareContract("ERC20Lockable", "starkgate_contracts", Layer.L3, "./starkgate-contracts/cairo_contracts");
-
-  await declareContract("ERC20", "starknet_contracts", Layer.L3);
-  Logger.success("ERC20 declared!");
-  await sleep(3000);
+  // await declareContract("ERC20", "starknet_contracts", Layer.L3);
+  // Logger.success("ERC20 declared!");
+  // await sleep(3000);
 
   const l3Bridge =
     getContracts().contracts["TokenBridge_starkgate_contracts"];
@@ -192,12 +191,24 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
 
   {
     const class_hash = await getContracts().class_hashes[
-      "starkgate_contracts_ERC20Lockable"
+      "ERC20Lockable_starkgate_contracts"
     ];
     const call = l3BridgeContract.populate("set_erc20_class_hash", {
       erc20_class_hash: class_hash,
     });
-    let result = await acc.execute([call], { maxFee: 0 });
+    let result = await acc.execute([call], {
+      maxFee: 0,
+      resourceBounds: {
+        l1_gas: {
+          max_price_per_unit: "0x1",
+          max_amount: "0x0",
+        },
+        l2_gas: {
+          max_price_per_unit: "0x0",
+          max_amount: "0x0",
+        }
+      }
+    });
     Logger.success("ERC20 class_hash set successfully!");
     Logger.txHash(result.transaction_hash);
     await sleep(5000);
@@ -215,7 +226,6 @@ export async function enrollToken(acc_l2: Account, token: string = "L2TestToken"
     token: tokenAddress,
   });
   let result = await acc_l2.execute([call]);
-  await sleep(5000);
   Logger.success("Token enrolled successfully!");
   Logger.txHash(result.transaction_hash);
 }

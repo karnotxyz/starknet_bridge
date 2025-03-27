@@ -117,7 +117,19 @@ export async function declareContract(contract_name: string, package_name: strin
     let tx: { transaction_hash: string; class_hash: string; };
     if (layer === Layer.L3) {
       Logger.info('Declaring on L3')
-      tx = await acc.declareIfNot(payload, { maxFee: 0 });
+      tx = await acc.declareIfNot(payload, {
+        maxFee: 0,
+        resourceBounds: {
+          l1_gas: {
+            max_amount: "0x0",
+            max_price_per_unit: "0x0",
+          },
+          l2_gas: {
+            max_amount: "0x0",
+            max_price_per_unit: "0x0",
+          },
+        }
+      });
     } else {
       Logger.info('Declaring on L2')
       tx = await acc.declareIfNot(payload);
@@ -157,7 +169,20 @@ export async function deployContract(contract_name: string, classHash: string, c
     tx = await acc.deployContract({
       classHash,
       constructorCalldata: constructorData,
-    }, { maxFee: 0 });
+    },
+      {
+        maxFee: 0,
+        resourceBounds: {
+          l1_gas: {
+            max_price_per_unit: "0x0",
+            max_amount: "0x0",
+          },
+          l2_gas: {
+            max_price_per_unit: "0x0",
+            max_amount: "0x0",
+          }
+        }
+      });
   } else {
     tx = await acc.deployContract({
       classHash,
