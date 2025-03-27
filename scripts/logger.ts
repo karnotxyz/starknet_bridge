@@ -22,6 +22,6 @@ export class Logger {
   }
 
   static address(label: string, address: string): void {
-    console.log(`${label}: ${chalk.green(address)}`);
+    console.log(`🏡  ${label}: ${chalk.green(address)}`);
   }
 }

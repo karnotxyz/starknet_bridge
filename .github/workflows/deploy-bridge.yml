@@ -46,7 +46,7 @@ jobs:
           tags: madara:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
+
       - name: Setup asdf
         uses: asdf-vm/actions/install@v3
 
@@ -92,6 +92,6 @@ jobs:
           --l1-endpoint http://localhost:9944 \
           --strk-gas-price 0 --strk-blob-gas-price 0 --gas-price 0 \
           --blob-gas-price 0 2>&1 | tee -a ./outputs/madara_output_8.log
-      
+
       - name: Run Bridge Deployment Script
         run: tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow 

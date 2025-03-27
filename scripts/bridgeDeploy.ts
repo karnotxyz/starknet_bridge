@@ -6,7 +6,6 @@ import {
   getProvider,
   Layer,
   getAccount,
-  getEthereumClient,
 } from "./utils";
 import { Account, byteArray, Contract, num } from "starknet";
 import { sepolia } from "viem/chains";
@@ -270,7 +269,7 @@ export async function deposit(acc_l2: Account, amount: bigint = 10n * 10n ** 18n
   }
 }
 
-export async function getL3Balance(address: string, token: string = "MyL2GameToken") {
+export async function getL3Balance(address: string, token: string = "L2TestToken") {
   const enrolledTokenAddress = getContracts().contracts[token];
   const appchainBridge = getContracts().contracts["TokenBridge_starkgate_contracts"];
   const providerL3 = getProvider(Layer.L3);
@@ -279,7 +278,7 @@ export async function getL3Balance(address: string, token: string = "MyL2GameTok
   const appchainBridgeContract = new Contract(appchainBridgeCls.abi, appchainBridge, providerL3);
 
   const correspondingToken = await appchainBridgeContract.call('get_l2_token', [enrolledTokenAddress]);
-  Logger.info(`Corresponding appchain token: ${num.toHex(correspondingToken as string)}`);
+  Logger.info(`Finding corresponding appchain token`);
 
   if (correspondingToken != 0n) {
     const correspondingTokenAddress = num.toHex(correspondingToken as any);

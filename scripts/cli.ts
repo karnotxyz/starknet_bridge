@@ -134,6 +134,16 @@ program
     await depositWithMessageL1toL3(acc_l1, options.token);
   });
 
+// Get L3 Balance Command
+program
+  .command('get-l3-balance')
+  .description('Get the L3 balance for an address')
+  .argument('<address>', 'Address to check')
+  .option('-t, --token <token>', 'Token name', 'L2TestToken')
+  .action(async (address, options) => {
+    await getL3Balance(address, options.token);
+  });
+
 // Initiate Withdrawal Command
 program
   .command('withdraw-l3-to-l2')
