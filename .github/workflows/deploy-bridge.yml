@@ -106,5 +106,13 @@ jobs:
             --strk-gas-price 0 --strk-blob-gas-price 0 --gas-price 0 \
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_l3.log
 
+      - name: Wait for server to be ready
+        run: |
+          until [ "$(curl -s http://localhost:9955)" = "Used HTTP Method is not allowed. POST or OPTIONS is required" ]; do
+            echo "Waiting for server to be ready..."
+            sleep 2
+          done
+          echo "Server is ready!"
+
       - name: Run Bridge Deployment Script
         run: tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
