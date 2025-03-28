@@ -23,15 +23,23 @@ export async function deployCoreContract(acc: Account) {
   const class_hash = await getContracts().class_hashes[
     "appchain_starknet_bridge"
   ];
-  const contract = await deployContract("appchain_starknet_bridge", class_hash, [
-    acc.address, // owner
-    0, // state_root,
-    0, // block_number,
-    0, // block_hash
-  ], Layer.L2);
+  const contract = await deployContract(
+    "appchain_starknet_bridge",
+    class_hash,
+    [
+      acc.address, // owner
+      0, // state_root,
+      0, // block_number,
+      0, // block_hash
+    ],
+    Layer.L2
+  );
 
   if (contract.address) {
-    Logger.address("Appchain core contract deployed at", contract.address as string);
+    Logger.address(
+      "Appchain core contract deployed at",
+      contract.address as string
+    );
   }
 }
 
@@ -50,7 +58,12 @@ export async function deployAppchainBridge() {
     "TokenBridge_starkgate_contracts"
   ];
   await sleep(2000);
-  const contract = await deployContract("TokenBridge_starkgate_contracts", class_hash, [process.env.ACCOUNT_L3_ADDRESS as string, "10"], Layer.L3);
+  const contract = await deployContract(
+    "TokenBridge_starkgate_contracts",
+    class_hash,
+    [process.env.ACCOUNT_L3_ADDRESS as string, "10"],
+    Layer.L3
+  );
   if (contract.address) {
     Logger.address("AppchainBridge deployed at", contract.address as string);
   }
@@ -63,9 +76,11 @@ export async function deployAppchainBridge() {
 export async function deployL2Brdige() {
   await declareContract("TokenBridge", "starknet_bridge", Layer.L2);
   Logger.success("TokenBridge declared!");
-  await sleep(1000);
-  const saved_class_hash = await getContracts().class_hashes["TokenBridge_starknet_bridge"];
-  const appchainBridge = getContracts().contracts["TokenBridge_starkgate_contracts"];
+  const saved_class_hash = await getContracts().class_hashes[
+    "TokenBridge_starknet_bridge"
+  ];
+  const appchainBridge =
+    getContracts().contracts["TokenBridge_starkgate_contracts"];
   const appchainContract = getContracts().contracts["appchain_starknet_bridge"];
   const contract = await deployContract(
     "TokenBridge_starknet_bridge",
@@ -95,27 +110,62 @@ export async function configureAppchainBridge(acc_l3: Account) {
     const call = appchainBridgeContract.populate("register_app_role_admin", {
       account: acc_l3.address,
     });
-    await acc_l3.execute([call], { maxFee: 0 });
+
+    await acc_l3.execute([call], {
+      maxFee: 0,
+      resourceBounds: {
+        l1_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0",
+        },
+        l2_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0",
+        },
+      },
+    });
+
     Logger.success("App role admin set successfully!");
-    await sleep(5000);
   }
 
   {
-    const call = appchainBridgeContract.populate('register_app_governor', {
-      account: acc_l3.address
+    const call = appchainBridgeContract.populate("register_app_governor", {
+      account: acc_l3.address,
     });
-    await acc_l3.execute([call], { maxFee: 0 });
+    await acc_l3.execute([call], {
+      maxFee: 0,
+      resourceBounds: {
+        l1_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0",
+        },
+        l2_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0",
+        },
+      },
+    });
     Logger.success("App governor set successfully!");
-    await sleep(5000);
   }
 
   {
     const call = appchainBridgeContract.populate("set_l2_token_governance", {
       l2_token_governance: acc_l3.address,
     });
-    await acc_l3.execute([call], { maxFee: 0 });
+    await acc_l3.execute([call], {
+      maxFee: 0,
+      resourceBounds: {
+        l1_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0",
+        },
+        l2_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0",
+        },
+      },
+    });
     Logger.success("L2 Governance set successfully!");
-    await sleep(5000);
   }
 }
 
@@ -130,12 +180,23 @@ export async function setL2Bridge(acc_l3: Account) {
   const appchainBridgeContract = new Contract(cls.abi, appchainBridge, acc_l3);
 
   {
-    const call = appchainBridgeContract.populate('set_l1_bridge', {
-      l1_bridge_address: tokenBridge
+    const call = appchainBridgeContract.populate("set_l1_bridge", {
+      l1_bridge_address: tokenBridge,
     });
-    await acc_l3.execute([call], { maxFee: 0 });
+    await acc_l3.execute([call], {
+      maxFee: 0,
+      resourceBounds: {
+        l1_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0",
+        },
+        l2_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0",
+        },
+      },
+    });
     Logger.success("L2 bridge set successfully!");
-    await sleep(1000);
   }
 }
 
@@ -144,7 +205,6 @@ export async function setL2Bridge(acc_l3: Account) {
  */
 export async function deployERC20() {
   await declareContract("ERC20", "starknet_bridge", Layer.L2);
-  await sleep(5000);
   const saved_class_hash = await getContracts().class_hashes[
     "ERC20_starknet_bridge"
   ];
@@ -167,7 +227,6 @@ export async function deployERC20() {
   if (contract.address) {
     Logger.address("ERC20 deployed at", contract.address as string);
   }
-  await sleep(5000);
 }
 
 /**
@@ -179,8 +238,7 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
   // Logger.success("ERC20 declared!");
   // await sleep(3000);
 
-  const l3Bridge =
-    getContracts().contracts["TokenBridge_starkgate_contracts"];
+  const l3Bridge = getContracts().contracts["TokenBridge_starkgate_contracts"];
   const cls = await acc_l3.getClassAt(l3Bridge);
   const l3BridgeContract = new Contract(cls.abi, l3Bridge, acc_l3);
 
@@ -203,16 +261,18 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
         l2_gas: {
           max_price_per_unit: "0x0",
           max_amount: "0x0",
-        }
-      }
+        },
+      },
     });
     Logger.success("ERC20 class_hash set successfully!");
     Logger.txHash(result.transaction_hash);
-    await sleep(5000);
   }
 }
 
-export async function enrollToken(acc_l2: Account, token: string = "L2TestToken") {
+export async function enrollToken(
+  acc_l2: Account,
+  token: string = "L2TestToken"
+) {
   const tokenAddress = getContracts().contracts[token];
   const tokenBridge = getContracts().contracts["TokenBridge_starknet_bridge"];
 
@@ -230,7 +290,10 @@ export async function enrollToken(acc_l2: Account, token: string = "L2TestToken"
 /**
  * Deposit tokens from L2 to L3
  */
-export async function deposit(acc_l2: Account, amount: bigint = 10n * 10n ** 18n) {
+export async function deposit(
+  acc_l2: Account,
+  amount: bigint = 10n * 10n ** 18n
+) {
   const tokenAddress = getContracts().contracts["ERC20_starknet_bridge"];
   const tokenBridge = getContracts().contracts["TokenBridge_starknet_bridge"];
 
@@ -247,18 +310,21 @@ export async function deposit(acc_l2: Account, amount: bigint = 10n * 10n ** 18n
     Logger.success("Approval success!");
     Logger.txHash(result.transaction_hash);
   }
-  await sleep(4000);
 
   // Deposit
   {
     const Bridgecls = await acc_l2.getClassAt(tokenBridge);
-    const tokenBridgeContract = new Contract(Bridgecls.abi, tokenBridge, acc_l2);
+    const tokenBridgeContract = new Contract(
+      Bridgecls.abi,
+      tokenBridge,
+      acc_l2
+    );
 
-    const call = tokenBridgeContract.populate('deposit', {
+    const call = tokenBridgeContract.populate("deposit", {
       token: tokenAddress,
       amount,
       appchain_recipient: process.env.ACCOUNT_L3_ADDRESS as string,
-      message: 0
+      message: 0,
     });
     let result = await acc_l2.execute([call]);
     Logger.success("Deposit success!");
@@ -267,23 +333,42 @@ export async function deposit(acc_l2: Account, amount: bigint = 10n * 10n ** 18n
   }
 }
 
-export async function getL3Balance(address: string, token: string = "L2TestToken") {
+export async function getL3Balance(
+  address: string,
+  token: string = "L2TestToken"
+) {
   const enrolledTokenAddress = getContracts().contracts[token];
-  const appchainBridge = getContracts().contracts["TokenBridge_starkgate_contracts"];
+  const appchainBridge =
+    getContracts().contracts["TokenBridge_starkgate_contracts"];
   const providerL3 = getProvider(Layer.L3);
 
   const appchainBridgeCls = await providerL3.getClassAt(appchainBridge);
-  const appchainBridgeContract = new Contract(appchainBridgeCls.abi, appchainBridge, providerL3);
+  const appchainBridgeContract = new Contract(
+    appchainBridgeCls.abi,
+    appchainBridge,
+    providerL3
+  );
 
-  const correspondingToken = await appchainBridgeContract.call('get_l2_token', [enrolledTokenAddress]);
+  const correspondingToken = await appchainBridgeContract.call("get_l2_token", [
+    enrolledTokenAddress,
+  ]);
   Logger.info(`Finding corresponding appchain token`);
 
   if (correspondingToken != 0n) {
     const correspondingTokenAddress = num.toHex(correspondingToken as any);
-    Logger.address("Corresponding appchain token address", correspondingTokenAddress);
-    const appchainTokenCls = await providerL3.getClassAt(correspondingTokenAddress);
-    const appchainToken = new Contract(appchainTokenCls.abi, correspondingTokenAddress, providerL3);
-    const balance = await appchainToken.call('balanceOf', [address]);
+    Logger.address(
+      "Corresponding appchain token address",
+      correspondingTokenAddress
+    );
+    const appchainTokenCls = await providerL3.getClassAt(
+      correspondingTokenAddress
+    );
+    const appchainToken = new Contract(
+      appchainTokenCls.abi,
+      correspondingTokenAddress,
+      providerL3
+    );
+    const balance = await appchainToken.call("balanceOf", [address]);
     Logger.info(`Balance: ${balance}`);
   }
 }
@@ -297,7 +382,6 @@ export async function depositWithMessageL1toL3(
 ) {
   const testToken = getContracts().contracts[token];
   const tokenBridge = getContracts().contracts["L1TokenBridge"];
-
 
   // Approval
   {
@@ -315,7 +399,6 @@ export async function depositWithMessageL1toL3(
     });
 
     Logger.txHash(approveTx);
-    await sleep(2000);
   }
 
   // Deposit
@@ -395,5 +478,3 @@ export async function enroll(
   }
   await enrollToken(acc_l2, token);
 }
-
-

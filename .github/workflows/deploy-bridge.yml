@@ -78,7 +78,7 @@ jobs:
         run: |
           cd starkgate-contracts 
           ./scripts/setup.sh && \
-          ./scripts/build-cairo.sh
+          ./scripts/build-cairo.sh 
 
       - name: Build bridge contracts
         run: scarb build

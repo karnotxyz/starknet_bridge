@@ -176,10 +176,10 @@ program
     const acc_l2 = getAccount(Layer.L2);
     const acc_l3 = getAccount(Layer.L3);
 
-    Logger.step(1, "Starting full flow setup...");
+    Logger.success("Starting full flow setup...");
 
     // Setup
-    Logger.step(2, "Setting up bridges...");
+    Logger.step(1, "Setting up bridges...");
     await deployAppchainBridge();
     await deployL2Brdige();
     await configureAppchainBridge(acc_l3);
@@ -187,12 +187,12 @@ program
     await declareAndSetERC20L3(acc_l3);
 
     // Deploy and enroll token
-    Logger.step(3, "Deploying and enrolling token...");
+    Logger.step(2, "Deploying and enrolling token...");
     await deployERC20();
     await enrollToken(acc_l2, "L2TestToken");
 
     // Deposit and check balance
-    Logger.step(4, "Processing deposits and checking balances...");
+    Logger.step(3, "Processing deposits and checking balances...");
     await deposit(acc_l2);
     await getL3Balance(acc_l3.address);
 

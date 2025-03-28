@@ -14,7 +14,7 @@ export class Logger {
   }
 
   static step(stepNumber: number, message: string): void {
-    console.log(chalk.magenta(`[${stepNumber}] ${message}`));
+    console.log(chalk.magenta(`Step: [${stepNumber}] ${message}`));
   }
 
   static txHash(hash: string): void {
