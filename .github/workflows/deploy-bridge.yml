@@ -49,7 +49,7 @@ jobs:
 
       - name: Run l2
         run: |
-          docker run -p 9944:9944 -v ./madara-cli/deps/madara/configs/:/apps/configs/  madara:latest \
+          docker run -d -p 9944:9944 -v ./madara-cli/deps/madara/configs/:/apps/configs/  madara:latest \
             --base-path ./madara-l2-db \
             --rpc-external --rpc-admin --rpc-cors "*" \
             --rpc-port 9944 --rpc-admin-port 9943 \
