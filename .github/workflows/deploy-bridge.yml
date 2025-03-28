@@ -79,7 +79,6 @@ jobs:
       - name: Build bridge contracts
         run: scarb build
 
-
       - name: Install tsx
         run: pnpm i -g tsx
 
@@ -90,7 +89,7 @@ jobs:
         run: yq -i ".eth_core_contract_address = \"$(jq -r '.contracts.appchain_starknet_bridge' ./contracts.json)\"" ./madara-cli/deps/madara/configs/presets/devnet.yaml
 
       - name: Run l3
-        run: docker run -p 9955:9955 -v ./deps/madara/configs/:/apps/configs/  madara:latest \
+        run: docker run -d -p 9955:9955 -v ./madara-cli/deps/madara/configs/:/apps/configs/  madara:latest \
           --base-path ./madara-l3-db \
           --rpc-cors "*" --rpc-external --rpc-admin \
           --rpc-port 9955 --rpc-admin-port 9953 \
@@ -102,4 +101,4 @@ jobs:
           --blob-gas-price 0 2>&1 | tee -a ./outputs/madara_output_8.log
 
       - name: Run Bridge Deployment Script
-        run: tsx ./scripts/cli.ts
+        run: tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
