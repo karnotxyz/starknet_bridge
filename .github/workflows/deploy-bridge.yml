@@ -71,6 +71,13 @@ jobs:
             --strk-gas-price 0 --strk-blob-gas-price 0 --gas-price 0 \
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_v1.log
 
+      - name: Wait for server to be ready
+        run: |
+          until [ "$(curl -s http://localhost:9944)" = "Used HTTP Method is not allowed. POST or OPTIONS is required" ]; do
+            echo "Waiting for server to be ready..."
+            sleep 2
+          done
+          echo "Server is ready!"
 
       - name: Install tsx
         run: pnpm i -g tsx
@@ -94,4 +101,4 @@ jobs:
           --blob-gas-price 0 2>&1 | tee -a ./outputs/madara_output_8.log
 
       - name: Run Bridge Deployment Script
-        run: tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow 
+        run: tsx ./scripts/cli.ts

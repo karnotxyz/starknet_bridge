@@ -1,8 +1,9 @@
 #!/usr/bin/env tsx
 import * as dotenv from 'dotenv';
 // Load environment variables
+console.log(process.env.CI || process.env.CI == "true" || process.env.GITHUB_ACTIONS);
 dotenv.config({
-  path: (process.env.CI || process.env.GITHUB_ACTIONS) ? '.env.ci.test' : '.env',
+  path: (process.env.CI || process.env.CI == "true" || process.env.GITHUB_ACTIONS) ? '.env.ci.test' : '.env',
 });
 
 import { Command } from 'commander';
