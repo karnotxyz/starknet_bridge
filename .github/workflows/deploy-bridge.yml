@@ -47,18 +47,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Setup asdf
-        uses: asdf-vm/actions/install@v3
-
-      - name: Build Starkgate Contracts
-        run: |
-          cd starkgate-contracts 
-          ./scripts/setup.sh && \
-          ./scripts/build-cairo.sh
-
-      - name: Build bridge contracts
-        run: scarb build
-
       - name: Run l2
         run: |
           docker run -p 9944:9944 -v ./deps/madara/configs/:/apps/configs/  madara:latest \
@@ -78,6 +66,19 @@ jobs:
             sleep 2
           done
           echo "Server is ready!"
+
+      - name: Setup asdf
+        uses: asdf-vm/actions/install@v3
+
+      - name: Build Starkgate Contracts
+        run: |
+          cd starkgate-contracts 
+          ./scripts/setup.sh && \
+          ./scripts/build-cairo.sh
+
+      - name: Build bridge contracts
+        run: scarb build
+
 
       - name: Install tsx
         run: pnpm i -g tsx
