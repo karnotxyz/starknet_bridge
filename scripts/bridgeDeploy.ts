@@ -23,7 +23,6 @@ export async function deployCoreContract(acc: Account) {
   const class_hash = await getContracts().class_hashes[
     "appchain_starknet_bridge"
   ];
-  await sleep(2000);
   const contract = await deployContract("appchain_starknet_bridge", class_hash, [
     acc.address, // owner
     0, // state_root,
@@ -31,7 +30,6 @@ export async function deployCoreContract(acc: Account) {
     0, // block_hash
   ], Layer.L2);
 
-  await sleep(2000);
   if (contract.address) {
     Logger.address("Appchain core contract deployed at", contract.address as string);
   }

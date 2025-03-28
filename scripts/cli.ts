@@ -4,6 +4,7 @@ import * as dotenv from 'dotenv';
 console.log(process.env.CI || process.env.CI == "true" || process.env.GITHUB_ACTIONS);
 dotenv.config({
   path: (process.env.CI || process.env.CI == "true" || process.env.GITHUB_ACTIONS) ? '.env.ci.test' : '.env',
+  override: true
 });
 
 import { Command } from 'commander';

@@ -47,9 +47,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Create Docker network
+        run: docker network create bridge-network
+
       - name: Run l2
         run: |
-          docker run -d -p 9944:9944 -v ./madara-cli/deps/madara/configs/:/apps/configs/  madara:latest \
+          docker run -d --name l2-node --network bridge-network -p 9944:9944 \
+            -v ./madara-cli/deps/madara/configs/:/apps/configs/ madara:latest \
             --base-path ./madara-l2-db \
             --rpc-external --rpc-admin --rpc-cors "*" \
             --rpc-port 9944 --rpc-admin-port 9943 \
@@ -57,7 +61,7 @@ jobs:
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8844 \
             --no-l1-sync \
             --strk-gas-price 0 --strk-blob-gas-price 0 --gas-price 0 \
-            --blob-gas-price 0 2>&1 | tee -a ./madara_output_v1.log
+            --blob-gas-price 0 2>&1 | tee -a ./madara_output_l2.log
 
       - name: Wait for server to be ready
         run: |
@@ -89,16 +93,18 @@ jobs:
         run: yq -i ".eth_core_contract_address = \"$(jq -r '.contracts.appchain_starknet_bridge' ./contracts.json)\"" ./madara-cli/deps/madara/configs/presets/devnet.yaml
 
       - name: Run l3
-        run: docker run -d -p 9955:9955 -v ./madara-cli/deps/madara/configs/:/apps/configs/  madara:latest \
-          --base-path ./madara-l3-db \
-          --rpc-cors "*" --rpc-external --rpc-admin \
-          --rpc-port 9955 --rpc-admin-port 9953 \
-          --devnet --chain-config-path ./madara-cli/deps/madara/configs/presets/devnet.yaml \
-          --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8080 \
-          --settlement-layer STARKNET \
-          --l1-endpoint http://localhost:9944 \
-          --strk-gas-price 0 --strk-blob-gas-price 0 --gas-price 0 \
-          --blob-gas-price 0 2>&1 | tee -a ./outputs/madara_output_8.log
+        run: |
+          docker run --network bridge-network \
+            -d -p 9955:9955 -v ./madara-cli/deps/madara/configs/:/apps/configs/  madara:latest \
+            --base-path ./madara-l3-db \
+            --rpc-cors "*" --rpc-external --rpc-admin \
+            --rpc-port 9955 --rpc-admin-port 9953 \
+            --devnet --chain-config-path /apps/configs/presets/devnet.yaml \
+            --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8080 \
+            --settlement-layer STARKNET \
+            --l1-endpoint http://l2-node:9944 \
+            --strk-gas-price 0 --strk-blob-gas-price 0 --gas-price 0 \
+            --blob-gas-price 0 2>&1 | tee -a ./madara_output_l3.log
 
       - name: Run Bridge Deployment Script
         run: tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
