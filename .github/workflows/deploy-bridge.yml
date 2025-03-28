@@ -14,15 +14,12 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with: 
-          submodules: 'true'
 
       - name: Update Submodule Branch
         run: |
           cd starkgate-contracts
-          git fetch origin dev-2.9.2
-          git checkout dev-2.9.2
-          cd ..
+          git submodule update --init --recursive
+          git --no-pager log -1 --pretty
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
