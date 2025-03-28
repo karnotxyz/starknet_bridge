@@ -17,6 +17,13 @@ jobs:
         with: 
           submodules: 'true'
 
+      - name: Update Submodule Branch
+        run: |
+          cd starkgate-contracts
+          git fetch origin dev-2.9.2
+          git checkout dev-2.9.2
+          cd ..
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
