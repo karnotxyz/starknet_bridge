@@ -99,7 +99,7 @@ jobs:
       - name: Update Core Contract Address
         run: |
           # Extract and print the core contract address from JSON
-          CORE_CONTRACT=$(jq -r '.contracts.appchain' ./contracts.json)
+          CORE_CONTRACT=$(jq -r '.contracts.l2.appchain' ./contracts.json)
           echo "Extracted core contract address: $CORE_CONTRACT"
 
           # Check if the extracted value is null and fail if it is
