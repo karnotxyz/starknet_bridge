@@ -398,7 +398,7 @@ export async function deposit(
 
 export async function getL3Balance(
   address: string,
-  token: string = "ERC20_starknet_bridge"
+  token: string = "ERC20"
 ) {
   // Create a contract object for the token and get its existing data
   const tokenContract: Contract = {

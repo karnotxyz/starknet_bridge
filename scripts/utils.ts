@@ -43,8 +43,8 @@ export function getContract(contract: Contract): Contract {
   }
 
   // Try to get contract address if it exists in stored contracts
-  if (contracts.contracts && contracts.contracts[contract.name]) {
-    contract.address = contracts.contracts[contract.name];
+  if (contracts.contracts && contracts.contracts[contract.layer] && contracts.contracts[contract.layer][contract.name]) {
+    contract.address = contracts.contracts[contract.layer][contract.name];
   }
 
   return contract;
@@ -239,7 +239,10 @@ export async function deployContract(contract: Contract, constructorData: RawArg
   if (!contracts.contracts) {
     contracts['contracts'] = {};
   }
-  contracts.contracts[contract.name] = tx.contract_address;
+  if(!contracts.contracts.layer) {
+    contracts.contracts[layer] = {}
+  }
+  contracts.contracts[contract.layer][contract.name] = tx.contract_address;
   saveContracts(contracts);
   console.log(`Contract deployed: ${contract.name}`)
   console.log(`Address: ${tx.contract_address}`);
