@@ -12,8 +12,6 @@ import { sepolia } from "viem/chains";
 import { Account as EthAccount } from "viem";
 import { Logger } from "./logger";
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 /**
  * Deploy the core contract on Starknet L2
  */
@@ -57,7 +55,6 @@ export async function deployAppchainBridge() {
   const class_hash = await getContracts().class_hashes[
     "TokenBridge_starkgate_contracts"
   ];
-  await sleep(2000);
   const contract = await deployContract(
     "TokenBridge_starkgate_contracts",
     class_hash,
@@ -67,14 +64,13 @@ export async function deployAppchainBridge() {
   if (contract.address) {
     Logger.address("AppchainBridge deployed at", contract.address as string);
   }
-  await sleep(2000);
 }
 
 /**
  * Deploy the L2 bridge on Starknet
  */
 export async function deployL2Brdige() {
-  await declareContract("TokenBridge", "starknet_bridge", Layer.L2);
+  // await declareContract("TokenBridge", "starknet_bridge", Layer.L2);
   Logger.success("TokenBridge declared!");
   const saved_class_hash = await getContracts().class_hashes[
     "TokenBridge_starknet_bridge"
@@ -345,7 +341,6 @@ export async function deposit(
     await acc_l2.waitForTransaction(result.transaction_hash);
     Logger.success("Deposit success!");
     Logger.txHash(result.transaction_hash);
-    await sleep(10000);
   }
 }
 
