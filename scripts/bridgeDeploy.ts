@@ -13,48 +13,15 @@ import { Account, byteArray, Contract as StarknetContract, num } from "starknet"
 import { sepolia } from "viem/chains";
 import { Account as EthAccount } from "viem";
 import { Logger } from "./logger";
+import {
+  appchainContract,
+  tokenBridgeL2Contract,
+  tokenBridgeL3Contract,
+  erc20Contract,
+  erc20LockableContract,
+  starknetBridgePackage,
+} from "./constants";
 
-// Define our packages
-const starknetBridgePackage: Package = {
-  name: "starknet_bridge",
-  base_path: "./target/dev"
-};
-
-const starkgatePackage: Package = {
-  name: "starkgate_contracts",
-  base_path: "./starkgate-contracts/cairo_contracts"
-};
-
-// Define all contract instances upfront
-const appchainContract: Contract = {
-  name: "appchain",
-  layer: Layer.L2,
-  package: starknetBridgePackage
-};
-
-const tokenBridgeL2Contract: Contract = {
-  name: "TokenBridge",
-  layer: Layer.L2,
-  package: starknetBridgePackage
-};
-
-const tokenBridgeL3Contract: Contract = {
-  name: "TokenBridge",
-  layer: Layer.L3,
-  package: starkgatePackage
-};
-
-const erc20Contract: Contract = {
-  name: "ERC20",
-  layer: Layer.L2,
-  package: starknetBridgePackage
-};
-
-const erc20LockableContract: Contract = {
-  name: "ERC20Lockable",
-  layer: Layer.L3,
-  package: starkgatePackage
-};
 
 /**
  * Deploy the core contract on Starknet L2
@@ -105,16 +72,24 @@ export async function deployL2Bridge() {
   await declareContract(tokenBridgeL2Contract);
   Logger.success("TokenBridge declared!");
   
-  // Get the addresses from saved contracts
-  const contracts = getContracts();
-  const appchainBridge = contracts.contracts["TokenBridge_starkgate_contracts"];
-  const appchainContractAddr = contracts.contracts["appchain_starknet_bridge"];
+  // Get the saved contract addresses
+  getContract(tokenBridgeL3Contract);
+  getContract(appchainContract);
+  
+  // Verify we have the required addresses
+  if (!tokenBridgeL3Contract.address) {
+    throw new Error("L3 Bridge contract address not found, deploy L3 bridge first");
+  }
+  
+  if (!appchainContract.address) {
+    throw new Error("Appchain core contract address not found, deploy core contract first");
+  }
   
   await deployContract(
     tokenBridgeL2Contract,
     [
-      appchainBridge,
-      appchainContractAddr,
+      tokenBridgeL3Contract.address,
+      appchainContract.address,
       process.env.ACCOUNT_L2_ADDRESS as string,
     ]
   );
@@ -128,8 +103,13 @@ export async function deployL2Bridge() {
  * Configure the appchain bridge roles and governance
  */
 export async function configureAppchainBridge(acc_l3: Account) {
-  const contracts = getContracts();
-  const appchainBridge = contracts.contracts["TokenBridge_starkgate_contracts"];
+  getContract(tokenBridgeL3Contract);
+  
+  if (!tokenBridgeL3Contract.address) {
+    throw new Error("L3 Bridge contract address not found");
+  }
+  
+  const appchainBridge = tokenBridgeL3Contract.address;
   const cls = await acc_l3.getClassAt(appchainBridge);
   const appchainBridgeContract = new StarknetContract(cls.abi, appchainBridge, acc_l3);
 
@@ -209,9 +189,19 @@ export async function configureAppchainBridge(acc_l3: Account) {
  * Set the L2 bridge in the appchain bridge contract
  */
 export async function setL2Bridge(acc_l3: Account) {
-  const contracts = getContracts();
-  const tokenBridge = contracts.contracts["TokenBridge_starknet_bridge"];
-  const appchainBridge = contracts.contracts["TokenBridge_starkgate_contracts"];
+  getContract(tokenBridgeL2Contract);
+  getContract(tokenBridgeL3Contract);
+  
+  if (!tokenBridgeL2Contract.address) {
+    throw new Error("L2 Bridge contract address not found");
+  }
+  
+  if (!tokenBridgeL3Contract.address) {
+    throw new Error("L3 Bridge contract address not found");
+  }
+  
+  const tokenBridge = tokenBridgeL2Contract.address;
+  const appchainBridge = tokenBridgeL3Contract.address;
   const cls = await acc_l3.getClassAt(appchainBridge);
   const appchainBridgeContract = new StarknetContract(cls.abi, appchainBridge, acc_l3);
 
@@ -273,8 +263,13 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
   await declareContract(erc20LockableContract);
   Logger.success("ERC20 declared!");
   
-  const contracts = getContracts();
-  const l3Bridge = contracts.contracts["TokenBridge_starkgate_contracts"];
+  getContract(tokenBridgeL3Contract);
+  
+  if (!tokenBridgeL3Contract.address) {
+    throw new Error("L3 Bridge contract address not found");
+  }
+  
+  const l3Bridge = tokenBridgeL3Contract.address;
   const cls = await acc_l3.getClassAt(l3Bridge);
   const l3BridgeContract = new StarknetContract(cls.abi, l3Bridge, acc_l3);
 
@@ -313,9 +308,26 @@ export async function enrollToken(
   acc_l2: Account,
   token: string = "ERC20_starknet_bridge"
 ) {
-  const contracts = getContracts();
-  const tokenAddress = contracts.contracts[token];
-  const tokenBridge = contracts.contracts["TokenBridge_starknet_bridge"];
+  // Create a contract object for the token and get its existing data
+  const tokenContract: Contract = {
+    name: token,
+    layer: Layer.L2,
+    package: starknetBridgePackage
+  };
+  
+  getContract(tokenContract);
+  getContract(tokenBridgeL2Contract);
+  
+  if (!tokenContract.address) {
+    throw new Error(`Token contract ${token} address not found`);
+  }
+  
+  if (!tokenBridgeL2Contract.address) {
+    throw new Error("L2 Bridge contract address not found");
+  }
+  
+  const tokenAddress = tokenContract.address;
+  const tokenBridge = tokenBridgeL2Contract.address;
 
   const cls = await acc_l2.getClassAt(tokenBridge);
   const tokenBridgeContract = new StarknetContract(cls.abi, tokenBridge, acc_l2);
@@ -336,9 +348,19 @@ export async function deposit(
   acc_l2: Account,
   amount: bigint = 10n * 10n ** 18n
 ) {
-  const contracts = getContracts();
-  const tokenAddress = contracts.contracts["ERC20_starknet_bridge"];
-  const tokenBridge = contracts.contracts["TokenBridge_starknet_bridge"];
+  getContract(erc20Contract);
+  getContract(tokenBridgeL2Contract);
+  
+  if (!erc20Contract.address) {
+    throw new Error("ERC20 contract address not found");
+  }
+  
+  if (!tokenBridgeL2Contract.address) {
+    throw new Error("L2 Bridge contract address not found");
+  }
+  
+  const tokenAddress = erc20Contract.address;
+  const tokenBridge = tokenBridgeL2Contract.address;
 
   // Approval
   {
@@ -382,9 +404,26 @@ export async function getL3Balance(
   address: string,
   token: string = "ERC20_starknet_bridge"
 ) {
-  const contracts = getContracts();
-  const enrolledTokenAddress = contracts.contracts[token];
-  const appchainBridge = contracts.contracts["TokenBridge_starkgate_contracts"];
+  // Create a contract object for the token and get its existing data
+  const tokenContract: Contract = {
+    name: token,
+    layer: Layer.L2,
+    package: starknetBridgePackage
+  };
+  
+  getContract(tokenContract);
+  getContract(tokenBridgeL3Contract);
+  
+  if (!tokenContract.address) {
+    throw new Error(`Token contract ${token} address not found`);
+  }
+  
+  if (!tokenBridgeL3Contract.address) {
+    throw new Error("L3 Bridge contract address not found");
+  }
+  
+  const enrolledTokenAddress = tokenContract.address;
+  const appchainBridge = tokenBridgeL3Contract.address;
   const providerL3 = getProvider(Layer.L3);
 
   const appchainBridgeCls = await providerL3.getClassAt(appchainBridge);
@@ -429,8 +468,28 @@ export async function initiateTokenL2toL3Withdrawal(
   amount: BigInt,
   l2_token: string
 ) {
-  const contracts = getContracts();
-  let tokenBridge_l3 = contracts.contracts["TokenBridge_starkgate_contracts"];
+  getContract(tokenBridgeL3Contract);
+  
+  // Create a contract object for the token and get its existing data
+  const tokenContract: Contract = {
+    name: l2_token,
+    layer: Layer.L2,
+    package: starknetBridgePackage
+  };
+  
+  getContract(tokenContract);
+  
+  if (!tokenBridgeL3Contract.address) {
+    throw new Error("L3 Bridge contract address not found");
+  }
+  
+  if (!tokenContract.address) {
+    throw new Error(`Token contract ${l2_token} address not found`);
+  }
+  
+  const tokenBridge_l3 = tokenBridgeL3Contract.address;
+  const l2TokenAddress = tokenContract.address;
+  
   let cls = await acc_l3.getClassAt(tokenBridge_l3);
   let tokenBridgeContract_l3 = new StarknetContract(cls.abi, tokenBridge_l3, acc_l3);
 
@@ -440,7 +499,7 @@ export async function initiateTokenL2toL3Withdrawal(
       // the function arg is called the l1_token, but you have to provide l2_token
       // this is since we are reappropriated the starkgate `token_bridge.cario`
       //  to be used in l2-l3 bridge
-      l1_token: contracts.contracts[l2_token],
+      l1_token: l2TokenAddress,
       l1_recipient: process.env.ACCOUNT_L2_ADDRESS as string,
       amount,
     }

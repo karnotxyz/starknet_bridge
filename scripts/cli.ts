@@ -32,7 +32,6 @@ import {
   enrollToken,
   deposit,
   getL3Balance,
-  depositWithMessageL1toL3,
   initiateTokenL2toL3Withdrawal,
 } from "./bridgeDeploy.ts";
 import {
@@ -133,6 +132,7 @@ program
 program
   .command("deposit")
   .description("Deposit tokens from L2 to L3")
+  .option("-t, --token <token>", "Token name", "ERC20_starknet_bridge")
   .option(
     "-a, --amount amount",
     "Amount of tokens to deposit",
@@ -142,16 +142,6 @@ program
     const acc_l2 = getAccount(Layer.L2);
     await deposit(acc_l2, BigInt(options.amount));
   }); // Get L3 Balance Command program .command('get-l3-balance') .description('Get the L3 balance for an address') .argument('<address>', 'Address to check') .option('-t, --token <token>', 'Token name', 'MyL2GameToken') .action(async (address, options) => { await getL3Balance(address, options.token); });
-
-// Deposit With Message From L1 to L3 Command
-program
-  .command("deposit-l1-to-l3")
-  .description("Deposit tokens from L1 to L3 with a message")
-  .option("-t, --token <token>", "Token name", "MyL1GameToken")
-  .action(async (options) => {
-    const acc_l1 = getEthereumClient();
-    await depositWithMessageL1toL3(acc_l1, options.token);
-  });
 
 // Get L3 Balance Command
 program
