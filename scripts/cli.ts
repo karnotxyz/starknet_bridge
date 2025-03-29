@@ -191,7 +191,7 @@ program
     // Deploy and enroll token
     Logger.step(3, "Deploying and enrolling token...");
     await deployERC20();
-    await enrollToken(acc_l2, "L2TestToken");
+    await enrollToken(acc_l2, "ERC20_starknet_bridge");
 
     // Deposit and check balance
     Logger.step(4, "Processing deposits and checking balances...");
