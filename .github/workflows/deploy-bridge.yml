@@ -80,12 +80,12 @@ jobs:
       - name: Setup asdf
         uses: asdf-vm/actions/install@v3
 
-      - name: Build Starkgate Contracts
-        run: |
-          cd starkgate-contracts 
-          git checkout dev-2.9.2
-          ./scripts/setup.sh && \
-          ./scripts/build-cairo.sh 
+      # - name: Build Starkgate Contracts
+      #   run: |
+      #     cd starkgate-contracts 
+      #     git checkout dev-2.9.2
+      #     ./scripts/setup.sh && \
+      #     ./scripts/build-cairo.sh 
 
       - name: Build bridge contracts
         run: scarb build
@@ -97,7 +97,16 @@ jobs:
         run: tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-core
 
       - name: Update Core Contract Address
-        run: yq -i ".eth_core_contract_address = \"$(jq -r '.contracts.appchain_starknet_bridge' ./contracts.json)\"" ./madara-cli/deps/madara/configs/presets/devnet.yaml
+        run: |
+          # Extract and print the core contract address from JSON
+          CORE_CONTRACT=$(jq -r '.contracts.appchain_starknet_bridge' ./contracts.json)
+          echo "Extracted core contract address: $CORE_CONTRACT"
+
+          # Update the YAML file with the contract address
+          yq -i ".eth_core_contract_address = \"$CORE_CONTRACT\"" ./madara-cli/deps/madara/configs/presets/devnet.yaml
+
+          # Print the updated value for verification
+          echo "Updated core contract address to: $(yq '.eth_core_contract_address' ./madara-cli/deps/madara/configs/presets/devnet.yaml)"
 
       - name: Run l3
         run: |
@@ -115,7 +124,7 @@ jobs:
 
       - name: Wait for server to be ready
         run: |
-          until [ "$(curl http://localhost:9955)" = "Used HTTP Method is not allowed. POST or OPTIONS is required" ]; do
+          until [ "$(curl -s http://localhost:9955)" = "Used HTTP Method is not allowed. POST or OPTIONS is required" ]; do
             echo "Waiting for server to be ready..."
             sleep 2
           done
