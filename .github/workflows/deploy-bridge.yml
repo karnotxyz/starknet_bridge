@@ -102,7 +102,7 @@ jobs:
       - name: Run l3
         run: |
           docker run --network bridge-network \
-            -d -p 9955:9955 -v ./madara-cli/deps/madara/configs/:/apps/configs/  madara:latest \
+            -p 9955:9955 -v ./madara-cli/deps/madara/configs/:/apps/configs/  madara:latest \
             --base-path ./madara-l3-db \
             --rpc-cors "*" --rpc-external --rpc-admin \
             --rpc-port 9955 --rpc-admin-port 9953 \
