@@ -80,12 +80,12 @@ jobs:
       - name: Setup asdf
         uses: asdf-vm/actions/install@v3
 
-      # - name: Build Starkgate Contracts
-      #   run: |
-      #     cd starkgate-contracts 
-      #     git checkout dev-2.9.2
-      #     ./scripts/setup.sh && \
-      #     ./scripts/build-cairo.sh 
+      - name: Build Starkgate Contracts
+        run: |
+          cd starkgate-contracts 
+          git checkout dev-2.9.2
+          ./scripts/setup.sh && \
+          ./scripts/build-cairo.sh 
 
       - name: Build bridge contracts
         run: scarb build
@@ -99,8 +99,14 @@ jobs:
       - name: Update Core Contract Address
         run: |
           # Extract and print the core contract address from JSON
-          CORE_CONTRACT=$(jq -r '.contracts.appchain_starknet_bridge' ./contracts.json)
+          CORE_CONTRACT=$(jq -r '.contracts.appchain' ./contracts.json)
           echo "Extracted core contract address: $CORE_CONTRACT"
+
+          # Check if the extracted value is null and fail if it is
+          if [ "$CORE_CONTRACT" == "null" ] || [ -z "$CORE_CONTRACT" ]; then
+            echo "Error: Core contract address is null or empty."
+            exit 1
+          fi
 
           # Update the YAML file with the contract address
           yq -i ".eth_core_contract_address = \"$CORE_CONTRACT\"" ./madara-cli/deps/madara/configs/presets/devnet.yaml
@@ -110,7 +116,7 @@ jobs:
 
       - name: Run l3
         run: |
-          docker run --network bridge-network \
+          docker run -d --network bridge-network \
             -p 9955:9955 -v ./madara-cli/deps/madara/configs/:/apps/configs/  madara:latest \
             --base-path ./madara-l3-db \
             --rpc-cors "*" --rpc-external --rpc-admin \

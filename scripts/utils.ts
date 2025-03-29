@@ -34,19 +34,19 @@ export function getContract(contract: Contract): Contract {
   if (!existsSync(PATH)) {
     return contract;
   }
-  
+
   const contracts = JSON.parse(readFileSync(PATH, { encoding: 'utf-8' }));
-  
+
   // Try to get class hash if it exists in stored contracts
   if (contracts.class_hashes && contracts.class_hashes[`${contract.name}_${contract.package.name}`]) {
     contract.classHash = contracts.class_hashes[`${contract.name}_${contract.package.name}`];
   }
-  
+
   // Try to get contract address if it exists in stored contracts
   if (contracts.contracts && contracts.contracts[contract.name]) {
     contract.address = contracts.contracts[contract.name];
   }
-  
+
   return contract;
 }
 
@@ -106,13 +106,13 @@ export function getAccount(layer: Layer): Account {
 export async function declareContract(contract: Contract) {
   // First, check if we already have the contract declared and get existing information
   getContract(contract);
-  
+
   // If contract already has a class hash, it's already declared
   if (contract.classHash) {
     console.log(`Contract ${contract.name} already declared with class hash ${contract.classHash}`);
     return { transaction_hash: '', class_hash: contract.classHash };
   }
-  
+
   const layer = contract.layer;
   const provider = getProvider(layer);
   const acc = getAccount(layer);
@@ -188,11 +188,11 @@ export async function deployContract(contract: Contract, constructorData: RawArg
     console.log(`Contract ${contract.name} already deployed at address ${contract.address}`);
     return { transaction_hash: '', contract_address: contract.address };
   }
-  
+
   const layer = contract.layer;
   const provider = getProvider(layer);
   const acc = getAccount(layer);
-  
+
   if (!contract.classHash) {
     throw new Error(`Contract ${contract.name} has no class hash. Declare it first.`);
   }
@@ -243,7 +243,7 @@ export async function deployContract(contract: Contract, constructorData: RawArg
   saveContracts(contracts);
   console.log(`Contract deployed: ${contract.name}`)
   console.log(`Address: ${tx.contract_address}`);
-  
+
   // Update contract with address
   contract.address = tx.contract_address;
 
