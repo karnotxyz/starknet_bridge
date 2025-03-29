@@ -115,7 +115,7 @@ jobs:
 
       - name: Wait for server to be ready
         run: |
-          until [ "$(curl -s http://localhost:9955)" = "Used HTTP Method is not allowed. POST or OPTIONS is required" ]; do
+          until [ "$(curl http://localhost:9955)" = "Used HTTP Method is not allowed. POST or OPTIONS is required" ]; do
             echo "Waiting for server to be ready..."
             sleep 2
           done
