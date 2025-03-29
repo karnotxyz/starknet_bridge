@@ -125,7 +125,6 @@ export async function configureAppchainBridge(acc_l3: Account) {
 
     Logger.success("App role admin set successfully !!");
     Logger.txHash(res.transaction_hash);
-
   }
 
   {
@@ -242,7 +241,12 @@ export async function deployERC20() {
  * Declare and set ERC20 token on L3
  */
 export async function declareAndSetERC20L3(acc_l3: Account) {
-  await declareContract("ERC20Lockable", "starkgate_contracts", Layer.L3, "./starkgate-contracts/cairo_contracts");
+  await declareContract(
+    "ERC20Lockable",
+    "starkgate_contracts",
+    Layer.L3,
+    "./starkgate-contracts/cairo_contracts"
+  );
   // await declareContract("ERC20", "starknet_contracts", Layer.L3);
   Logger.success("ERC20 declared!");
   const l3Bridge = getContracts().contracts["TokenBridge_starkgate_contracts"];
@@ -366,22 +370,25 @@ export async function getL3Balance(
   Logger.info(`Finding corresponding appchain token`);
 
   if (correspondingToken != 0n) {
-    const correspondingTokenAddress = num.toHex(correspondingToken as any);
-    Logger.address(
-      "Corresponding appchain token address",
-      correspondingTokenAddress
-    );
-    const appchainTokenCls = await providerL3.getClassAt(
-      correspondingTokenAddress
-    );
-    const appchainToken = new Contract(
-      appchainTokenCls.abi,
-      correspondingTokenAddress,
-      providerL3
-    );
-    const balance = await appchainToken.call("balanceOf", [address]);
-    Logger.info(`Balance: ${balance}`);
+    Logger.error("No corresponding token found on l3");
+    throw new Error("No corresponding token found on l3 ");
   }
+
+  const correspondingTokenAddress = num.toHex(correspondingToken as any);
+  Logger.address(
+    "Corresponding appchain token address",
+    correspondingTokenAddress
+  );
+  const appchainTokenCls = await providerL3.getClassAt(
+    correspondingTokenAddress
+  );
+  const appchainToken = new Contract(
+    appchainTokenCls.abi,
+    correspondingTokenAddress,
+    providerL3
+  );
+  const balance = await appchainToken.call("balanceOf", [address]);
+  Logger.info(`Balance: ${balance}`);
 }
 
 /**

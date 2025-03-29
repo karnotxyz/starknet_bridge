@@ -38,6 +38,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      # this builds `madara` at the branch `l3-support`
+      # and commit a9b0821a5fc837c0bd96e8102162f02ea8b43aab
       - name: Clone Madara repository
         run: git clone --branch devlopment https://github.com/byteZorvin/madara-cli.git
 
