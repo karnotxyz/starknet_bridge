@@ -182,17 +182,19 @@ program
     Logger.step(1, "Setting up bridges...");
     await deployAppchainBridge();
     await deployL2Brdige();
+
+    Logger.step(2, "Configuring the bridges...");
     await configureAppchainBridge(acc_l3);
     await setL2Bridge(acc_l3);
     await declareAndSetERC20L3(acc_l3);
 
     // Deploy and enroll token
-    Logger.step(2, "Deploying and enrolling token...");
+    Logger.step(3, "Deploying and enrolling token...");
     await deployERC20();
     await enrollToken(acc_l2, "L2TestToken");
 
     // Deposit and check balance
-    Logger.step(3, "Processing deposits and checking balances...");
+    Logger.step(4, "Processing deposits and checking balances...");
     await deposit(acc_l2);
     await getL3Balance(acc_l3.address);
 

@@ -111,7 +111,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
       account: acc_l3.address,
     });
 
-    await acc_l3.execute([call], {
+    const res = await acc_l3.execute([call], {
       maxFee: 0,
       resourceBounds: {
         l1_gas: {
@@ -125,14 +125,18 @@ export async function configureAppchainBridge(acc_l3: Account) {
       },
     });
 
-    Logger.success("App role admin set successfully!");
+    await acc_l3.waitForTransaction(res.transaction_hash);
+
+    Logger.txHash(res.transaction_hash);
+    Logger.success("App role admin set successfully !!");
+
   }
 
   {
     const call = appchainBridgeContract.populate("register_app_governor", {
       account: acc_l3.address,
     });
-    await acc_l3.execute([call], {
+    const res = await acc_l3.execute([call], {
       maxFee: 0,
       resourceBounds: {
         l1_gas: {
@@ -145,14 +149,18 @@ export async function configureAppchainBridge(acc_l3: Account) {
         },
       },
     });
-    Logger.success("App governor set successfully!");
+
+    await acc_l3.waitForTransaction(res.transaction_hash);
+
+    Logger.success("App governor set successfully !!");
+    Logger.txHash(res.transaction_hash);
   }
 
   {
     const call = appchainBridgeContract.populate("set_l2_token_governance", {
       l2_token_governance: acc_l3.address,
     });
-    await acc_l3.execute([call], {
+    const res = await acc_l3.execute([call], {
       maxFee: 0,
       resourceBounds: {
         l1_gas: {
@@ -165,7 +173,9 @@ export async function configureAppchainBridge(acc_l3: Account) {
         },
       },
     });
-    Logger.success("L2 Governance set successfully!");
+    await acc_l3.waitForTransaction(res.transaction_hash);
+    Logger.txHash(res.transaction_hash);
+    Logger.success("L2 Governance set successfully !!");
   }
 }
 
@@ -183,7 +193,7 @@ export async function setL2Bridge(acc_l3: Account) {
     const call = appchainBridgeContract.populate("set_l1_bridge", {
       l1_bridge_address: tokenBridge,
     });
-    await acc_l3.execute([call], {
+    const res = await acc_l3.execute([call], {
       maxFee: 0,
       resourceBounds: {
         l1_gas: {
@@ -196,7 +206,10 @@ export async function setL2Bridge(acc_l3: Account) {
         },
       },
     });
-    Logger.success("L2 bridge set successfully!");
+
+    await acc_l3.waitForTransaction(res.transaction_hash);
+    Logger.txHash(res.transaction_hash);
+    Logger.success("L2 bridge set successfully !!");
   }
 }
 
@@ -233,11 +246,9 @@ export async function deployERC20() {
  * Declare and set ERC20 token on L3
  */
 export async function declareAndSetERC20L3(acc_l3: Account) {
-  // await declareContract("ERC20Lockable", "starkgate_contracts", Layer.L3, "./starkgate-contracts/cairo_contracts");
+  await declareContract("ERC20Lockable", "starkgate_contracts", Layer.L3, "./starkgate-contracts/cairo_contracts");
   // await declareContract("ERC20", "starknet_contracts", Layer.L3);
-  // Logger.success("ERC20 declared!");
-  // await sleep(3000);
-
+  Logger.success("ERC20 declared!");
   const l3Bridge = getContracts().contracts["TokenBridge_starkgate_contracts"];
   const cls = await acc_l3.getClassAt(l3Bridge);
   const l3BridgeContract = new Contract(cls.abi, l3Bridge, acc_l3);
@@ -264,6 +275,7 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
         },
       },
     });
+    await acc.waitForTransaction(result.transaction_hash);
     Logger.success("ERC20 class_hash set successfully!");
     Logger.txHash(result.transaction_hash);
   }
@@ -283,6 +295,7 @@ export async function enrollToken(
     token: tokenAddress,
   });
   let result = await acc_l2.execute([call]);
+  await acc_l2.waitForTransaction(result.transaction_hash);
   Logger.success("Token enrolled successfully!");
   Logger.txHash(result.transaction_hash);
 }
@@ -307,6 +320,7 @@ export async function deposit(
       amount,
     });
     let result = await acc_l2.execute([call]);
+    await acc_l2.waitForTransaction(result.transaction_hash);
     Logger.success("Approval success!");
     Logger.txHash(result.transaction_hash);
   }
@@ -327,6 +341,8 @@ export async function deposit(
       message: 0,
     });
     let result = await acc_l2.execute([call]);
+
+    await acc_l2.waitForTransaction(result.transaction_hash);
     Logger.success("Deposit success!");
     Logger.txHash(result.transaction_hash);
     await sleep(10000);
