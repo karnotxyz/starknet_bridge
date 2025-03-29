@@ -18,14 +18,13 @@ import {
   dumpPath,
   getAccount,
   getEthereumClient,
-  Layer,
   setDumpPath,
 } from "./utils.ts";
 import { Logger } from "./logger.ts";
 import {
   deployCoreContract,
   deployAppchainBridge,
-  deployL2Brdige,
+  deployL2Bridge,
   configureAppchainBridge,
   setL2Bridge,
   deployERC20,
@@ -36,6 +35,9 @@ import {
   depositWithMessageL1toL3,
   initiateTokenL2toL3Withdrawal,
 } from "./bridgeDeploy.ts";
+import {
+  Layer
+} from "./types.ts"
 
 const program = new Command();
 
@@ -75,7 +77,7 @@ program
   .command("deploy-l2-bridge")
   .description("Deploy the bridge to L2")
   .action(async () => {
-    await deployL2Brdige();
+    await deployL2Bridge();
   });
 
 // Configure Appchain Bridge Command
@@ -196,7 +198,7 @@ program
     // Setup
     Logger.step(1, "Setting up bridges...");
     await deployAppchainBridge();
-    await deployL2Brdige();
+    await deployL2Bridge();
 
     Logger.step(2, "Configuring the bridges...");
     await configureAppchainBridge(acc_l3);
