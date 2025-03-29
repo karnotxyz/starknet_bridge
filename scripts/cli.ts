@@ -198,12 +198,12 @@ program
     // Deploy and enroll token
     Logger.step(3, "Deploying and enrolling token...");
     await deployERC20();
-    await enrollToken(acc_l2, "ERC20_starknet_bridge");
+    await enrollToken(acc_l2, "ERC20");
 
     Logger.step(4, "Check the corresponding token and balance on l3");
     await getL3Balance(
       process.env.AACCOUNT_L3_ADDRESS as string,
-      "ERC20_starknet_bridge"
+      "ERC20"
     );
 
     Logger.success("Full flow completed successfully!");
