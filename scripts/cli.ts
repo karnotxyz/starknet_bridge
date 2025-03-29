@@ -193,11 +193,6 @@ program
     await deployERC20();
     await enrollToken(acc_l2, "ERC20_starknet_bridge");
 
-    // Deposit and check balance
-    Logger.step(4, "Processing deposits and checking balances...");
-    await deposit(acc_l2);
-    await getL3Balance(acc_l3.address);
-
     Logger.success("Full flow completed successfully!");
   });
 

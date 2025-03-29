@@ -70,7 +70,7 @@ export async function deployAppchainBridge() {
  * Deploy the L2 bridge on Starknet
  */
 export async function deployL2Brdige() {
-  // await declareContract("TokenBridge", "starknet_bridge", Layer.L2);
+  await declareContract("TokenBridge", "starknet_bridge", Layer.L2);
   Logger.success("TokenBridge declared!");
   const saved_class_hash = await getContracts().class_hashes[
     "TokenBridge_starknet_bridge"
@@ -123,8 +123,8 @@ export async function configureAppchainBridge(acc_l3: Account) {
 
     await acc_l3.waitForTransaction(res.transaction_hash);
 
-    Logger.txHash(res.transaction_hash);
     Logger.success("App role admin set successfully !!");
+    Logger.txHash(res.transaction_hash);
 
   }
 
@@ -170,8 +170,8 @@ export async function configureAppchainBridge(acc_l3: Account) {
       },
     });
     await acc_l3.waitForTransaction(res.transaction_hash);
-    Logger.txHash(res.transaction_hash);
     Logger.success("L2 Governance set successfully !!");
+    Logger.txHash(res.transaction_hash);
   }
 }
 
@@ -204,8 +204,8 @@ export async function setL2Bridge(acc_l3: Account) {
     });
 
     await acc_l3.waitForTransaction(res.transaction_hash);
-    Logger.txHash(res.transaction_hash);
     Logger.success("L2 bridge set successfully !!");
+    Logger.txHash(res.transaction_hash);
   }
 }
 
@@ -464,6 +464,8 @@ export async function initiateTokenL2toL3Withdrawal(
   );
 
   let tx = await acc_l3.execute([initiateWithdrawalCall]);
+  await acc_l3.waitForTransaction(tx.transaction_hash);
+  Logger.success("Withdrawal initiated successfully!");
   Logger.txHash(tx.transaction_hash);
 }
 
