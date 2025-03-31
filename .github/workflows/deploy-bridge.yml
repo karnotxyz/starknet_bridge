@@ -39,7 +39,6 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       # this builds `madara` at the branch `bridge-support`
-      # and commit d614b5c3cff90de2a592f7bd8a69db33ebfa5917
       - name: Clone Madara repository
         run: git clone --branch devlopment https://github.com/byteZorvin/madara-cli.git
 
