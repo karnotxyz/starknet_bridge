@@ -1,15 +1,14 @@
 #[starknet::component]
 pub mod WithdrawalLimitComponent {
-    use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
-    use starknet_bridge::{constants, bridge::IWithdrawalLimitStatus};
     use core::num::traits::Bounded;
-    use starknet::storage::Map;
-    use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapWriteAccess,
-        StorageMapReadAccess,
-    };
-
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
+    use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
+    use starknet_bridge::bridge::IWithdrawalLimitStatus;
+    use starknet_bridge::constants;
     use starknet_bridge::withdrawal_limit::interface::IWithdrawalLimit;
 
     #[storage]
@@ -53,7 +52,7 @@ pub mod WithdrawalLimitComponent {
             self: @ComponentState<TContractState>, token: ContractAddress,
         ) -> u256 {
             // If there is no limt, return max uint256.
-            if self.get_contract().is_withdrawal_limit_applied(:token) == false {
+            if !self.get_contract().is_withdrawal_limit_applied(:token) {
                 return Bounded::MAX;
             }
             let remaining_quota = self.read_withdrawal_quota_slot(:token);

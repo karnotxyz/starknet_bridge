@@ -1,15 +1,13 @@
-use snforge_std::DeclareResultTrait;
 use snforge_std as snf;
-use snforge_std::{ContractClassTrait, EventSpyAssertionsTrait};
-use starknet_bridge::mocks::{hash};
-use starknet_bridge::bridge::{
-    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge, TokenBridge::Event,
-    types::TokenStatus,
-};
-use super::constants::{OWNER, L3_BRIDGE_ADDRESS};
-use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, deploy_token_bridge};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait};
+use starknet_bridge::bridge::TokenBridge::Event;
 use starknet_bridge::bridge::tests::utils::message_payloads;
+use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, deploy_token_bridge};
+use starknet_bridge::bridge::types::TokenStatus;
+use starknet_bridge::bridge::{ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge};
 use starknet_bridge::constants;
+use starknet_bridge::mocks::hash;
+use super::constants::{L3_BRIDGE_ADDRESS, OWNER};
 
 
 #[test]

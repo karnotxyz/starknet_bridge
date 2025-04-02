@@ -1,4 +1,4 @@
-use piltover::messaging::types::{MessageHash};
+use piltover::messaging::types::MessageHash;
 
 #[derive(Serde, Drop, starknet::Store, PartialEq, Debug)]
 pub enum TokenStatus {

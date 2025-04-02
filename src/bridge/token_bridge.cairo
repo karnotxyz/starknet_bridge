@@ -1,37 +1,30 @@
 #[starknet::contract]
 pub mod TokenBridge {
-    use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapWriteAccess,
-        StorageMapReadAccess,
-    };
-    use starknet::SyscallResultTrait;
-    use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
-    use core::option::OptionTrait;
-    use core::traits::TryInto;
-    use core::starknet::event::EventEmitter;
-    use starknet::storage::Map;
     use core::array::ArrayTrait;
-    use core::serde::Serde;
     use core::num::traits::Bounded;
+    use core::option::OptionTrait;
+    use core::serde::Serde;
+    use core::to_byte_array::FormatAsByteArray;
+    use core::traits::TryInto;
+    use openzeppelin::access::ownable::OwnableComponent;
+    use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent;
+    use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent::InternalTrait as InternalReentrancyGuardImpl;
     use openzeppelin::token::erc20::interface::{
-        IERC20Dispatcher, IERC20MetadataDispatcher, IERC20DispatcherTrait,
+        IERC20Dispatcher, IERC20DispatcherTrait, IERC20MetadataDispatcher,
         IERC20MetadataDispatcherTrait,
     };
-    use starknet::syscalls::call_contract_syscall;
-    use core::to_byte_array::FormatAsByteArray;
-
-    use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
-    use openzeppelin::security::reentrancyguard::{
-        ReentrancyGuardComponent,
-        ReentrancyGuardComponent::InternalTrait as InternalReentrancyGuardImpl,
-    };
-
     use piltover::messaging::types::MessageToAppchainStatus;
-
-
+    use starknet::SyscallResultTrait;
+    use starknet::event::EventEmitter;
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
+    use starknet::syscalls::call_contract_syscall;
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent;
+    use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
@@ -39,19 +32,17 @@ pub mod TokenBridge {
     component!(
         path: ReentrancyGuardComponent, storage: reentrancy_guard, event: ReentrancyGuardEvent,
     );
-
     use core::num::traits::zero::Zero;
-    use starknet::{ContractAddress, get_contract_address, get_caller_address, get_block_timestamp};
-
-    use starknet_bridge::bridge::{
-        types::{TokenStatus, TokenSettings},
-        interface::{ITokenBridge, ITokenBridgeAdmin, IWithdrawalLimitStatus},
+    use piltover::messaging::interface::{IMessagingDispatcher, IMessagingDispatcherTrait};
+    use piltover::messaging::types::{MessageHash, Nonce};
+    use starknet::{
+        ClassHash, ContractAddress, get_block_timestamp, get_caller_address, get_contract_address,
     };
-    use piltover::messaging::{
-        interface::{IMessagingDispatcher, IMessagingDispatcherTrait}, types::{MessageHash, Nonce},
+    use starknet_bridge::bridge::interface::{
+        ITokenBridge, ITokenBridgeAdmin, IWithdrawalLimitStatus,
     };
+    use starknet_bridge::bridge::types::{TokenSettings, TokenStatus};
     use starknet_bridge::constants;
-    use starknet::ClassHash;
 
 
     // Ownable

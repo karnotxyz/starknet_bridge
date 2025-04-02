@@ -1,22 +1,19 @@
-use snforge_std::DeclareResultTrait;
 use core::num::traits::Bounded;
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;
-use snforge_std::{ContractClassTrait, EventSpy, EventSpyAssertionsTrait};
-use starknet_bridge::bridge::tests::constants::{OWNER};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpy, EventSpyAssertionsTrait};
+use starknet_bridge::bridge::tests::constants::OWNER;
+use starknet_bridge::bridge::tests::utils::setup::deploy_erc20;
 use starknet_bridge::mocks::withdrawal_limit_mock::{
     IMockWithdrawalLimitDispatcher, IMockWithdrawalLimitDispatcherTrait,
 };
-
-
+use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent;
+use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::{
+    DailyWithdrawalPercentageUpdated, RemainingQuotaUpdated,
+};
 use starknet_bridge::withdrawal_limit::interface::{
     IWithdrawalLimitDispatcher, IWithdrawalLimitDispatcherTrait,
 };
-use starknet_bridge::withdrawal_limit::component::{
-    WithdrawalLimitComponent,
-    WithdrawalLimitComponent::{RemainingQuotaUpdated, DailyWithdrawalPercentageUpdated},
-};
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-use starknet_bridge::bridge::tests::utils::setup::deploy_erc20;
 
 
 fn deploy_withdrawal_limit() -> (IWithdrawalLimitDispatcher, EventSpy) {

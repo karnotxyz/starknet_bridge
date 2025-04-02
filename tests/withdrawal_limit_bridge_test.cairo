@@ -1,11 +1,12 @@
 use snforge_std as snf;
 use snforge_std::EventSpyAssertionsTrait;
+use starknet_bridge::bridge::TokenBridge::Event;
+use starknet_bridge::bridge::tests::utils::setup::deploy_token_bridge;
 use starknet_bridge::bridge::{
     ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, IWithdrawalLimitStatusDispatcher,
-    IWithdrawalLimitStatusDispatcherTrait, TokenBridge, TokenBridge::Event,
+    IWithdrawalLimitStatusDispatcherTrait, TokenBridge,
 };
 use super::constants::{OWNER, USDC_MOCK_ADDRESS};
-use starknet_bridge::bridge::tests::utils::setup::{deploy_token_bridge};
 
 
 #[test]

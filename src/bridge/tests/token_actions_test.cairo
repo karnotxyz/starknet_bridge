@@ -1,11 +1,10 @@
 use snforge_std as snf;
 use starknet::contract_address_const;
-use starknet::storage::{StoragePointerWriteAccess, StorageMapReadAccess, StorageMapWriteAccess};
-use starknet_bridge::bridge::{ITokenBridge, ITokenBridgeAdmin, types::{TokenStatus, TokenSettings}};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerWriteAccess};
+use starknet_bridge::bridge::tests::constants::{L3_BRIDGE_ADDRESS, OWNER, USDC_MOCK_ADDRESS};
 use starknet_bridge::bridge::tests::utils::setup::mock_state_testing;
-
-use starknet_bridge::bridge::TokenBridge;
-use starknet_bridge::bridge::tests::constants::{OWNER, USDC_MOCK_ADDRESS, L3_BRIDGE_ADDRESS};
+use starknet_bridge::bridge::types::{TokenSettings, TokenStatus};
+use starknet_bridge::bridge::{ITokenBridge, ITokenBridgeAdmin, TokenBridge};
 
 #[test]
 fn deactivate_token_ok() {

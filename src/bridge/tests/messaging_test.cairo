@@ -1,22 +1,19 @@
-use piltover::messaging::interface::IMessagingDispatcherTrait;
-
-use starknet::storage::{StoragePointerWriteAccess};
-use starknet_bridge::bridge::token_bridge::TokenBridge::{TokenBridgeInternal};
+use piltover::messaging::interface::{IMessagingDispatcher, IMessagingDispatcherTrait};
+use piltover::messaging::types::MessageToAppchainStatus;
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, DeclareResultTrait};
-use starknet_bridge::mocks::{
-    messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, hash,
-};
+use starknet::contract_address::contract_address_const;
+use starknet::storage::StoragePointerWriteAccess;
 use starknet_bridge::bridge::TokenBridge;
-use piltover::messaging::interface::IMessagingDispatcher;
-use starknet_bridge::bridge::{
-    tests::constants::{L3_BRIDGE_ADDRESS, OWNER, USDC_MOCK_ADDRESS, DELAY_TIME},
+use starknet_bridge::bridge::tests::constants::{
+    DELAY_TIME, L3_BRIDGE_ADDRESS, OWNER, USDC_MOCK_ADDRESS,
 };
-use piltover::messaging::types::MessageToAppchainStatus;
-use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, mock_state_testing};
 use starknet_bridge::bridge::tests::utils::message_payloads;
-use starknet::contract_address::{contract_address_const};
+use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, mock_state_testing};
+use starknet_bridge::bridge::token_bridge::TokenBridge::TokenBridgeInternal;
 use starknet_bridge::constants;
+use starknet_bridge::mocks::hash;
+use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessagingDispatcherTrait};
 
 
 #[test]
@@ -27,7 +24,7 @@ fn deploy_message_payload_ok() {
     println!("calldata: {:?}", calldata);
 
     let expected_calldata: Span<felt252> = array![
-        1735287220490242646849127034349817040427485508531977630937607944683610398217, // usdc_address
+        681912207603843452456861997385329665619280875193438322080214328832458190422, // usdc_address
         0,
         1431520323,
         4, // "USDC"

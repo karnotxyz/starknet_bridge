@@ -1,20 +1,18 @@
 use core::array::ArrayTrait;
 use core::option::OptionTrait;
 use core::traits::TryInto;
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;
 use snforge_std::{EventSpy, EventSpyAssertionsTrait};
 use starknet::ContractAddress;
-use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher};
-use starknet_bridge::bridge::{
-    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge, TokenBridge::Event,
-};
-
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-use starknet::contract_address::{contract_address_const};
-use super::constants::DELAY_TIME;
+use starknet::contract_address::contract_address_const;
+use starknet_bridge::bridge::TokenBridge::Event;
 use starknet_bridge::bridge::tests::utils::setup::{
     deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle,
 };
+use starknet_bridge::bridge::{ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge};
+use starknet_bridge::mocks::messaging::IMockMessagingDispatcher;
+use super::constants::DELAY_TIME;
 
 fn setup() -> (ITokenBridgeDispatcher, EventSpy, ContractAddress, IMockMessagingDispatcher) {
     let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();

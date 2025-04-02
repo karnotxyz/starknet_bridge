@@ -1,15 +1,16 @@
+use openzeppelin::access::ownable::interface::{
+    IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait,
+};
 use snforge_std as snf;
 use snforge_std::EventSpyAssertionsTrait;
+use starknet::contract_address::contract_address_const;
+use starknet_bridge::bridge::TokenBridge::Event;
+use starknet_bridge::bridge::tests::utils::setup::deploy_token_bridge;
 use starknet_bridge::bridge::{
-    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, ITokenBridgeAdminDispatcher,
-    ITokenBridgeAdminDispatcherTrait, TokenBridge, TokenBridge::Event,
+    ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, ITokenBridgeDispatcher,
+    ITokenBridgeDispatcherTrait, TokenBridge,
 };
-use openzeppelin::access::ownable::{
-    interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait},
-};
-use starknet::contract_address::{contract_address_const};
-use starknet_bridge::bridge::tests::utils::setup::{deploy_token_bridge};
-use super::constants::{OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS};
+use super::constants::{L3_BRIDGE_ADDRESS, OWNER, USDC_MOCK_ADDRESS};
 
 
 #[test]

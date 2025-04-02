@@ -1,14 +1,13 @@
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpy};
 use starknet::ContractAddress;
-use starknet_bridge::mocks::{messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}};
-use starknet_bridge::bridge::{
-    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge, types::TokenStatus,
-};
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-use starknet_bridge::bridge::tests::constants::{OWNER, L3_BRIDGE_ADDRESS, DELAY_TIME};
-use starknet_bridge::constants;
+use starknet_bridge::bridge::tests::constants::{DELAY_TIME, L3_BRIDGE_ADDRESS, OWNER};
 use starknet_bridge::bridge::tests::utils::message_payloads;
+use starknet_bridge::bridge::types::TokenStatus;
+use starknet_bridge::bridge::{ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge};
+use starknet_bridge::constants;
+use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessagingDispatcherTrait};
 
 
 pub fn deploy_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
