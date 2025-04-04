@@ -2,7 +2,6 @@ import { parseAbi, parseEther, WalletClient } from "viem";
 import {
   deployContract,
   declareContract,
-  getContracts,
   getProvider,
   getAccount,
   getContract,
@@ -10,13 +9,12 @@ import {
 } from "./utils";
 import { Layer, Contract, Package } from "./types";
 import { Account, byteArray, Contract as StarknetContract, num } from "starknet";
-import { sepolia } from "viem/chains";
-import { Account as EthAccount } from "viem";
 import { Logger } from "./logger";
 import {
   appchainContract,
   tokenBridgeL2Contract,
   tokenBridgeL3Contract,
+  timelockContract,
   erc20Contract,
   erc20LockableContract,
   starknetBridgePackage,
@@ -65,6 +63,25 @@ export async function deployAppchainBridge() {
   }
 }
 
+export async function deployTimelockContract() {
+  await declareContract(timelockContract);
+  Logger.success("Timelock declared!");
+
+  await deployContract(
+    timelockContract,
+    [
+      86400, // delay (24 hours in seconds)
+      [process.env.ACCOUNT_L2_ADDRESS as string], // proposers
+      [process.env.ACCOUNT_L2_ADDRESS as string], // executors
+      process.env.ACCOUNT_L2_ADDRESS as string, // admin
+    ]
+  )
+
+  if (timelockContract.address) {
+    Logger.address("Timelock deployed at", timelockContract.address);
+  }
+}
+
 /**
  * Deploy the L2 bridge on Starknet
  */
@@ -75,6 +92,7 @@ export async function deployL2Bridge() {
   // Get the saved contract addresses
   getContract(tokenBridgeL3Contract);
   getContract(appchainContract);
+  getContract(timelockContract);
 
   // Verify we have the required addresses
   if (!tokenBridgeL3Contract.address) {
@@ -85,12 +103,20 @@ export async function deployL2Bridge() {
     throw new Error("Appchain core contract address not found, deploy core contract first");
   }
 
+  if (!timelockContract.address) {
+    throw new Error("Timelock contract address not found, deploy timelock contract first");
+  }
+
   await deployContract(
     tokenBridgeL2Contract,
     [
       tokenBridgeL3Contract.address,
       appchainContract.address,
-      process.env.ACCOUNT_L2_ADDRESS as string,
+      [process.env.ACCOUNT_L2_ADDRESS as string], // app governors
+      [process.env.ACCOUNT_L2_ADDRESS as string], // security admins
+      [process.env.ACCOUNT_L2_ADDRESS as string], // security agents
+      [process.env.ACCOUNT_L2_ADDRESS as string], // token admins
+      timelockContract.address, // timelock
     ]
   );
 

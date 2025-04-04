@@ -8,8 +8,7 @@ use starknet_bridge::bridge::{ITokenBridgeDispatcher, ITokenBridgeDispatcherTrai
 use starknet_bridge::constants;
 use starknet_bridge::mocks::hash;
 use super::constants::{
-    APP_GOVERNOR, L3_BRIDGE_ADDRESS, OWNER, SECURITY_ADMIN, SECURITY_AGENT, TIMELOCK_ADDRESS,
-    TOKEN_ADMIN,
+    APP_GOVERNOR, L3_BRIDGE_ADDRESS, SECURITY_ADMIN, SECURITY_AGENT, TIMELOCK_ADDRESS, TOKEN_ADMIN,
 };
 
 
