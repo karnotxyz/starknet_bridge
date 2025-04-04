@@ -2,7 +2,6 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use snforge_std as snf;
 use snforge_std::{EventSpy, EventSpyAssertionsTrait};
 use starknet::ContractAddress;
-use starknet::contract_address::contract_address_const;
 use starknet_bridge::bridge::TokenBridge::Event;
 use starknet_bridge::bridge::tests::utils::setup::{
     deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle,
@@ -12,7 +11,7 @@ use starknet_bridge::bridge::{
     ITokenBridgeDispatcherTrait, TokenBridge,
 };
 use starknet_bridge::mocks::messaging::IMockMessagingDispatcher;
-use super::constants::OWNER;
+use super::constants::TOKEN_ADMIN;
 
 fn setup() -> (ITokenBridgeDispatcher, EventSpy, ContractAddress, IMockMessagingDispatcher) {
     let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
@@ -73,9 +72,9 @@ fn deposit_deactivated() {
         contract_address: token_bridge.contract_address,
     };
 
-    snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
+    snf::start_cheat_caller_address(token_bridge.contract_address, TOKEN_ADMIN());
     token_bridge_admin.deactivate_token(usdc_address);
-    snf::stop_cheat_caller_address(OWNER());
+    snf::stop_cheat_caller_address(TOKEN_ADMIN());
 
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 }
@@ -189,9 +188,9 @@ fn deposit_with_message_deactivated() {
         contract_address: token_bridge.contract_address,
     };
 
-    snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
+    snf::start_cheat_caller_address(token_bridge.contract_address, TOKEN_ADMIN());
     token_bridge_admin.deactivate_token(usdc_address);
-    snf::stop_cheat_caller_address(OWNER());
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
 
     let mut calldata = ArrayTrait::new();
     'param1'.serialize(ref calldata);
@@ -246,9 +245,7 @@ fn deposit_cancel_request_different_user() {
     usdc.approve(token_bridge.contract_address, 100);
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 
-    snf::start_cheat_caller_address(
-        token_bridge.contract_address, contract_address_const::<'user2'>(),
-    );
+    snf::start_cheat_caller_address(token_bridge.contract_address, 'user2'.try_into().unwrap());
     token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 2);
 }
 
@@ -319,9 +316,7 @@ fn deposit_with_message_cancel_request_different_user() {
     usdc.approve(token_bridge.contract_address, 100);
     token_bridge.deposit_with_message(usdc_address, 100, snf::test_address(), calldata.span());
 
-    snf::start_cheat_caller_address(
-        token_bridge.contract_address, contract_address_const::<'user2'>(),
-    );
+    snf::start_cheat_caller_address(token_bridge.contract_address, 'user2'.try_into().unwrap());
     token_bridge
         .deposit_with_message_cancel_request(
             usdc_address, 100, snf::test_address(), calldata.span(), 2,

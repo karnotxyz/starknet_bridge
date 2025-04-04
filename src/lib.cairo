@@ -33,6 +33,15 @@ pub mod withdrawal_limit {
     }
 }
 
+pub mod access_control {
+    pub mod component;
+    pub mod roles;
+}
+
+pub mod timelock {
+    pub mod timelock;
+}
+
 pub mod constants;
 
 pub mod mocks {

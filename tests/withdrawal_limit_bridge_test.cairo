@@ -6,11 +6,11 @@ use starknet_bridge::bridge::{
     ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, IWithdrawalLimitStatusDispatcher,
     IWithdrawalLimitStatusDispatcherTrait, TokenBridge,
 };
-use super::constants::{OWNER, USDC_MOCK_ADDRESS};
+use super::constants::{SECURITY_ADMIN, SECURITY_AGENT, USDC_MOCK_ADDRESS};
 
 
 #[test]
-#[should_panic(expected: ('Caller is not the owner',))]
+#[should_panic(expected: ('Caller is missing role',))]
 fn enable_withdrawal_limit_not_owner() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
@@ -31,7 +31,7 @@ fn enable_withdrawal_limit_ok() {
         contract_address: token_bridge.contract_address,
     };
 
-    snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
 
     let usdc_address = USDC_MOCK_ADDRESS();
     token_bridge_admin.enable_withdrawal_limit(usdc_address);
@@ -41,7 +41,7 @@ fn enable_withdrawal_limit_ok() {
     assert(withdrawal_limit.is_withdrawal_limit_applied(usdc_address), 'Limit not applied');
 
     let exepected_limit_enabled = TokenBridge::WithdrawalLimitEnabled {
-        sender: OWNER(), token: usdc_address,
+        sender: SECURITY_AGENT(), token: usdc_address,
     };
     spy
         .assert_emitted(
@@ -55,7 +55,7 @@ fn enable_withdrawal_limit_ok() {
 }
 
 #[test]
-fn disable_withdrwal_limit_ok() {
+fn disable_withdrawal_limit_ok() {
     let (token_bridge, mut spy) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
         contract_address: token_bridge.contract_address,
@@ -64,23 +64,30 @@ fn disable_withdrwal_limit_ok() {
         contract_address: token_bridge.contract_address,
     };
 
-    let owner = OWNER();
-    snf::start_cheat_caller_address(token_bridge.contract_address, owner);
+    // Security agent can enable the limit
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
 
     let usdc_address = USDC_MOCK_ADDRESS();
     token_bridge_admin.enable_withdrawal_limit(usdc_address);
 
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
     // Withdrawal limit is now applied
     assert(withdrawal_limit.is_withdrawal_limit_applied(usdc_address), 'Limit not applied');
 
+    // Security admin can disable the limit
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_ADMIN());
+
     token_bridge_admin.disable_withdrawal_limit(usdc_address);
+
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
 
     assert(
         withdrawal_limit.is_withdrawal_limit_applied(usdc_address) == false, 'Limit not applied',
     );
 
     let expected_limit_disabled = TokenBridge::WithdrawalLimitDisabled {
-        sender: OWNER(), token: usdc_address,
+        sender: SECURITY_ADMIN(), token: usdc_address,
     };
 
     spy
@@ -95,7 +102,7 @@ fn disable_withdrwal_limit_ok() {
 }
 
 #[test]
-#[should_panic(expected: ('Caller is not the owner',))]
+#[should_panic(expected: ('Caller is missing role',))]
 fn disable_withdrawal_limit_not_owner() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
@@ -106,8 +113,7 @@ fn disable_withdrawal_limit_not_owner() {
         contract_address: token_bridge.contract_address,
     };
 
-    let owner = OWNER();
-    snf::start_cheat_caller_address(token_bridge.contract_address, owner);
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
 
     let usdc_address = USDC_MOCK_ADDRESS();
     token_bridge_admin.enable_withdrawal_limit(usdc_address);
@@ -140,7 +146,7 @@ fn is_withdrawal_limit_applied_ok() {
         'Limit already applied',
     );
 
-    snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
     token_bridge_admin.enable_withdrawal_limit(usdc_address);
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 

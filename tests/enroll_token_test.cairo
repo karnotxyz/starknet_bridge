@@ -7,7 +7,10 @@ use starknet_bridge::bridge::types::TokenStatus;
 use starknet_bridge::bridge::{ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge};
 use starknet_bridge::constants;
 use starknet_bridge::mocks::hash;
-use super::constants::{L3_BRIDGE_ADDRESS, OWNER};
+use super::constants::{
+    APP_GOVERNOR, L3_BRIDGE_ADDRESS, OWNER, SECURITY_ADMIN, SECURITY_AGENT, TIMELOCK_ADDRESS,
+    TOKEN_ADMIN,
+};
 
 
 #[test]
@@ -69,16 +72,17 @@ fn enroll_token_nonce_not_updated() {
     // Declare l3 bridge address
     let appchain_bridge_address = L3_BRIDGE_ADDRESS();
 
-    // Declare owner
-    let owner = OWNER();
-
     let token_bridge_class_hash = snf::declare("TokenBridge").unwrap().contract_class();
 
     // Deploy the bridge
     let mut calldata = ArrayTrait::new();
     appchain_bridge_address.serialize(ref calldata);
     messaging_contract_address.serialize(ref calldata);
-    owner.serialize(ref calldata);
+    [APP_GOVERNOR()].span().serialize(ref calldata);
+    [SECURITY_ADMIN()].span().serialize(ref calldata);
+    [SECURITY_AGENT()].span().serialize(ref calldata);
+    [TOKEN_ADMIN()].span().serialize(ref calldata);
+    TIMELOCK_ADDRESS().serialize(ref calldata);
 
     let (token_bridge_address, _) = token_bridge_class_hash.deploy(@calldata).unwrap();
 

@@ -1,25 +1,22 @@
-use openzeppelin::access::ownable::interface::{
-    IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait,
-};
+use openzeppelin::security::interface::{IPausableDispatcher, IPausableDispatcherTrait};
 use snforge_std as snf;
 use snforge_std::EventSpyAssertionsTrait;
-use starknet::contract_address::contract_address_const;
 use starknet_bridge::bridge::TokenBridge::Event;
 use starknet_bridge::bridge::tests::utils::setup::deploy_token_bridge;
 use starknet_bridge::bridge::{
     ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, ITokenBridgeDispatcher,
     ITokenBridgeDispatcherTrait, TokenBridge,
 };
-use super::constants::{L3_BRIDGE_ADDRESS, OWNER, USDC_MOCK_ADDRESS};
+use super::constants::{APP_GOVERNOR, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS};
 
 
 #[test]
 fn constructor_ok() {
     let (token_bridge, _) = deploy_token_bridge();
-    let token_bridge_ownable = IOwnableTwoStepDispatcher {
+    let token_bridge_ownable = IPausableDispatcher {
         contract_address: token_bridge.contract_address,
     };
-    assert(OWNER() == token_bridge_ownable.owner(), 'Incorrect owner');
+    assert(token_bridge_ownable.is_paused() == false, 'Incorrect owner');
 }
 
 #[test]
@@ -34,12 +31,11 @@ fn set_appchain_bridge_ok() {
     let old_appchain_bridge_address = token_bridge.appchain_bridge();
     assert(old_appchain_bridge_address == L3_BRIDGE_ADDRESS(), 'L3 Bridge address incorrect');
 
-    let owner = OWNER();
-    // Cheat for the owner
-    snf::start_cheat_caller_address(token_bridge.contract_address, owner);
+    // Cheat for the APP_GOVERNOR
+    snf::start_cheat_caller_address(token_bridge.contract_address, APP_GOVERNOR());
 
     // Set and check new bridge
-    let new_appchain_bridge_address = contract_address_const::<'l3_bridge_address_new'>();
+    let new_appchain_bridge_address = 'l3_bridge_address_new'.try_into().unwrap();
     token_bridge_admin.set_appchain_token_bridge(new_appchain_bridge_address);
     assert(
         token_bridge.appchain_bridge() == new_appchain_bridge_address, 'Appchain bridge not set',
@@ -56,7 +52,7 @@ fn set_appchain_bridge_ok() {
 }
 
 #[test]
-#[should_panic(expected: ('Caller is not the owner',))]
+#[should_panic(expected: ('Caller is missing role',))]
 fn set_appchain_bridge_not_owner() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
@@ -69,13 +65,13 @@ fn set_appchain_bridge_not_owner() {
     assert(old_appchain_bridge_address == L3_BRIDGE_ADDRESS(), 'L3 Bridge address incorrect');
 
     // Set and check new bridge
-    let new_appchain_bridge_address = contract_address_const::<'l3_bridge_address_new'>();
+    let new_appchain_bridge_address = 'l3_bridge_address_new'.try_into().unwrap();
     token_bridge_admin.set_appchain_token_bridge(new_appchain_bridge_address);
 }
 
 
 #[test]
-#[should_panic(expected: ('Caller is not the owner',))]
+#[should_panic(expected: ('Caller is missing role',))]
 fn set_max_total_balance_not_owner() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
@@ -97,9 +93,8 @@ fn set_max_total_balance_ok() {
 
     let usdc_address = USDC_MOCK_ADDRESS();
 
-    let owner = OWNER();
     // Cheat for the owner
-    snf::start_cheat_caller_address(token_bridge.contract_address, owner);
+    snf::start_cheat_caller_address(token_bridge.contract_address, APP_GOVERNOR());
 
     let decimals = 1000_000;
     token_bridge_admin.set_max_total_balance(usdc_address, 50 * decimals);

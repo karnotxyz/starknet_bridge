@@ -1,7 +1,9 @@
 use snforge_std as snf;
-use starknet::contract_address_const;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerWriteAccess};
-use starknet_bridge::bridge::tests::constants::{L3_BRIDGE_ADDRESS, OWNER, USDC_MOCK_ADDRESS};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use starknet_bridge::access_control::roles::Roles;
+use starknet_bridge::bridge::tests::constants::{
+    L3_BRIDGE_ADDRESS, TIMELOCK_ADDRESS, TOKEN_ADMIN, USDC_MOCK_ADDRESS,
+};
 use starknet_bridge::bridge::tests::utils::setup::mock_state_testing;
 use starknet_bridge::bridge::types::{TokenSettings, TokenStatus};
 use starknet_bridge::bridge::{ITokenBridge, ITokenBridgeAdmin, TokenBridge};
@@ -10,10 +12,16 @@ use starknet_bridge::bridge::{ITokenBridge, ITokenBridgeAdmin, TokenBridge};
 fn deactivate_token_ok() {
     let mut mock = mock_state_testing();
     let usdc_address = USDC_MOCK_ADDRESS();
-    snf::start_cheat_caller_address_global(OWNER());
 
     TokenBridge::constructor(
-        ref mock, L3_BRIDGE_ADDRESS(), contract_address_const::<'messaging_mock'>(), OWNER(),
+        ref mock,
+        L3_BRIDGE_ADDRESS(),
+        'messaging_mock'.try_into().unwrap(),
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        array![TOKEN_ADMIN()].span(),
+        TIMELOCK_ADDRESS(),
     );
     // Setting the token active
     let old_settings = mock.token_settings.read(usdc_address);
@@ -21,7 +29,9 @@ fn deactivate_token_ok() {
         .token_settings
         .write(usdc_address, TokenSettings { token_status: TokenStatus::Active, ..old_settings });
 
+    snf::start_cheat_caller_address_global(TOKEN_ADMIN());
     mock.deactivate_token(usdc_address);
+
     assert(mock.get_status(usdc_address) == TokenStatus::Deactivated, 'Token not deactivated');
 }
 
@@ -31,8 +41,8 @@ fn deactivate_token_not_active() {
     let mut mock = mock_state_testing();
     let usdc_address = USDC_MOCK_ADDRESS();
 
-    mock.ownable.Ownable_owner.write(OWNER());
-    snf::start_cheat_caller_address_global(OWNER());
+    mock.access_control.AccessControl_role_member.write((Roles::TOKEN_ADMIN, TOKEN_ADMIN()), true);
+    snf::start_cheat_caller_address_global(TOKEN_ADMIN());
 
     mock.deactivate_token(usdc_address);
     assert(mock.get_status(usdc_address) == TokenStatus::Deactivated, 'Token not deactivated');
@@ -40,12 +50,12 @@ fn deactivate_token_not_active() {
 
 
 #[test]
-#[should_panic(expected: ('Caller is not the owner',))]
+#[should_panic(expected: ('Caller is missing role',))]
 fn deactivate_token_not_owner() {
     let mut mock = mock_state_testing();
     let usdc_address = USDC_MOCK_ADDRESS();
 
-    mock.ownable.Ownable_owner.write(OWNER());
+    mock.access_control.AccessControl_role_member.write((Roles::TOKEN_ADMIN, TOKEN_ADMIN()), true);
     snf::start_cheat_caller_address_global(snf::test_address());
 
     mock.deactivate_token(usdc_address);
@@ -57,8 +67,8 @@ fn block_token_ok() {
     let mut mock = mock_state_testing();
     let usdc_address = USDC_MOCK_ADDRESS();
 
-    mock.ownable.Ownable_owner.write(OWNER());
-    snf::start_cheat_caller_address_global(OWNER());
+    mock.access_control.AccessControl_role_member.write((Roles::TOKEN_ADMIN, TOKEN_ADMIN()), true);
+    snf::start_cheat_caller_address_global(TOKEN_ADMIN());
 
     mock.block_token(usdc_address);
     assert(mock.get_status(usdc_address) == TokenStatus::Blocked, 'Token not blocked');
@@ -66,12 +76,13 @@ fn block_token_ok() {
 
 
 #[test]
-#[should_panic(expected: ('Caller is not the owner',))]
+#[should_panic(expected: ('Caller is missing role',))]
 fn block_token_not_owner() {
     let mut mock = mock_state_testing();
     let usdc_address = USDC_MOCK_ADDRESS();
 
-    mock.ownable.Ownable_owner.write(OWNER());
+    mock.access_control.AccessControl_role_member.write((Roles::TOKEN_ADMIN, TOKEN_ADMIN()), true);
+
     snf::start_cheat_caller_address_global(snf::test_address());
 
     mock.block_token(usdc_address);
@@ -89,8 +100,8 @@ fn block_token_not_unknown() {
         .token_settings
         .write(usdc_address, TokenSettings { token_status: TokenStatus::Active, ..old_settings });
 
-    mock.ownable.Ownable_owner.write(OWNER());
-    snf::start_cheat_caller_address_global(OWNER());
+    mock.access_control.AccessControl_role_member.write((Roles::TOKEN_ADMIN, TOKEN_ADMIN()), true);
+    snf::start_cheat_caller_address_global(TOKEN_ADMIN());
 
     mock.block_token(usdc_address);
 }
@@ -106,15 +117,15 @@ fn unblock_token_ok() {
         .token_settings
         .write(usdc_address, TokenSettings { token_status: TokenStatus::Blocked, ..old_settings });
 
-    mock.ownable.Ownable_owner.write(OWNER());
-    snf::start_cheat_caller_address_global(OWNER());
+    mock.access_control.AccessControl_role_member.write((Roles::TOKEN_ADMIN, TOKEN_ADMIN()), true);
+    snf::start_cheat_caller_address_global(TOKEN_ADMIN());
 
     mock.unblock_token(usdc_address);
     assert(mock.get_status(usdc_address) == TokenStatus::Unknown, 'Not unblocked');
 }
 
 #[test]
-#[should_panic(expected: ('Caller is not the owner',))]
+#[should_panic(expected: ('Caller is missing role',))]
 fn unblock_token_not_owner() {
     let mut mock = mock_state_testing();
     let usdc_address = USDC_MOCK_ADDRESS();
@@ -125,7 +136,8 @@ fn unblock_token_not_owner() {
         .token_settings
         .write(usdc_address, TokenSettings { token_status: TokenStatus::Blocked, ..old_settings });
 
-    mock.ownable.Ownable_owner.write(OWNER());
+    mock.access_control.AccessControl_role_member.write((Roles::TOKEN_ADMIN, TOKEN_ADMIN()), true);
+
     snf::start_cheat_caller_address_global(snf::test_address());
 
     mock.unblock_token(usdc_address);
@@ -144,8 +156,8 @@ fn unblock_token_not_blocked() {
         .token_settings
         .write(usdc_address, TokenSettings { token_status: TokenStatus::Active, ..old_settings });
 
-    mock.ownable.Ownable_owner.write(OWNER());
-    snf::start_cheat_caller_address_global(OWNER());
+    mock.access_control.AccessControl_role_member.write((Roles::TOKEN_ADMIN, TOKEN_ADMIN()), true);
+    snf::start_cheat_caller_address_global(TOKEN_ADMIN());
 
     mock.unblock_token(usdc_address);
 }
@@ -163,16 +175,15 @@ fn reactivate_token_ok() {
             usdc_address, TokenSettings { token_status: TokenStatus::Deactivated, ..old_settings },
         );
 
-    mock.ownable.Ownable_owner.write(OWNER());
-
-    snf::start_cheat_caller_address_global(OWNER());
+    mock.access_control.AccessControl_role_member.write((Roles::TOKEN_ADMIN, TOKEN_ADMIN()), true);
+    snf::start_cheat_caller_address_global(TOKEN_ADMIN());
 
     mock.reactivate_token(usdc_address);
     assert(mock.get_status(usdc_address) == TokenStatus::Active, 'Did not reactivate');
 }
 
 #[test]
-#[should_panic(expected: ('Caller is not the owner',))]
+#[should_panic(expected: ('Caller is missing role',))]
 fn reactivate_token_not_owner() {
     let mut mock = mock_state_testing();
     let usdc_address = USDC_MOCK_ADDRESS();
@@ -202,8 +213,9 @@ fn reactivate_token_not_deactivated() {
         .token_settings
         .write(usdc_address, TokenSettings { token_status: TokenStatus::Blocked, ..old_settings });
 
-    mock.ownable.Ownable_owner.write(OWNER());
-    snf::start_cheat_caller_address_global(OWNER());
+    mock.access_control.AccessControl_role_member.write((Roles::TOKEN_ADMIN, TOKEN_ADMIN()), true);
+
+    snf::start_cheat_caller_address_global(TOKEN_ADMIN());
 
     mock.reactivate_token(usdc_address);
 }
@@ -221,9 +233,9 @@ fn enroll_token_blocked() {
         .token_settings
         .write(usdc_address, TokenSettings { token_status: TokenStatus::Blocked, ..old_settings });
 
-    mock.ownable.Ownable_owner.write(OWNER());
+    mock.access_control.AccessControl_role_member.write((Roles::TOKEN_ADMIN, TOKEN_ADMIN()), true);
 
-    snf::start_cheat_caller_address_global(OWNER());
+    snf::start_cheat_caller_address_global(TOKEN_ADMIN());
     mock.enroll_token(usdc_address);
 }
 

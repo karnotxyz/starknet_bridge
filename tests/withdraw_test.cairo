@@ -1,7 +1,6 @@
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;
 use snforge_std::EventSpy;
-use starknet::contract_address::contract_address_const;
 use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet_bridge::bridge::tests::utils::setup::{
     deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle,
@@ -12,7 +11,7 @@ use starknet_bridge::bridge::{
 };
 use starknet_bridge::constants;
 use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessagingDispatcherTrait};
-use super::constants::{L3_BRIDGE_ADDRESS, OWNER};
+use super::constants::{L3_BRIDGE_ADDRESS, OWNER, SECURITY_AGENT};
 
 
 fn setup() -> (ITokenBridgeDispatcher, EventSpy, IERC20Dispatcher, IMockMessagingDispatcher, u256) {
@@ -90,7 +89,7 @@ fn withdraw_incorrect_recipient() {
             ),
         );
 
-    token_bridge.withdraw(usdc.contract_address, amount, contract_address_const::<'user2'>());
+    token_bridge.withdraw(usdc.contract_address, amount, 'user2'.try_into().unwrap());
 }
 
 
@@ -103,7 +102,7 @@ fn withdraw_limit_reached() {
         contract_address: token_bridge.contract_address,
     };
 
-    snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
     token_bridge_admin.enable_withdrawal_limit(usdc.contract_address);
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 

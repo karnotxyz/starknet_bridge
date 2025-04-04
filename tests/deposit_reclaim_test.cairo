@@ -5,7 +5,6 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use snforge_std as snf;
 use snforge_std::{EventSpy, EventSpyAssertionsTrait};
 use starknet::ContractAddress;
-use starknet::contract_address::contract_address_const;
 use starknet_bridge::bridge::TokenBridge::Event;
 use starknet_bridge::bridge::tests::utils::setup::{
     deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle,
@@ -117,7 +116,7 @@ fn deposit_reclaim_different_user() {
         starknet::get_block_timestamp() + DELAY_TIME.try_into().unwrap() + 10,
     );
 
-    snf::start_cheat_caller_address_global(contract_address_const::<'user2'>());
+    snf::start_cheat_caller_address_global('user2'.try_into().unwrap());
     token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 1);
 }
 
@@ -252,7 +251,7 @@ fn deposit_reclaim_with_message_different_user() {
         starknet::get_block_timestamp() + DELAY_TIME.try_into().unwrap() + 10,
     );
 
-    snf::start_cheat_caller_address_global(contract_address_const::<'user2'>());
+    snf::start_cheat_caller_address_global('user2'.try_into().unwrap());
     token_bridge
         .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), calldata.span(), 1);
 }
