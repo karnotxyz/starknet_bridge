@@ -20,6 +20,7 @@ fn deactivate_token_ok() {
         array![].span(),
         array![].span(),
         array![].span(),
+        array![].span(),
         array![TOKEN_ADMIN()].span(),
         TIMELOCK_ADDRESS(),
     );

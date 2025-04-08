@@ -8,6 +8,10 @@ pub fn UPGRADE_GOVERNOR() -> ContractAddress {
     'UPGRADE_GOVERNOR'.try_into().unwrap()
 }
 
+pub fn GOVERNANCE_ADMIN() -> ContractAddress {
+    'GOVERNANCE_ADMIN'.try_into().unwrap()
+}
+
 pub fn APP_GOVERNOR() -> ContractAddress {
     'APP_GOVERNOR'.try_into().unwrap()
 }

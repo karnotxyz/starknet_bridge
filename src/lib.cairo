@@ -16,8 +16,6 @@ pub mod bridge {
     pub use interface::{
         ITokenBridge, ITokenBridgeAdmin, ITokenBridgeAdminDispatcher,
         ITokenBridgeAdminDispatcherTrait, ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait,
-        IWithdrawalLimitStatus, IWithdrawalLimitStatusDispatcher,
-        IWithdrawalLimitStatusDispatcherTrait,
     };
 
     pub use token_bridge::TokenBridge;

@@ -8,7 +8,8 @@ use starknet_bridge::bridge::{ITokenBridgeDispatcher, ITokenBridgeDispatcherTrai
 use starknet_bridge::constants;
 use starknet_bridge::mocks::hash;
 use super::constants::{
-    APP_GOVERNOR, L3_BRIDGE_ADDRESS, SECURITY_ADMIN, SECURITY_AGENT, TIMELOCK_ADDRESS, TOKEN_ADMIN,
+    APP_GOVERNOR, GOVERNANCE_ADMIN, L3_BRIDGE_ADDRESS, SECURITY_ADMIN, SECURITY_AGENT,
+    TIMELOCK_ADDRESS, TOKEN_ADMIN,
 };
 
 
@@ -77,6 +78,7 @@ fn enroll_token_nonce_not_updated() {
     let mut calldata = ArrayTrait::new();
     appchain_bridge_address.serialize(ref calldata);
     messaging_contract_address.serialize(ref calldata);
+    [GOVERNANCE_ADMIN()].span().serialize(ref calldata);
     [APP_GOVERNOR()].span().serialize(ref calldata);
     [SECURITY_ADMIN()].span().serialize(ref calldata);
     [SECURITY_AGENT()].span().serialize(ref calldata);

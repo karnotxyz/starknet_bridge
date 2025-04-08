@@ -25,6 +25,7 @@ pub mod BridgeAccessControlComponent {
     > of InternalTrait<TContractState> {
         fn initializer(
             ref self: ComponentState<TContractState>,
+            governance_admins: Span<ContractAddress>,
             app_governors: Span<ContractAddress>,
             security_admins: Span<ContractAddress>,
             security_agents: Span<ContractAddress>,
@@ -36,8 +37,12 @@ pub mod BridgeAccessControlComponent {
 
             access_control._grant_role(DEFAULT_ADMIN_ROLE, timelock);
 
-            // Only the timelock will the upgrade governor
+            // Only the timelock will be the upgrade governor
             access_control._grant_role(Roles::UPGRADE_GOVERNOR, timelock);
+
+            for governance_admin in governance_admins {
+                access_control._grant_role(Roles::GOVERNANCE_ADMIN, *governance_admin);
+            }
 
             for app_governor in app_governors {
                 access_control._grant_role(Roles::APP_GOVERNOR, *app_governor);
@@ -55,11 +60,17 @@ pub mod BridgeAccessControlComponent {
                 access_control._grant_role(Roles::TOKEN_ADMIN, *token_admin);
             }
 
-            // set role admin as super admin
-            // All other role admins will have automatically been set as super
-            // admin(DEFAULT_ADMIN_ROLE)
+            // Set role admins
+            access_control.set_role_admin(Roles::GOVERNANCE_ADMIN, Roles::GOVERNANCE_ADMIN);
+            access_control.set_role_admin(Roles::APP_GOVERNOR, Roles::GOVERNANCE_ADMIN);
+            access_control.set_role_admin(Roles::SECURITY_ADMIN, Roles::GOVERNANCE_ADMIN);
             access_control.set_role_admin(Roles::SECURITY_AGENT, Roles::SECURITY_ADMIN);
             access_control.set_role_admin(Roles::TOKEN_ADMIN, Roles::APP_GOVERNOR);
+        }
+
+        fn assert_only_governance_admin(self: @ComponentState<TContractState>) {
+            let access_control = get_dep_component!(self, AccessControl);
+            access_control.assert_only_role(Roles::GOVERNANCE_ADMIN);
         }
 
         fn assert_only_security_agent(self: @ComponentState<TContractState>) {

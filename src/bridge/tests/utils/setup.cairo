@@ -3,7 +3,8 @@ use snforge_std as snf;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpy};
 use starknet::ContractAddress;
 use starknet_bridge::bridge::tests::constants::{
-    APP_GOVERNOR, DELAY_TIME, L3_BRIDGE_ADDRESS, OWNER, SECURITY_ADMIN, SECURITY_AGENT, TOKEN_ADMIN,
+    APP_GOVERNOR, DELAY_TIME, GOVERNANCE_ADMIN, L3_BRIDGE_ADDRESS, OWNER, SECURITY_ADMIN,
+    SECURITY_AGENT, TOKEN_ADMIN,
 };
 use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet_bridge::bridge::types::TokenStatus;
@@ -72,6 +73,7 @@ pub fn deploy_token_bridge_with_messaging() -> (
     let mut calldata = ArrayTrait::new();
     appchain_bridge_address.serialize(ref calldata);
     messaging_contract_address.serialize(ref calldata);
+    [GOVERNANCE_ADMIN()].span().serialize(ref calldata);
     [APP_GOVERNOR()].span().serialize(ref calldata);
     [SECURITY_ADMIN()].span().serialize(ref calldata);
     [SECURITY_AGENT()].span().serialize(ref calldata);

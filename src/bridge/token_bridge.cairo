@@ -34,13 +34,14 @@ pub mod TokenBridge {
         get_contract_address,
     };
     use starknet_bridge::access_control::component::BridgeAccessControlComponent;
-    use starknet_bridge::bridge::interface::{
-        ITokenBridge, ITokenBridgeAdmin, IWithdrawalLimitStatus,
-    };
+    use starknet_bridge::bridge::interface::{ITokenBridge, ITokenBridgeAdmin};
     use starknet_bridge::bridge::types::{TokenSettings, TokenStatus};
     use starknet_bridge::constants;
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent;
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
+    use starknet_bridge::withdrawal_limit::interface::{
+        IWithdrawalLimitDispatcher, IWithdrawalLimitDispatcherTrait,
+    };
 
     component!(path: AccessControlComponent, storage: access_control, event: AccessControlEvent);
     component!(
@@ -75,7 +76,7 @@ pub mod TokenBridge {
     #[abi(embed_v0)]
     impl WithdrawalLimitImpl =
         WithdrawalLimitComponent::WithdrawalLimitImpl<ContractState>;
-    impl WithdrawalLimitInternal = WithdrawalLimitComponent::InternalImpl<ContractState>;
+    // impl WithdrawalLimitInternal = WithdrawalLimitComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
@@ -118,6 +119,8 @@ pub mod TokenBridge {
         pub const INVALID_RECIPIENT: felt252 = 'Invalid recipient';
         pub const MAX_BALANCE_EXCEEDED: felt252 = 'Max Balance Exceeded';
         pub const TOKENS_NOT_TRANSFERRED: felt252 = 'Tokens not transferred';
+        pub const NEW_LIMIT_MUST_BE_GREATER: felt252 = 'New limit must be greater';
+        pub const WITHDRAWAL_LIMIT_NOT_APPLIED: felt252 = 'Withdrawal limit not applied';
     }
 
 
@@ -310,6 +313,7 @@ pub mod TokenBridge {
         ref self: ContractState,
         appchain_bridge: ContractAddress,
         messaging_contract: ContractAddress,
+        governance_admins: Span<ContractAddress>,
         app_governors: Span<ContractAddress>,
         security_admins: Span<ContractAddress>,
         security_agents: Span<ContractAddress>,
@@ -320,10 +324,16 @@ pub mod TokenBridge {
         self
             .messaging_contract
             .write(IMessagingDispatcher { contract_address: messaging_contract });
-        self.withdrawal.initialize(5);
         self
             .bridge_access_control
-            .initializer(app_governors, security_admins, security_agents, token_admins, timelock);
+            .initializer(
+                governance_admins,
+                app_governors,
+                security_admins,
+                security_agents,
+                token_admins,
+                timelock,
+            );
     }
 
 
@@ -561,23 +571,48 @@ pub mod TokenBridge {
 
         // @dev This can be used to enable daily withdrawal limits on a token,
         // @param token The address of the token on which to enable withdrawal limit
-        fn enable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
+        fn increase_withdrawal_limit(
+            ref self: ContractState, token: ContractAddress, daily_withdrawal_limit_pct: u8,
+        ) {
             self.pausable.assert_not_paused();
-            self.bridge_access_control.assert_only_security_agent();
-            let new_settings = TokenSettings {
-                withdrawal_limit_applied: true, ..self.token_settings.read(token),
-            };
-            self.token_settings.write(token, new_settings);
+            self.bridge_access_control.assert_only_security_admin();
+
+            let current_pct = self.withdrawal.get_daily_withdrawal_limit_pct(token);
+            assert(daily_withdrawal_limit_pct > current_pct, Errors::NEW_LIMIT_MUST_BE_GREATER);
+            self.withdrawal.write_daily_withdrawal_limit_pct(token, daily_withdrawal_limit_pct);
+
             self.emit(WithdrawalLimitEnabled { sender: get_caller_address(), token });
         }
 
+
+        // @notice This can only be called by the security agent
+        // @dev This can be used to decrease daily withdrawal limits on a token,
+        // @param token The address of the token on which to decrease withdrawal limit
+        fn decrease_withdrawal_limit(
+            ref self: ContractState, token: ContractAddress, daily_withdrawal_limit_pct: u8,
+        ) {
+            self.pausable.assert_not_paused();
+            self.bridge_access_control.assert_only_security_agent();
+
+            let current_pct = self.withdrawal.get_daily_withdrawal_limit_pct(token);
+            assert(daily_withdrawal_limit_pct < current_pct, Errors::NEW_LIMIT_MUST_BE_GREATER);
+            self.withdrawal.write_daily_withdrawal_limit_pct(token, daily_withdrawal_limit_pct);
+
+            self.emit(WithdrawalLimitEnabled { sender: get_caller_address(), token });
+        }
+
+
+        // @notice This can only be called by the security admin
+        // @dev This can be used to disable daily withdrawal limits on a token,
+        // sets the limit to 100%
+        // @param token The address of the token on which to disable withdrawal limit
         fn disable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
             self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_security_admin();
-            let new_settings = TokenSettings {
-                withdrawal_limit_applied: false, ..self.token_settings.read(token),
-            };
-            self.token_settings.write(token, new_settings);
+            assert(self.withdrawal.is_withdrawal_limit_applied(token), Errors::WITHDRAWAL_LIMIT_NOT_APPLIED);
+            
+            // To disable the limit, we set the limit to 100%
+            self.decrease_withdrawal_limit(token, 100);
             self.emit(WithdrawalLimitDisabled { sender: get_caller_address(), token });
         }
 
@@ -596,12 +631,18 @@ pub mod TokenBridge {
             self.emit(SetMaxTotalBalance { token, value: max_total_balance });
         }
 
+        // This function is used to pause the contract.
+        // It can only be called by the security agent.
+        // The function checks if the contract is not already paused
         fn pause(ref self: ContractState) {
             self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_security_agent();
             self.pausable.pause();
         }
 
+        // This function is used to unpause the contract.
+        // It can only be called by the security admin.
+        // The function checks if the contract is paused
         fn unpause(ref self: ContractState) {
             self.pausable.assert_paused();
             self.bridge_access_control.assert_only_security_admin();
@@ -948,14 +989,6 @@ pub mod TokenBridge {
 
         fn get_appchain_token_bridge(self: @ContractState) -> ContractAddress {
             self.appchain_bridge.read()
-        }
-    }
-
-
-    #[abi(embed_v0)]
-    impl WithdrawalLimitStatusImpl of IWithdrawalLimitStatus<ContractState> {
-        fn is_withdrawal_limit_applied(self: @ContractState, token: ContractAddress) -> bool {
-            self.token_settings.read(token).withdrawal_limit_applied
         }
     }
 

@@ -2,7 +2,7 @@ use core::num::traits::Bounded;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpy, EventSpyAssertionsTrait};
-use starknet_bridge::bridge::tests::constants::OWNER;
+use starknet_bridge::bridge::tests::constants::{OWNER, USDC_MOCK_ADDRESS};
 use starknet_bridge::bridge::tests::utils::setup::deploy_erc20;
 use starknet_bridge::mocks::withdrawal_limit_mock::{
     IMockWithdrawalLimitDispatcher, IMockWithdrawalLimitDispatcherTrait,
@@ -56,7 +56,7 @@ fn get_remaining_withdrawal_quota_ok() {
         withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == Bounded::MAX,
         'Quota is not BoundedInt::max()',
     );
-    withdrawal_limit_mock.toggle_withdrawal_limit_for_token(usdc_address, true);
+    withdrawal_limit_mock.write_daily_withdrawal_limit_pct(usdc_address, 5);
 
     // Should return the default 5% of the balance of contract when limit applied
     assert(
@@ -84,7 +84,7 @@ fn consume_withdrawal_quota_ok() {
         contract_address: withdrawal_limit.contract_address,
     };
 
-    withdrawal_limit_mock.toggle_withdrawal_limit_for_token(usdc_address, true);
+    withdrawal_limit_mock.write_daily_withdrawal_limit_pct(usdc_address, 5);
 
     assert(
         withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == 5000_0,
@@ -129,7 +129,7 @@ fn consume_withdrawal_quota_limit_exceeded() {
         contract_address: withdrawal_limit.contract_address,
     };
 
-    withdrawal_limit_mock.toggle_withdrawal_limit_for_token(usdc_address, true);
+    withdrawal_limit_mock.write_daily_withdrawal_limit_pct(usdc_address, 5);
 
     assert(
         withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == 5000_0,
@@ -156,7 +156,7 @@ fn get_remaining_withdrawal_quota_should_reset_after_1_day_ok() {
         contract_address: withdrawal_limit.contract_address,
     };
 
-    withdrawal_limit_mock.toggle_withdrawal_limit_for_token(usdc_address, true);
+    withdrawal_limit_mock.write_daily_withdrawal_limit_pct(usdc_address, 5);
 
     assert(
         withdrawal_limit.get_remaining_withdrawal_quota(usdc_address) == 5000_0,
@@ -188,10 +188,11 @@ fn write_daily_withdrawal_limit_pct_ok() {
         contract_address: withdrawal_limit.contract_address,
     };
 
-    assert(withdrawal_limit_mock.get_daily_withdrawal_limit_pct() == 5, 'Limit not set');
-    withdrawal_limit_mock.write_daily_withdrawal_limit_pct(10);
+    withdrawal_limit_mock.write_daily_withdrawal_limit_pct(USDC_MOCK_ADDRESS(), 10);
 
-    assert(withdrawal_limit_mock.get_daily_withdrawal_limit_pct() == 10, 'Limit not set');
+    assert(
+        withdrawal_limit.get_daily_withdrawal_limit_pct(USDC_MOCK_ADDRESS()) == 10, 'Limit not set',
+    );
     let expected_event = DailyWithdrawalPercentageUpdated { new_percentage: 10 };
     spy
         .assert_emitted(
@@ -215,7 +216,10 @@ fn write_daily_withdrawal_limit_pct_too_high() {
         contract_address: withdrawal_limit.contract_address,
     };
 
-    assert(withdrawal_limit_mock.get_daily_withdrawal_limit_pct() == 5, 'Limit not set');
-    withdrawal_limit_mock.write_daily_withdrawal_limit_pct(150);
+    withdrawal_limit_mock.write_daily_withdrawal_limit_pct(USDC_MOCK_ADDRESS(), 5);
+    assert(
+        withdrawal_limit.get_daily_withdrawal_limit_pct(USDC_MOCK_ADDRESS()) == 5, 'Limit not set',
+    );
+    withdrawal_limit_mock.write_daily_withdrawal_limit_pct(USDC_MOCK_ADDRESS(), 150);
 }
 

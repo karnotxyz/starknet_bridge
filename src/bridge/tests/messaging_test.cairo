@@ -75,6 +75,7 @@ fn send_deploy_message_ok() {
         array![].span(),
         array![].span(),
         array![].span(),
+        array![].span(),
         TIMELOCK_ADDRESS(),
     );
 
@@ -117,6 +118,7 @@ fn send_deposit_message_ok() {
         ref mock,
         L3_BRIDGE_ADDRESS(),
         messaging_contract_address,
+        array![].span(),
         array![].span(),
         array![].span(),
         array![].span(),
@@ -188,6 +190,7 @@ fn consume_message_ok() {
         array![].span(),
         array![].span(),
         array![].span(),
+        array![].span(),
         TIMELOCK_ADDRESS(),
     );
 
@@ -222,6 +225,7 @@ fn consume_message_no_message() {
         ref mock,
         L3_BRIDGE_ADDRESS(),
         messaging_contract_address,
+        array![].span(),
         array![].span(),
         array![].span(),
         array![].span(),

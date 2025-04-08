@@ -103,7 +103,7 @@ fn withdraw_limit_reached() {
     };
 
     snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
-    token_bridge_admin.enable_withdrawal_limit(usdc.contract_address);
+    token_bridge_admin.decrease_withdrawal_limit(usdc.contract_address, 10);
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
     let withdraw_amount = 50;
