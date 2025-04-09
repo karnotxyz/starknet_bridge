@@ -13,12 +13,6 @@ The bridge relies on the core messaging contract from [piltover](https://github.
 The bridge implements a hierarchical access control system with different roles for flexibility. This does not complicate the system, 
 if some roles feel unnecessary just dont use them given proper setup has been done.
 
-### Timelock Access Control
-The Timelock contract has a DEFAULT_ADMIN role (owner) which manages three roles:
-- Proposer: Can propose new operations
-- Executor: Can execute operations after the timelock period
-- Canceller: Can cancel proposed operations
-
 ### TokenBridge Access Control
 The TokenBridge has a more complex role hierarchy:
 - GOVERNANCE_ADMIN: Top-level admin role
@@ -26,6 +20,27 @@ The TokenBridge has a more complex role hierarchy:
 - SECURITY_ADMIN: Manages SECURITY_AGENT role
 - TOKEN_ADMIN: Handles token-related operations
 - SECURITY_AGENT: Handles security-related operations
+- UPGRADE_GOVERNOR: Ability to upgrade the token bridge.
+
+
+// Role                |   Role Admin
+// ----------------------------------------
+// UPGRADE_GOVERNOR    |   DEFAULT_ADMIN
+// GOVERNANCE_ADMIN    |   GOVERNANCE_ADMIN
+// APP_GOVERNOR        |   GOVERNANCE_ADMIN
+// SECURITY_ADMIN      |   GOVERNANCE_ADMIN
+// SECURITY_AGENT      |   SECURITY_ADMIN
+// TOKEN_ADMIN         |   APP_GOVERNOR
+
+Note: The admin for the UPGRADE_GOVERNOR role is held the timelock contract only which means that only timelock can add/remove more UPGRADE_GOVERNOR.
+
+
+### Timelock Access Control
+The Timelock contract maintains its own access control with a DEFAULT_ADMIN role (owner) which manages three roles:
+- Proposer: Can propose new operations
+- Executor: Can execute operations after the timelock period
+- Canceller: Can cancel proposed operations
+
 
 The UPGRADE_GOVERNOR role is exclusively assigned to the Timelock contract, ensuring all upgrades go through a predefined delay period for enhanced security.
 
