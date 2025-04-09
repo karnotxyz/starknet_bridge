@@ -201,6 +201,8 @@ program
     await enrollToken(acc_l2, "ERC20");
 
     Logger.step(4, "Check the corresponding token and balance on l3");
+    // Adding a sleep to wait for the message to be processed on l3 
+    await new Promise(resolve => setTimeout(resolve, 10000));
     await getL3Balance(
       process.env.AACCOUNT_L3_ADDRESS as string,
       "ERC20"
