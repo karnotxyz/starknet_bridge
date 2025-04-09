@@ -43,7 +43,7 @@ The Timelock contract maintains its own access control with a DEFAULT_ADMIN role
 
 The UPGRADE_GOVERNOR role is exclusively assigned to the Timelock contract, ensuring all upgrades go through a predefined delay period for enhanced security.
 
-![Access Control Roles](./docs/access_control_roles.png)
+![Access Control Roles](./docs/access_control.png)
 
 ## Build
 To build the project run: 
