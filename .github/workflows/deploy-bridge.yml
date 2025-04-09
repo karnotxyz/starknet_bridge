@@ -40,7 +40,10 @@ jobs:
 
       # this builds `madara` at the branch `l3-support`
       - name: Clone Madara repository
-        run: git clone --branch devlopment https://github.com/byteZorvin/madara-cli.git
+        run: |
+          git clone --branch devlopment https://github.com/byteZorvin/madara-cli.git
+          cd madara-cli
+          git checkout devlopment
 
       - name: Build and cache Madara Docker image
         uses: docker/build-push-action@v4
