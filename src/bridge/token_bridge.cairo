@@ -39,9 +39,6 @@ pub mod TokenBridge {
     use starknet_bridge::constants;
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent;
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
-    use starknet_bridge::withdrawal_limit::interface::{
-        IWithdrawalLimitDispatcher, IWithdrawalLimitDispatcherTrait,
-    };
 
     component!(path: AccessControlComponent, storage: access_control, event: AccessControlEvent);
     component!(
@@ -140,8 +137,8 @@ pub mod TokenBridge {
         DepositReclaimed: DepositReclaimed,
         DepositWithMessageReclaimed: DepositWithMessageReclaimed,
         Withdrawal: Withdrawal,
-        WithdrawalLimitEnabled: WithdrawalLimitEnabled,
-        WithdrawalLimitDisabled: WithdrawalLimitDisabled,
+        WithdrawalLimitIncreased: WithdrawalLimitIncreased,
+        WithdrawalLimitDecreased: WithdrawalLimitDecreased,
         SetMaxTotalBalance: SetMaxTotalBalance,
         SetAppchainBridge: SetAppchainBridge,
         #[flat]
@@ -279,19 +276,21 @@ pub mod TokenBridge {
     }
 
     #[derive(Drop, starknet::Event)]
-    pub struct WithdrawalLimitEnabled {
+    pub struct WithdrawalLimitIncreased {
         #[key]
         pub sender: ContractAddress,
         #[key]
         pub token: ContractAddress,
+        pub daily_withdrawal_limit_pct: u8,
     }
 
     #[derive(Drop, starknet::Event)]
-    pub struct WithdrawalLimitDisabled {
+    pub struct WithdrawalLimitDecreased {
         #[key]
         pub sender: ContractAddress,
         #[key]
         pub token: ContractAddress,
+        pub daily_withdrawal_limit_pct: u8,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -581,7 +580,12 @@ pub mod TokenBridge {
             assert(daily_withdrawal_limit_pct > current_pct, Errors::NEW_LIMIT_MUST_BE_GREATER);
             self.withdrawal.write_daily_withdrawal_limit_pct(token, daily_withdrawal_limit_pct);
 
-            self.emit(WithdrawalLimitEnabled { sender: get_caller_address(), token });
+            self
+                .emit(
+                    WithdrawalLimitIncreased {
+                        sender: get_caller_address(), token, daily_withdrawal_limit_pct,
+                    },
+                );
         }
 
 
@@ -598,7 +602,12 @@ pub mod TokenBridge {
             assert(daily_withdrawal_limit_pct < current_pct, Errors::NEW_LIMIT_MUST_BE_GREATER);
             self.withdrawal.write_daily_withdrawal_limit_pct(token, daily_withdrawal_limit_pct);
 
-            self.emit(WithdrawalLimitEnabled { sender: get_caller_address(), token });
+            self
+                .emit(
+                    WithdrawalLimitDecreased {
+                        sender: get_caller_address(), token, daily_withdrawal_limit_pct,
+                    },
+                );
         }
 
 
@@ -609,11 +618,13 @@ pub mod TokenBridge {
         fn disable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
             self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_security_admin();
-            assert(self.withdrawal.is_withdrawal_limit_applied(token), Errors::WITHDRAWAL_LIMIT_NOT_APPLIED);
-            
+            assert(
+                self.withdrawal.is_withdrawal_limit_applied(token),
+                Errors::WITHDRAWAL_LIMIT_NOT_APPLIED,
+            );
+
             // To disable the limit, we set the limit to 100%
             self.decrease_withdrawal_limit(token, 100);
-            self.emit(WithdrawalLimitDisabled { sender: get_caller_address(), token });
         }
 
         // Use this to add a max total balance on the token. Beyond this value no more deposits

@@ -4,12 +4,15 @@ use starknet_bridge::bridge::TokenBridge::Event;
 use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, deploy_token_bridge};
 use starknet_bridge::bridge::types::TokenStatus;
-use starknet_bridge::bridge::{ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge};
+use starknet_bridge::bridge::{
+    ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, ITokenBridgeDispatcher,
+    ITokenBridgeDispatcherTrait, TokenBridge,
+};
 use starknet_bridge::constants;
 use starknet_bridge::mocks::hash;
 use super::constants::{
     APP_GOVERNOR, GOVERNANCE_ADMIN, L3_BRIDGE_ADDRESS, SECURITY_ADMIN, SECURITY_AGENT,
-    TIMELOCK_ADDRESS, TOKEN_ADMIN,
+    TIMELOCK_ADDRESS, TOKEN_ADMIN
 };
 
 
@@ -45,6 +48,23 @@ fn enroll_token_ok() {
                 (token_bridge.contract_address, Event::TokenEnrollmentInitiated(expected_event)),
             ],
         );
+}
+
+#[test]
+#[should_panic(expected: ('Pausable: paused',))]
+fn enroll_token_paused() {
+    let (token_bridge, _) = deploy_token_bridge();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    // Set up security agent before pausing
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.pause();
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    let usdc_address = deploy_erc20("USDC", "USDC");
+    token_bridge.enroll_token(usdc_address);
 }
 
 #[test]

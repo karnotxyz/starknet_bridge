@@ -30,15 +30,15 @@ pub mod BridgeAccessControlComponent {
             security_admins: Span<ContractAddress>,
             security_agents: Span<ContractAddress>,
             token_admins: Span<ContractAddress>,
-            timelock: ContractAddress,
+            upgrade_governor: ContractAddress,
         ) {
             let mut access_control = get_dep_component_mut!(ref self, AccessControl);
             access_control.initializer();
 
-            access_control._grant_role(DEFAULT_ADMIN_ROLE, timelock);
+            access_control._grant_role(DEFAULT_ADMIN_ROLE, upgrade_governor);
 
-            // Only the timelock will be the upgrade governor
-            access_control._grant_role(Roles::UPGRADE_GOVERNOR, timelock);
+            // Only the upgrade_governor will be the upgrade governor
+            access_control._grant_role(Roles::UPGRADE_GOVERNOR, upgrade_governor);
 
             for governance_admin in governance_admins {
                 access_control._grant_role(Roles::GOVERNANCE_ADMIN, *governance_admin);

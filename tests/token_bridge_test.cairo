@@ -7,7 +7,7 @@ use starknet_bridge::bridge::{
     ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, ITokenBridgeDispatcher,
     ITokenBridgeDispatcherTrait, TokenBridge,
 };
-use super::constants::{APP_GOVERNOR, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS};
+use super::constants::{APP_GOVERNOR, L3_BRIDGE_ADDRESS, SECURITY_AGENT, USDC_MOCK_ADDRESS};
 
 
 #[test]
@@ -16,7 +16,7 @@ fn constructor_ok() {
     let token_bridge_ownable = IPausableDispatcher {
         contract_address: token_bridge.contract_address,
     };
-    assert(token_bridge_ownable.is_paused() == false, 'Incorrect owner');
+    assert(!token_bridge_ownable.is_paused(), 'Incorrect owner');
 }
 
 #[test]
@@ -52,8 +52,25 @@ fn set_appchain_bridge_ok() {
 }
 
 #[test]
+#[should_panic(expected: ('Pausable: paused',))]
+fn set_appchain_bridge_paused() {
+    let (token_bridge, _) = deploy_token_bridge();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    // Set up security agent before pausing
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.pause();
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    let new_appchain_bridge_address = 'l3_bridge_address_new'.try_into().unwrap();
+    token_bridge_admin.set_appchain_token_bridge(new_appchain_bridge_address);
+}
+
+#[test]
 #[should_panic(expected: ('Caller is missing role',))]
-fn set_appchain_bridge_not_owner() {
+fn set_appchain_bridge_not_app_governor() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
         contract_address: token_bridge.contract_address,
@@ -72,7 +89,7 @@ fn set_appchain_bridge_not_owner() {
 
 #[test]
 #[should_panic(expected: ('Caller is missing role',))]
-fn set_max_total_balance_not_owner() {
+fn set_max_total_balance_not_app_governor() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
         contract_address: token_bridge.contract_address,
@@ -109,4 +126,22 @@ fn set_max_total_balance_ok() {
         .assert_emitted(
             @array![(token_bridge.contract_address, Event::SetMaxTotalBalance(expected_event))],
         );
+}
+
+
+#[test]
+#[should_panic(expected: ('Pausable: paused',))]
+fn set_max_total_balance_paused() {
+    let (token_bridge, _) = deploy_token_bridge();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    // Set up security agent before pausing
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.pause();
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    let usdc_address = USDC_MOCK_ADDRESS();
+    token_bridge_admin.set_max_total_balance(usdc_address, 100);
 }

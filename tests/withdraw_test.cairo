@@ -75,6 +75,22 @@ fn withdraw_ok() {
 }
 
 #[test]
+#[should_panic(expected: ('Pausable: paused',))]
+fn withdraw_paused() {
+    let (token_bridge, _, usdc, _, amount) = setup();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    // Set up security agent before pausing
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.pause();
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    token_bridge.withdraw(usdc.contract_address, amount, snf::test_address());
+}
+
+#[test]
 #[should_panic(expected: ('INVALID_MESSAGE_TO_CONSUME',))]
 fn withdraw_incorrect_recipient() {
     let (token_bridge, _, usdc, messaging_mock, amount) = setup();

@@ -34,6 +34,11 @@ pub mod withdrawal_limit {
 pub mod access_control {
     pub mod component;
     pub mod roles;
+
+    #[cfg(test)]
+    pub mod tests {
+        mod access_control_test;
+    }
 }
 
 pub mod timelock {
@@ -43,6 +48,8 @@ pub mod timelock {
 pub mod constants;
 
 pub mod mocks {
+    #[cfg(test)]
+    pub mod access_control_mock;
     pub mod erc20;
 
     #[cfg(target: 'test')]
