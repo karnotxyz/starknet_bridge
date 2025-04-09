@@ -9,6 +9,28 @@ This repository contains the code for the L2<>L3 bridges that can be used to bri
 
 The bridge relies on the core messaging contract from [piltover](https://github.com/keep-starknet-strange/piltover) which is the Cairo version of the Starknet Core Contracts.
 
+## Access Control
+The bridge implements a hierarchical access control system with different roles for flexibility. This does not complicate the system, 
+if some roles feel unnecessary just dont use them given proper setup has been done.
+
+### Timelock Access Control
+The Timelock contract has a DEFAULT_ADMIN role (owner) which manages three roles:
+- Proposer: Can propose new operations
+- Executor: Can execute operations after the timelock period
+- Canceller: Can cancel proposed operations
+
+### TokenBridge Access Control
+The TokenBridge has a more complex role hierarchy:
+- GOVERNANCE_ADMIN: Top-level admin role
+- APP_GOVERNOR: Manages TOKEN_ADMIN role
+- SECURITY_ADMIN: Manages SECURITY_AGENT role
+- TOKEN_ADMIN: Handles token-related operations
+- SECURITY_AGENT: Handles security-related operations
+
+The UPGRADE_GOVERNOR role is exclusively assigned to the Timelock contract, ensuring all upgrades go through a predefined delay period for enhanced security.
+
+![Access Control Roles](./docs/access_control_roles.png)
+
 ## Build
 To build the project run: 
 ```shell
