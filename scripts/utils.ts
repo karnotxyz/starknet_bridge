@@ -243,8 +243,8 @@ export async function deployContract(contract: Contract, constructorData: RawArg
   if (!contracts.contracts) {
     contracts['contracts'] = {};
   }
-  if(!contracts.contracts.layer) {
-    contracts.contracts[layer] = {}
+  if (!contracts.contracts[layer]) {
+    contracts.contracts[layer] = {};
   }
   contracts.contracts[contract.layer][contract.name] = tx.contract_address;
   saveContracts(contracts);
@@ -256,3 +256,4 @@ export async function deployContract(contract: Contract, constructorData: RawArg
 
   return tx;
 }
+
