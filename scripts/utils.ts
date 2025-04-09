@@ -59,7 +59,7 @@ export function getContracts() {
   return {}
 }
 
-// TODO: Incorportate the layer also
+// TODO: Incorporate the layer also
 // TODO: Add layer as a param
 function saveContracts(contracts: any) {
   const PATH = dumpPath;
