@@ -148,7 +148,7 @@ program
   .command("get-l3-balance")
   .description("Get the L3 balance for an address")
   .argument("<address>", "Address to check")
-  .option("-t, --token <token>", "Token name", "L2TestToken")
+  .option("-t, --token <token>", "Token name", "ERC20")
   .action(async (address, options) => {
     await getL3Balance(address, options.token);
   });

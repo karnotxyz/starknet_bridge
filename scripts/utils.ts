@@ -38,8 +38,10 @@ export function getContract(contract: Contract): Contract {
   const contracts = JSON.parse(readFileSync(PATH, { encoding: 'utf-8' }));
 
   // Try to get class hash if it exists in stored contracts
-  if (contracts.class_hashes && contracts.class_hashes[`${contract.name}_${contract.package.name}`]) {
-    contract.classHash = contracts.class_hashes[`${contract.name}_${contract.package.name}`];
+  if (contracts.class_hashes && 
+      contracts.class_hashes[contract.layer] && 
+      contracts.class_hashes[contract.layer][`${contract.name}_${contract.package.name}`]) {
+    contract.classHash = contracts.class_hashes[contract.layer][`${contract.name}_${contract.package.name}`];
   }
 
   // Try to get contract address if it exists in stored contracts
@@ -138,7 +140,6 @@ export async function declareContract(contract: Contract) {
   console.log("classhash:", result.classHash);
 
   try {
-
     let tx: { transaction_hash: string; class_hash: string; };
     if (layer === Layer.L3) {
       Logger.info('Declaring on L3')
@@ -167,8 +168,11 @@ export async function declareContract(contract: Contract) {
     if (!contracts.class_hashes) {
       contracts['class_hashes'] = {};
     }
+    if (!contracts.class_hashes[layer]) {
+      contracts.class_hashes[layer] = {};
+    }
     // Todo attach cairo and scarb version. and commit ID
-    contracts.class_hashes[`${contract.name}_${contract.package.name}`] = tx.class_hash;
+    contracts.class_hashes[layer][`${contract.name}_${contract.package.name}`] = tx.class_hash;
     saveContracts(contracts);
     console.log(`Contract declared: ${contract.name}_${contract.package.name}`);
     console.log(`Class hash: ${tx.class_hash}`)
