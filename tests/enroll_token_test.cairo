@@ -12,7 +12,7 @@ use starknet_bridge::constants;
 use starknet_bridge::mocks::hash;
 use super::constants::{
     APP_GOVERNOR, GOVERNANCE_ADMIN, L3_BRIDGE_ADDRESS, SECURITY_ADMIN, SECURITY_AGENT,
-    TIMELOCK_ADDRESS, TOKEN_ADMIN
+    TIMELOCK_ADDRESS, TOKEN_ADMIN,
 };
 
 
