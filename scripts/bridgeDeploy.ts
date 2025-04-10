@@ -112,6 +112,7 @@ export async function deployL2Bridge() {
     [
       tokenBridgeL3Contract.address,
       appchainContract.address,
+      [process.env.ACCOUNT_L2_ADDRESS as string], // governance admins
       [process.env.ACCOUNT_L2_ADDRESS as string], // app governors
       [process.env.ACCOUNT_L2_ADDRESS as string], // security admins
       [process.env.ACCOUNT_L2_ADDRESS as string], // security agents
