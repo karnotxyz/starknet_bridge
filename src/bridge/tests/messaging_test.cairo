@@ -23,7 +23,7 @@ fn deploy_message_payload_ok() {
     println!("calldata: {:?}", calldata);
 
     let expected_calldata: Span<felt252> = array![
-        1662452683819830855024969206903018858134062174848333775482776885353820494666, // usdc_address
+        2001674650675320615195032075302485379933169890409294838135260466102026843722, // usdc_address
         0,
         1431520323,
         4, // "USDC"

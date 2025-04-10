@@ -8,6 +8,10 @@ use starknet_bridge::bridge::{
 use starknet_bridge::withdrawal_limit::interface::{
     IWithdrawalLimitDispatcher, IWithdrawalLimitDispatcherTrait,
 };
+use starknet_bridge::access_control::roles::Roles;
+use openzeppelin::access::accesscontrol::interface::{
+    IAccessControlDispatcher, IAccessControlDispatcherTrait,
+};
 use super::constants::{SECURITY_ADMIN, SECURITY_AGENT, USDC_MOCK_ADDRESS};
 
 
@@ -147,6 +151,9 @@ fn disable_withdrawal_limit_ok() {
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
         contract_address: token_bridge.contract_address,
     };
+    let access_control = IAccessControlDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
     let withdrawal_limit = IWithdrawalLimitDispatcher {
         contract_address: token_bridge.contract_address,
     };
@@ -159,13 +166,14 @@ fn disable_withdrawal_limit_ok() {
 
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
-    println!(
-        "is_withdrawal_limit_applied after decrease: {}",
-        withdrawal_limit.is_withdrawal_limit_applied(usdc_address),
-    );
 
     // Withdrawal limit is now applied
     assert(withdrawal_limit.is_withdrawal_limit_applied(usdc_address), 'Limit not applied');
+
+    assert!(
+        access_control.has_role(Roles::SECURITY_ADMIN, SECURITY_ADMIN()),
+        "Security admin not granted",
+    );
 
     // Security admin can disable the limit
     snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_ADMIN());
@@ -180,7 +188,7 @@ fn disable_withdrawal_limit_ok() {
     );
     assert(!withdrawal_limit.is_withdrawal_limit_applied(usdc_address), 'Limit not applied');
 
-    let expected_limit_disabled = TokenBridge::WithdrawalLimitDecreased {
+    let expected_limit_disabled = TokenBridge::WithdrawalLimitIncreased {
         sender: SECURITY_ADMIN(), token: usdc_address, daily_withdrawal_limit_pct: 100,
     };
 
@@ -189,7 +197,7 @@ fn disable_withdrawal_limit_ok() {
             @array![
                 (
                     token_bridge_admin.contract_address,
-                    Event::WithdrawalLimitDecreased(expected_limit_disabled),
+                    Event::WithdrawalLimitIncreased(expected_limit_disabled),
                 ),
             ],
         );

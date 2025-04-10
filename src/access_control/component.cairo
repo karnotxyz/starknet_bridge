@@ -42,23 +42,23 @@ pub mod BridgeAccessControlComponent {
 
             for governance_admin in governance_admins {
                 access_control._grant_role(Roles::GOVERNANCE_ADMIN, *governance_admin);
-            }
+            };
 
             for app_governor in app_governors {
                 access_control._grant_role(Roles::APP_GOVERNOR, *app_governor);
-            }
+            };
 
             for security_admin in security_admins {
                 access_control._grant_role(Roles::SECURITY_ADMIN, *security_admin);
-            }
+            };
 
             for security_agent in security_agents {
                 access_control._grant_role(Roles::SECURITY_AGENT, *security_agent);
-            }
+            };
 
             for token_admin in token_admins {
                 access_control._grant_role(Roles::TOKEN_ADMIN, *token_admin);
-            }
+            };
 
             // Set role admins
             access_control.set_role_admin(Roles::GOVERNANCE_ADMIN, Roles::GOVERNANCE_ADMIN);

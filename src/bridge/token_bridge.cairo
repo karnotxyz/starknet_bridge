@@ -58,7 +58,7 @@ pub mod TokenBridge {
     // AccessControl
     #[abi(embed_v0)]
     impl AccessControlComponentImpl =
-        AccessControlComponent::AccessControlCamelImpl<ContractState>;
+        AccessControlComponent::AccessControlImpl<ContractState>;
     impl BridgeAccessControlInternalImpl =
         BridgeAccessControlComponent::InternalImpl<ContractState>;
 
@@ -624,7 +624,7 @@ pub mod TokenBridge {
             );
 
             // To disable the limit, we set the limit to 100%
-            self.decrease_withdrawal_limit(token, 100);
+            self.increase_withdrawal_limit(token, 100);
         }
 
         // Use this to add a max total balance on the token. Beyond this value no more deposits

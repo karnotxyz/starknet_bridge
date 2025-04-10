@@ -5,8 +5,8 @@ edition = "2024_07"
 
 [dependencies]
 starknet = "2.9.4"
-openzeppelin = "1.0.0"
-piltover = { git = "https://github.com/byteZorvin/piltover", ref = "26424182cef3c81deae7a0d2e05c2c662ff803f4" }
+openzeppelin = "0.20.0"
+piltover = { git = "https://github.com/keep-starknet-strange/piltover", ref = "26424182cef3c81deae7a0d2e05c2c662ff803f4" }
 
 [dev-dependencies]
 snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.40.0" }
