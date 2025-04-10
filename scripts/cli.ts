@@ -211,7 +211,7 @@ program
     await deployERC20();
     await enrollToken(acc_l2, "ERC20");
 
-    // Check the corresponding token and balance on l3
+    // Check the corresponding token and balance
     Logger.step(4, "Check the corresponding token and balance on l3");
     await sleep(20000);
     await getL3Balance(
