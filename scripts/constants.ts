@@ -42,8 +42,8 @@ export const erc20Contract: Contract = {
   package: starknetBridgePackage,
 };
 
-export const erc20LockableContract: Contract = {
-  name: "ERC20Lockable",
+export const erc20L3Contract: Contract = {
+  name: "ERC20",
   layer: Layer.L3,
-  package: starkgatePackage,
+  package: starknetBridgePackage,
 };

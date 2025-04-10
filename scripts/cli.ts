@@ -19,6 +19,7 @@ import {
   getAccount,
   getEthereumClient,
   setDumpPath,
+  sleep,
 } from "./utils.ts";
 import { Logger } from "./logger.ts";
 import {
@@ -149,7 +150,7 @@ program
   .command("get-l3-balance")
   .description("Get the L3 balance for an address")
   .argument("<address>", "Address to check")
-  .option("-t, --token <token>", "Token name", "L2TestToken")
+  .option("-t, --token <token>", "Token name", "ERC20")
   .action(async (address, options) => {
     await getL3Balance(address, options.token);
   });
@@ -210,7 +211,9 @@ program
     await deployERC20();
     await enrollToken(acc_l2, "ERC20");
 
+    // Check the corresponding token and balance on l3
     Logger.step(4, "Check the corresponding token and balance on l3");
+    await sleep(20000);
     await getL3Balance(
       process.env.AACCOUNT_L3_ADDRESS as string,
       "ERC20"

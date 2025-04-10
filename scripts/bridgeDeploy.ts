@@ -16,7 +16,7 @@ import {
   tokenBridgeL3Contract,
   timelockContract,
   erc20Contract,
-  erc20LockableContract,
+  erc20L3Contract,
   starknetBridgePackage,
 } from "./constants";
 
@@ -282,7 +282,7 @@ export async function deployERC20() {
  * Declare and set ERC20 token on L3
  */
 export async function declareAndSetERC20L3(acc_l3: Account) {
-  await declareContract(erc20LockableContract);
+  await declareContract(erc20L3Contract);
   Logger.success("ERC20 declared!");
 
   getContract(tokenBridgeL3Contract);
@@ -298,7 +298,7 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
   let acc = getAccount(Layer.L3);
 
   {
-    const class_hash = erc20LockableContract.classHash;
+    const class_hash = erc20L3Contract.classHash;
     if (!class_hash) {
       throw new Error("ERC20Lockable class hash not found");
     }
@@ -460,7 +460,7 @@ export async function getL3Balance(
   ]);
   Logger.info(`Finding corresponding appchain token`);
 
-  if (correspondingToken != 0n) {
+  if (correspondingToken === 0n) {
     Logger.error("No corresponding token found on l3");
     throw new Error("No corresponding token found on l3 ");
   }

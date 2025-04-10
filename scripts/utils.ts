@@ -15,7 +15,7 @@ export async function checkEnvVars() {
   console.log(`L3 Account Address: ${process.env.ACCOUNT_L3_ADDRESS}`);
   console.log('===============================')
   assert(process.env.RPC_L2_URL, 'RPC_L2_URL not set in .env');
-  assert(process.env.RPC_L3_URL, 'RPC_L3_UR not set in .env');
+  assert(process.env.RPC_L3_URL, 'RPC_L3_URL not set in .env');
   assert(process.env.ACCOUNT_L2_ADDRESS, 'ACCOUNT_L2_ADDRESS not set in .env');
   assert(process.env.ACCOUNT_L3_ADDRESS, 'ACCOUNT_L3_ADDRESS not set in .env');
   assert(process.env.ACCOUNT_L2_PRIVATE_KEY, 'ACCOUNT_L2_PRIVATE_KEY not set in .env');
@@ -38,8 +38,10 @@ export function getContract(contract: Contract): Contract {
   const contracts = JSON.parse(readFileSync(PATH, { encoding: 'utf-8' }));
 
   // Try to get class hash if it exists in stored contracts
-  if (contracts.class_hashes && contracts.class_hashes[`${contract.name}_${contract.package.name}`]) {
-    contract.classHash = contracts.class_hashes[`${contract.name}_${contract.package.name}`];
+  if (contracts.class_hashes && 
+      contracts.class_hashes[contract.layer] && 
+      contracts.class_hashes[contract.layer][`${contract.name}_${contract.package.name}`]) {
+    contract.classHash = contracts.class_hashes[contract.layer][`${contract.name}_${contract.package.name}`];
   }
 
   // Try to get contract address if it exists in stored contracts
@@ -59,7 +61,7 @@ export function getContracts() {
   return {}
 }
 
-// TODO: Incorportate the layer also
+// TODO: Incorporate the layer also
 // TODO: Add layer as a param
 function saveContracts(contracts: any) {
   const PATH = dumpPath;
@@ -103,6 +105,13 @@ export function getAccount(layer: Layer): Account {
   }
 }
 
+/**
+ * Sleep for a specified number of milliseconds
+ * @param ms Number of milliseconds to sleep
+ * @returns Promise that resolves after the specified time
+ */
+export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export async function declareContract(contract: Contract) {
   // First, check if we already have the contract declared and get existing information
   getContract(contract);
@@ -138,7 +147,6 @@ export async function declareContract(contract: Contract) {
   console.log("classhash:", result.classHash);
 
   try {
-
     let tx: { transaction_hash: string; class_hash: string; };
     if (layer === Layer.L3) {
       Logger.info('Declaring on L3')
@@ -167,8 +175,11 @@ export async function declareContract(contract: Contract) {
     if (!contracts.class_hashes) {
       contracts['class_hashes'] = {};
     }
+    if (!contracts.class_hashes[layer]) {
+      contracts.class_hashes[layer] = {};
+    }
     // Todo attach cairo and scarb version. and commit ID
-    contracts.class_hashes[`${contract.name}_${contract.package.name}`] = tx.class_hash;
+    contracts.class_hashes[layer][`${contract.name}_${contract.package.name}`] = tx.class_hash;
     saveContracts(contracts);
     console.log(`Contract declared: ${contract.name}_${contract.package.name}`);
     console.log(`Class hash: ${tx.class_hash}`)
@@ -239,8 +250,8 @@ export async function deployContract(contract: Contract, constructorData: RawArg
   if (!contracts.contracts) {
     contracts['contracts'] = {};
   }
-  if(!contracts.contracts.layer) {
-    contracts.contracts[layer] = {}
+  if (!contracts.contracts[layer]) {
+    contracts.contracts[layer] = {};
   }
   contracts.contracts[contract.layer][contract.name] = tx.contract_address;
   saveContracts(contracts);
@@ -252,3 +263,4 @@ export async function deployContract(contract: Contract, constructorData: RawArg
 
   return tx;
 }
+
