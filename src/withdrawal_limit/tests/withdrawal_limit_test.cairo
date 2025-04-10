@@ -1,4 +1,3 @@
-use snforge_std::DeclareResultTrait;
 use core::num::traits::Bounded;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;

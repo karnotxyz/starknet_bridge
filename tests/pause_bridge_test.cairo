@@ -21,7 +21,7 @@ fn setup() -> (ITokenBridgeDispatcher, EventSpy, ContractAddress, IMockMessaging
 }
 
 #[test]
-fn `is_not_paused_on_deployment_ok`() {
+fn is_not_paused_on_deployment_ok() {
     let (token_bridge, _, _, _) = setup();
     let token_bridge_pausable = IPausableDispatcher {
         contract_address: token_bridge.contract_address,
