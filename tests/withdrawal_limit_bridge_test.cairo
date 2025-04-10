@@ -166,7 +166,6 @@ fn disable_withdrawal_limit_ok() {
 
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
-
     // Withdrawal limit is now applied
     assert(withdrawal_limit.is_withdrawal_limit_applied(usdc_address), 'Limit not applied');
 
