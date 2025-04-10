@@ -205,7 +205,7 @@ program
     Logger.step(4, "Check the corresponding token and balance on l3");
     await sleep(20000);
     await getL3Balance(
-      process.env.AACCOUNT_L3_ADDRESS as string,
+      process.env.ACCOUNT_L3_ADDRESS as string,
       "ERC20"
     );
 
