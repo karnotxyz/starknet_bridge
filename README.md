@@ -1,5 +1,5 @@
 # Starknet Bridge
-`starknet_bridge` are the bridges that can be used by the appchains that will deployed using Starknet [Madara](https://github.com/keep-starknet-strange/madara) stack
+`starknet_bridge` are the bridges that can be used by the appchains that will deployed using Starknet [Madara](https://github.com/madara-alliance/madara) stack
 
 This repository contains the code for the L2<>L3 bridges that can be used to bridge funds between an appchain and Starknet. This is similar to [starkgate](https://github.com/starknet-io/starkgate-contracts) which contains the bridge contracts between Ethereum and Starknet.
 

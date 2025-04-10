@@ -13,7 +13,7 @@ use starknet_bridge::bridge::tests::utils::setup::{deploy_token_bridge};
 fn enable_withdrawal_limit_not_owner() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
 
     let usdc_address = USDC_MOCK_ADDRESS();
@@ -24,10 +24,10 @@ fn enable_withdrawal_limit_not_owner() {
 fn enable_withdrawal_limit_ok() {
     let (token_bridge, mut spy) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
     let withdrawal_limit = IWithdrawalLimitStatusDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
 
     snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
@@ -40,16 +40,16 @@ fn enable_withdrawal_limit_ok() {
     assert(withdrawal_limit.is_withdrawal_limit_applied(usdc_address), 'Limit not applied');
 
     let exepected_limit_enabled = TokenBridge::WithdrawalLimitEnabled {
-        sender: OWNER(), token: usdc_address
+        sender: OWNER(), token: usdc_address,
     };
     spy
         .assert_emitted(
             @array![
                 (
                     token_bridge_admin.contract_address,
-                    Event::WithdrawalLimitEnabled(exepected_limit_enabled)
-                )
-            ]
+                    Event::WithdrawalLimitEnabled(exepected_limit_enabled),
+                ),
+            ],
         );
 }
 
@@ -57,10 +57,10 @@ fn enable_withdrawal_limit_ok() {
 fn disable_withdrwal_limit_ok() {
     let (token_bridge, mut spy) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
     let withdrawal_limit = IWithdrawalLimitStatusDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
 
     let owner = OWNER();
@@ -75,11 +75,11 @@ fn disable_withdrwal_limit_ok() {
     token_bridge_admin.disable_withdrawal_limit(usdc_address);
 
     assert(
-        withdrawal_limit.is_withdrawal_limit_applied(usdc_address) == false, 'Limit not applied'
+        withdrawal_limit.is_withdrawal_limit_applied(usdc_address) == false, 'Limit not applied',
     );
 
     let expected_limit_disabled = TokenBridge::WithdrawalLimitDisabled {
-        sender: OWNER(), token: usdc_address
+        sender: OWNER(), token: usdc_address,
     };
 
     spy
@@ -87,9 +87,9 @@ fn disable_withdrwal_limit_ok() {
             @array![
                 (
                     token_bridge_admin.contract_address,
-                    Event::WithdrawalLimitDisabled(expected_limit_disabled)
-                )
-            ]
+                    Event::WithdrawalLimitDisabled(expected_limit_disabled),
+                ),
+            ],
         );
 }
 
@@ -98,11 +98,11 @@ fn disable_withdrwal_limit_ok() {
 fn disable_withdrawal_limit_not_owner() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
 
     let withdrawal_limit = IWithdrawalLimitStatusDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
 
     let owner = OWNER();
@@ -119,7 +119,7 @@ fn disable_withdrawal_limit_not_owner() {
     token_bridge_admin.disable_withdrawal_limit(usdc_address);
 
     assert(
-        withdrawal_limit.is_withdrawal_limit_applied(usdc_address) == false, 'Limit not applied'
+        withdrawal_limit.is_withdrawal_limit_applied(usdc_address) == false, 'Limit not applied',
     );
 }
 
@@ -128,14 +128,15 @@ fn is_withdrawal_limit_applied_ok() {
     let (token_bridge, _) = deploy_token_bridge();
     let usdc_address = USDC_MOCK_ADDRESS();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
     let withdrawal_limit = IWithdrawalLimitStatusDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
 
     assert(
-        withdrawal_limit.is_withdrawal_limit_applied(usdc_address) == false, 'Limit already applied'
+        withdrawal_limit.is_withdrawal_limit_applied(usdc_address) == false,
+        'Limit already applied',
     );
 
     snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());

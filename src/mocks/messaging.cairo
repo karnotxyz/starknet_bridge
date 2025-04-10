@@ -3,18 +3,27 @@ use starknet::ContractAddress;
 pub trait IMockMessaging<TState> {
     fn update_state_for_message(ref self: TState, message_hash: felt252);
     fn process_last_message_to_appchain(
-        ref self: TState, to_address: ContractAddress, selector: felt252, payload: Span<felt252>
+        ref self: TState,
+        from_address: ContractAddress,
+        to_address: ContractAddress,
+        selector: felt252,
+        payload: Span<felt252>,
     );
     fn process_message_to_starknet(
-        ref self: TState, from: ContractAddress, to_address: ContractAddress, payload: Span<felt252>
+        ref self: TState,
+        from: ContractAddress,
+        to_address: ContractAddress,
+        payload: Span<felt252>,
     );
 }
 
 #[starknet::contract]
 mod messaging_mock {
-    use piltover::messaging::{messaging_cpt, messaging_cpt::InternalTrait as MessagingInternal,};
+    use piltover::messaging::{messaging_cpt, messaging_cpt::InternalTrait as MessagingInternal};
+    use piltover::messaging::types::MessageToAppchainStatus;
     use starknet::ContractAddress;
     use starknet_bridge::mocks::hash;
+    use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess, StorageMapReadAccess};
     use super::IMockMessaging;
 
     component!(path: messaging_cpt, storage: messaging, event: MessagingEvent);
@@ -25,14 +34,14 @@ mod messaging_mock {
     #[storage]
     struct Storage {
         #[substorage(v0)]
-        messaging: messaging_cpt::Storage
+        messaging: messaging_cpt::Storage,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         #[flat]
-        MessagingEvent: messaging_cpt::Event
+        MessagingEvent: messaging_cpt::Event,
     }
 
     #[constructor]
@@ -44,18 +53,20 @@ mod messaging_mock {
     #[abi(embed_v0)]
     impl MockMessagingImpl of IMockMessaging<ContractState> {
         fn update_state_for_message(ref self: ContractState, message_hash: felt252) {
-            self.messaging.sn_to_appc_messages.write(message_hash, 0);
+            // let current_status = self.messaging.sn_to_appc_messages.read(message_hash);
+            self.messaging.sn_to_appc_messages.write(message_hash, MessageToAppchainStatus::Sealed);
         }
 
         fn process_last_message_to_appchain(
             ref self: ContractState,
+            from_address: ContractAddress,
             to_address: ContractAddress,
             selector: felt252,
-            payload: Span<felt252>
+            payload: Span<felt252>,
         ) {
             let nonce = self.messaging.sn_to_appc_nonce.read();
             let message_hash = hash::compute_message_hash_sn_to_appc(
-                nonce, to_address, selector, payload
+                from_address, to_address, selector, payload, nonce - 1,
             );
             self.update_state_for_message(message_hash);
         }
@@ -64,7 +75,7 @@ mod messaging_mock {
             ref self: ContractState,
             from: ContractAddress,
             to_address: ContractAddress,
-            payload: Span<felt252>
+            payload: Span<felt252>,
         ) {
             let message_hash = hash::compute_message_hash_appc_to_sn(from, to_address, payload);
             let ref_count = self.messaging.appc_to_sn_messages.read(message_hash);

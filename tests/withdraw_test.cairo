@@ -1,6 +1,6 @@
 use snforge_std as snf;
 use snforge_std::EventSpy;
-use starknet_bridge::mocks::{messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher},};
+use starknet_bridge::mocks::{messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}};
 use starknet_bridge::bridge::{
     ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, ITokenBridgeAdminDispatcher,
     ITokenBridgeAdminDispatcherTrait,
@@ -10,7 +10,7 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use starknet::contract_address::{contract_address_const};
 use super::constants::{OWNER, L3_BRIDGE_ADDRESS};
 use starknet_bridge::bridge::tests::utils::setup::{
-    deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle
+    deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle,
 };
 use starknet_bridge::constants;
 use starknet_bridge::bridge::tests::utils::message_payloads;
@@ -31,6 +31,7 @@ fn setup() -> (ITokenBridgeDispatcher, EventSpy, IERC20Dispatcher, IMockMessagin
     token_bridge.deposit(usdc_address, amount, snf::test_address());
     messaging_mock
         .process_last_message_to_appchain(
+            token_bridge.contract_address,
             L3_BRIDGE_ADDRESS(),
             constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
             message_payloads::deposit_message_payload(
@@ -39,8 +40,8 @@ fn setup() -> (ITokenBridgeDispatcher, EventSpy, IERC20Dispatcher, IMockMessagin
                 snf::test_address(),
                 snf::test_address(),
                 false,
-                array![].span()
-            )
+                array![].span(),
+            ),
         );
 
     (token_bridge, spy, usdc, messaging_mock, amount)
@@ -56,8 +57,8 @@ fn withdraw_ok() {
             L3_BRIDGE_ADDRESS(),
             token_bridge.contract_address,
             message_payloads::withdraw_message_payload_from_appchain(
-                usdc.contract_address, amount, snf::test_address()
-            )
+                usdc.contract_address, amount, snf::test_address(),
+            ),
         );
 
     let initial_bridge_balance = usdc.balance_of(token_bridge.contract_address);
@@ -66,12 +67,12 @@ fn withdraw_ok() {
 
     assert(
         usdc.balance_of(snf::test_address()) == initial_recipient_balance + amount,
-        'Incorrect amount recieved'
+        'Incorrect amount recieved',
     );
 
     assert(
         usdc.balance_of(token_bridge.contract_address) == initial_bridge_balance - amount,
-        'Incorrect token amount'
+        'Incorrect token amount',
     );
 }
 
@@ -86,8 +87,8 @@ fn withdraw_incorrect_recipient() {
             L3_BRIDGE_ADDRESS(),
             token_bridge.contract_address,
             message_payloads::withdraw_message_payload_from_appchain(
-                usdc.contract_address, amount, snf::test_address()
-            )
+                usdc.contract_address, amount, snf::test_address(),
+            ),
         );
 
     token_bridge.withdraw(usdc.contract_address, amount, contract_address_const::<'user2'>());
@@ -100,7 +101,7 @@ fn withdraw_limit_reached() {
     let (token_bridge, _, usdc, messaging_mock, _) = setup();
 
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
 
     snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
@@ -115,8 +116,8 @@ fn withdraw_limit_reached() {
             L3_BRIDGE_ADDRESS(),
             token_bridge.contract_address,
             message_payloads::withdraw_message_payload_from_appchain(
-                usdc.contract_address, withdraw_amount, snf::test_address()
-            )
+                usdc.contract_address, withdraw_amount, snf::test_address(),
+            ),
         );
 
     token_bridge.withdraw(usdc.contract_address, withdraw_amount, snf::test_address());

@@ -12,7 +12,7 @@ pub trait ITokenBridgeAdmin<TContractState> {
     fn enable_withdrawal_limit(ref self: TContractState, token: ContractAddress);
     fn disable_withdrawal_limit(ref self: TContractState, token: ContractAddress);
     fn set_max_total_balance(
-        ref self: TContractState, token: ContractAddress, max_total_balance: u256
+        ref self: TContractState, token: ContractAddress, max_total_balance: u256,
     );
 }
 
@@ -31,18 +31,18 @@ pub trait ITokenBridge<TContractState> {
         ref self: TContractState,
         token: ContractAddress,
         amount: u256,
-        appchain_recipient: ContractAddress
+        appchain_recipient: ContractAddress,
     );
     fn deposit_with_message(
         ref self: TContractState,
         token: ContractAddress,
         amount: u256,
         appchain_recipient: ContractAddress,
-        message: Span<felt252>
+        message: Span<felt252>,
     );
 
     fn withdraw(
-        ref self: TContractState, token: ContractAddress, amount: u256, recipient: ContractAddress
+        ref self: TContractState, token: ContractAddress, amount: u256, recipient: ContractAddress,
     );
 
     fn deposit_cancel_request(
@@ -50,7 +50,7 @@ pub trait ITokenBridge<TContractState> {
         token: ContractAddress,
         amount: u256,
         appchain_recipient: ContractAddress,
-        nonce: felt252
+        nonce: felt252,
     );
     fn deposit_with_message_cancel_request(
         ref self: TContractState,
@@ -58,7 +58,7 @@ pub trait ITokenBridge<TContractState> {
         amount: u256,
         appchain_recipient: ContractAddress,
         message: Span<felt252>,
-        nonce: felt252
+        nonce: felt252,
     );
 
     fn deposit_with_message_reclaim(
@@ -67,16 +67,17 @@ pub trait ITokenBridge<TContractState> {
         amount: u256,
         appchain_recipient: ContractAddress,
         message: Span<felt252>,
-        nonce: felt252
+        nonce: felt252,
     );
     fn deposit_reclaim(
         ref self: TContractState,
         token: ContractAddress,
         amount: u256,
         appchain_recipient: ContractAddress,
-        nonce: felt252
+        nonce: felt252,
     );
     fn get_max_total_balance(self: @TContractState, token: ContractAddress) -> u256;
+    fn get_appchain_token_bridge(self: @TContractState) -> ContractAddress;
 }
 
 #[starknet::interface]

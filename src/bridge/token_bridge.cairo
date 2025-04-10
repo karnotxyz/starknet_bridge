@@ -1,10 +1,13 @@
 #[starknet::contract]
 pub mod TokenBridge {
+    use starknet::storage::{
+        StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapWriteAccess,
+        StorageMapReadAccess,
+    };
     use starknet::SyscallResultTrait;
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
     use core::option::OptionTrait;
     use core::traits::TryInto;
-    use core::panic_with_felt252;
     use core::starknet::event::EventEmitter;
     use starknet::storage::Map;
     use core::array::ArrayTrait;
@@ -12,7 +15,7 @@ pub mod TokenBridge {
     use core::num::traits::Bounded;
     use openzeppelin::token::erc20::interface::{
         IERC20Dispatcher, IERC20MetadataDispatcher, IERC20DispatcherTrait,
-        IERC20MetadataDispatcherTrait
+        IERC20MetadataDispatcherTrait,
     };
     use starknet::syscalls::call_contract_syscall;
     use core::to_byte_array::FormatAsByteArray;
@@ -22,7 +25,7 @@ pub mod TokenBridge {
     use openzeppelin::upgrades::interface::IUpgradeable;
     use openzeppelin::security::reentrancyguard::{
         ReentrancyGuardComponent,
-        ReentrancyGuardComponent::InternalTrait as InternalReentrancyGuardImpl
+        ReentrancyGuardComponent::InternalTrait as InternalReentrancyGuardImpl,
     };
 
     use piltover::messaging::types::MessageToAppchainStatus;
@@ -34,7 +37,7 @@ pub mod TokenBridge {
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
     component!(path: WithdrawalLimitComponent, storage: withdrawal, event: WithdrawalEvent);
     component!(
-        path: ReentrancyGuardComponent, storage: reentrancy_guard, event: ReentrancyGuardEvent
+        path: ReentrancyGuardComponent, storage: reentrancy_guard, event: ReentrancyGuardEvent,
     );
 
     use core::num::traits::zero::Zero;
@@ -42,11 +45,10 @@ pub mod TokenBridge {
 
     use starknet_bridge::bridge::{
         types::{TokenStatus, TokenSettings},
-        interface::{ITokenBridge, ITokenBridgeAdmin, IWithdrawalLimitStatus}
+        interface::{ITokenBridge, ITokenBridgeAdmin, IWithdrawalLimitStatus},
     };
     use piltover::messaging::{
-        interface::{IMessagingDispatcher, IMessagingDispatcherTrait},
-        messaging_cpt::{MessageHash, Nonce}
+        interface::{IMessagingDispatcher, IMessagingDispatcherTrait}, types::{MessageHash, Nonce},
     };
     use starknet_bridge::constants;
     use starknet::ClassHash;
@@ -68,13 +70,13 @@ pub mod TokenBridge {
     #[storage]
     struct Storage {
         // corresponding bridge contract_address deployed on the appchain
-        appchain_bridge: ContractAddress,
+        pub appchain_bridge: ContractAddress,
         // the core messaging contract deployed on starknet used for l2 - l3 messsaging
-        messaging_contract: IMessagingDispatcher,
+        pub messaging_contract: IMessagingDispatcher,
         // All token related settings and its status
-        token_settings: Map<ContractAddress, TokenSettings>,
+        pub token_settings: Map<ContractAddress, TokenSettings>,
         #[substorage(v0)]
-        ownable: OwnableComponent::Storage,
+        pub ownable: OwnableComponent::Storage,
         #[substorage(v0)]
         upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
@@ -90,8 +92,9 @@ pub mod TokenBridge {
         pub const APPCHAIN_BRIDGE_NOT_SET: felt252 = 'L3 bridge not set';
         pub const ZERO_DEPOSIT: felt252 = 'Zero amount';
         pub const ALREADY_ENROLLED: felt252 = 'Incorrect token status';
-        pub const DEPLOYMENT_MESSAGE_DOES_NOT_EXIST: felt252 = 'Deployment message inexistent';
         pub const NOT_ACTIVE: felt252 = 'Token not active';
+        pub const DEPLOY_MESSAGE_NOT_PENDING: felt252 = 'Deploy message not Pending';
+        pub const DEPOSIT_MESSAGE_NOT_PENDING: felt252 = 'Deposit message not Pending';
         pub const NOT_DEACTIVATED: felt252 = 'Token not deactivated';
         pub const NOT_BLOCKED: felt252 = 'Token not blocked';
         pub const NOT_UNKNOWN: felt252 = 'Only unknown can be blocked';
@@ -134,35 +137,35 @@ pub mod TokenBridge {
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenActivated {
-        pub token: ContractAddress
+        pub token: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenDeactivated {
-        pub token: ContractAddress
+        pub token: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenBlocked {
-        pub token: ContractAddress
+        pub token: ContractAddress,
     }
 
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenUnblocked {
-        pub token: ContractAddress
+        pub token: ContractAddress,
     }
 
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenReactivated {
-        pub token: ContractAddress
+        pub token: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenEnrollmentInitiated {
         pub token: ContractAddress,
-        pub deployment_message_hash: MessageHash
+        pub deployment_message_hash: MessageHash,
     }
 
 
@@ -213,7 +216,7 @@ pub mod TokenBridge {
         #[key]
         pub appchain_recipient: ContractAddress,
         pub message: Span<felt252>,
-        pub nonce: felt252
+        pub nonce: felt252,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -225,7 +228,7 @@ pub mod TokenBridge {
         pub amount: u256,
         #[key]
         pub appchain_recipient: ContractAddress,
-        pub nonce: felt252
+        pub nonce: felt252,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -238,7 +241,7 @@ pub mod TokenBridge {
         #[key]
         pub appchain_recipient: ContractAddress,
         pub message: Span<felt252>,
-        pub nonce: felt252
+        pub nonce: felt252,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -270,13 +273,13 @@ pub mod TokenBridge {
     pub struct SetMaxTotalBalance {
         #[key]
         pub token: ContractAddress,
-        pub value: u256
+        pub value: u256,
     }
 
 
     #[derive(Drop, starknet::Event)]
     pub struct SetAppchainBridge {
-        pub appchain_bridge: ContractAddress
+        pub appchain_bridge: ContractAddress,
     }
 
 
@@ -285,7 +288,7 @@ pub mod TokenBridge {
         ref self: ContractState,
         appchain_bridge: ContractAddress,
         messaging_contract: ContractAddress,
-        owner: ContractAddress
+        owner: ContractAddress,
     ) {
         self.appchain_bridge.write(appchain_bridge);
         self
@@ -301,14 +304,22 @@ pub mod TokenBridge {
         fn send_deploy_message(self: @ContractState, token: ContractAddress) -> felt252 {
             assert(self.appchain_bridge().is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
 
-            let (hash, _nonce) = self
+            let (hash, nonce) = self
                 .messaging_contract
                 .read()
                 .send_message_to_appchain(
                     self.appchain_bridge(),
                     constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
-                    deployment_message_payload(token)
+                    deployment_message_payload(token),
                 );
+
+            assert(
+                self
+                    .messaging_contract
+                    .read()
+                    .sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(nonce),
+                Errors::DEPLOY_MESSAGE_NOT_PENDING,
+            );
             return hash;
         }
 
@@ -324,21 +335,29 @@ pub mod TokenBridge {
             assert(amount > 0, Errors::ZERO_DEPOSIT);
 
             let is_with_message = selector == constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR;
-            let (_, nonce) = self
+            let (hash, nonce) = self
                 .messaging_contract
                 .read()
                 .send_message_to_appchain(
                     self.appchain_bridge(),
                     selector,
                     deposit_message_payload(
-                        token, amount, appchain_recipient, is_with_message, message
-                    )
+                        token, amount, appchain_recipient, is_with_message, message,
+                    ),
                 );
+
+            assert(
+                self
+                    .messaging_contract
+                    .read()
+                    .sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(nonce),
+                Errors::DEPOSIT_MESSAGE_NOT_PENDING,
+            );
             nonce
         }
 
         fn consume_message(
-            self: @ContractState, token: ContractAddress, amount: u256, recipient: ContractAddress
+            self: @ContractState, token: ContractAddress, amount: u256, recipient: ContractAddress,
         ) {
             assert(recipient.is_non_zero(), Errors::INVALID_RECIPIENT);
 
@@ -369,7 +388,7 @@ pub mod TokenBridge {
             dispatcher.transfer_from(caller, this_address, amount);
             assert(
                 dispatcher.balance_of(this_address) == initial_balance + amount,
-                Errors::TOKENS_NOT_TRANSFERRED
+                Errors::TOKENS_NOT_TRANSFERRED,
             );
         }
     }
@@ -380,7 +399,7 @@ pub mod TokenBridge {
         amount: u256,
         appchain_recipient: ContractAddress,
         is_with_message: bool,
-        message: Span<felt252>
+        message: Span<felt252>,
     ) -> Span<felt252> {
         let caller = get_caller_address();
         let mut payload = ArrayTrait::new();
@@ -396,7 +415,7 @@ pub mod TokenBridge {
     }
 
     fn deserialize_and_append(
-        mut value: Span<felt252>, mut calldata: Array<felt252>
+        mut value: Span<felt252>, mut calldata: Array<felt252>,
     ) -> Array<felt252> {
         if (value.len() == 1) {
             let value_byte_array = value[0].format_as_byte_array(10);
@@ -456,7 +475,7 @@ pub mod TokenBridge {
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::NOT_UNKNOWN);
 
             let new_settings = TokenSettings {
-                token_status: TokenStatus::Blocked, ..self.token_settings.read(token)
+                token_status: TokenStatus::Blocked, ..self.token_settings.read(token),
             };
             self.token_settings.write(token, new_settings);
             self.emit(TokenBlocked { token });
@@ -469,7 +488,7 @@ pub mod TokenBridge {
             assert(self.get_status(token) == TokenStatus::Blocked, Errors::NOT_BLOCKED);
 
             let new_settings = TokenSettings {
-                token_status: TokenStatus::Unknown, ..self.token_settings.read(token)
+                token_status: TokenStatus::Unknown, ..self.token_settings.read(token),
             };
             self.token_settings.write(token, new_settings);
             self.emit(TokenUnblocked { token });
@@ -484,7 +503,7 @@ pub mod TokenBridge {
             assert(status == TokenStatus::Active, Errors::NOT_ACTIVE);
 
             let new_settings = TokenSettings {
-                token_status: TokenStatus::Deactivated, ..self.token_settings.read(token)
+                token_status: TokenStatus::Deactivated, ..self.token_settings.read(token),
             };
             self.token_settings.write(token, new_settings);
 
@@ -499,7 +518,7 @@ pub mod TokenBridge {
             assert(status == TokenStatus::Deactivated, Errors::NOT_DEACTIVATED);
 
             let new_settings = TokenSettings {
-                token_status: TokenStatus::Active, ..self.token_settings.read(token)
+                token_status: TokenStatus::Active, ..self.token_settings.read(token),
             };
             self.token_settings.write(token, new_settings);
 
@@ -512,7 +531,7 @@ pub mod TokenBridge {
         fn enable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
             let new_settings = TokenSettings {
-                withdrawal_limit_applied: true, ..self.token_settings.read(token)
+                withdrawal_limit_applied: true, ..self.token_settings.read(token),
             };
             self.token_settings.write(token, new_settings);
             self.emit(WithdrawalLimitEnabled { sender: get_caller_address(), token });
@@ -521,7 +540,7 @@ pub mod TokenBridge {
         fn disable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
             self.ownable.assert_only_owner();
             let new_settings = TokenSettings {
-                withdrawal_limit_applied: false, ..self.token_settings.read(token)
+                withdrawal_limit_applied: false, ..self.token_settings.read(token),
             };
             self.token_settings.write(token, new_settings);
             self.emit(WithdrawalLimitDisabled { sender: get_caller_address(), token });
@@ -531,11 +550,11 @@ pub mod TokenBridge {
         // will be accepted. In case of L3 this would mean the maximum supply of token that
         // can be taken from L2 to L3
         fn set_max_total_balance(
-            ref self: ContractState, token: ContractAddress, max_total_balance: u256
+            ref self: ContractState, token: ContractAddress, max_total_balance: u256,
         ) {
             self.ownable.assert_only_owner();
             let new_settings = TokenSettings {
-                max_total_balance: max_total_balance, ..self.token_settings.read(token)
+                max_total_balance: max_total_balance, ..self.token_settings.read(token),
             };
             self.token_settings.write(token, new_settings);
             self.emit(SetMaxTotalBalance { token, value: max_total_balance });
@@ -579,19 +598,6 @@ pub mod TokenBridge {
 
             // Send message to appchain
             let deployment_message_hash = self.send_deploy_message(token);
-
-            let message_status = self
-                .messaging_contract
-                .read()
-                .sn_to_appchain_messages(deployment_message_hash);
-
-            match message_status {
-                MessageToAppchainStatus::Pending => {},
-                MessageToAppchainStatus::SealedOrNotSent => {
-                    panic_with_felt252(Errors::DEPLOYMENT_MESSAGE_DOES_NOT_EXIST)
-                }
-            };
-
             // Reading existing settings as withdrawal_limit_applied and max_total_balance
             // can be set before the token is enrolled.
             let old_settings = self.token_settings.read(token);
@@ -600,7 +606,7 @@ pub mod TokenBridge {
                 deployment_message_hash: deployment_message_hash,
                 pending_deployment_expiration: get_block_timestamp()
                     + constants::MAX_PENDING_DURATION.try_into().unwrap(),
-                ..old_settings
+                ..old_settings,
             };
 
             self.token_settings.write(token, new_settings);
@@ -616,7 +622,7 @@ pub mod TokenBridge {
             ref self: ContractState,
             token: ContractAddress,
             amount: u256,
-            appchain_recipient: ContractAddress
+            appchain_recipient: ContractAddress,
         ) {
             self.reentrancy_guard.start();
             let no_message: Span<felt252> = array![].span();
@@ -646,7 +652,7 @@ pub mod TokenBridge {
             token: ContractAddress,
             amount: u256,
             appchain_recipient: ContractAddress,
-            message: Span<felt252>
+            message: Span<felt252>,
         ) {
             self.accept_deposit(token, amount);
             let nonce = self
@@ -663,7 +669,7 @@ pub mod TokenBridge {
                 .emit(
                     DepositWithMessage {
                         sender: caller, token, amount, appchain_recipient, message, nonce,
-                    }
+                    },
                 );
             // Piggy-back the deposit tx to check and update the status of token bridge deployment.
             self.check_deployment_status(token);
@@ -685,7 +691,7 @@ pub mod TokenBridge {
                 .read()
                 .sn_to_appchain_messages(settings.deployment_message_hash);
 
-            if (message_status == MessageToAppchainStatus::SealedOrNotSent) {
+            if (message_status == MessageToAppchainStatus::Sealed) {
                 let new_settings = TokenSettings { token_status: TokenStatus::Active, ..settings };
                 self.token_settings.write(token, new_settings);
                 self.emit(TokenActivated { token });
@@ -706,7 +712,7 @@ pub mod TokenBridge {
             ref self: ContractState,
             token: ContractAddress,
             amount: u256,
-            recipient: ContractAddress
+            recipient: ContractAddress,
         ) {
             self.reentrancy_guard.start();
 
@@ -740,7 +746,7 @@ pub mod TokenBridge {
             token: ContractAddress,
             amount: u256,
             appchain_recipient: ContractAddress,
-            nonce: Nonce
+            nonce: Nonce,
         ) {
             let no_message: Span<felt252> = array![].span();
             self
@@ -750,13 +756,13 @@ pub mod TokenBridge {
                     self.appchain_bridge(),
                     constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
                     deposit_message_payload(token, amount, appchain_recipient, false, no_message),
-                    nonce
+                    nonce,
                 );
             self
                 .emit(
                     DepositCancelRequest {
-                        sender: get_caller_address(), token, amount, appchain_recipient, nonce
-                    }
+                        sender: get_caller_address(), token, amount, appchain_recipient, nonce,
+                    },
                 );
         }
 
@@ -768,7 +774,7 @@ pub mod TokenBridge {
             amount: u256,
             appchain_recipient: ContractAddress,
             message: Span<felt252>,
-            nonce: Nonce
+            nonce: Nonce,
         ) {
             self
                 .messaging_contract
@@ -777,7 +783,7 @@ pub mod TokenBridge {
                     self.appchain_bridge(),
                     constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR,
                     deposit_message_payload(token, amount, appchain_recipient, true, message),
-                    nonce
+                    nonce,
                 );
             self
                 .emit(
@@ -787,8 +793,8 @@ pub mod TokenBridge {
                         amount,
                         appchain_recipient,
                         message,
-                        nonce
-                    }
+                        nonce,
+                    },
                 );
         }
 
@@ -800,7 +806,7 @@ pub mod TokenBridge {
             amount: u256,
             appchain_recipient: ContractAddress,
             message: Span<felt252>,
-            nonce: Nonce
+            nonce: Nonce,
         ) {
             self.reentrancy_guard.start();
             self
@@ -810,7 +816,7 @@ pub mod TokenBridge {
                     self.appchain_bridge(),
                     constants::HANDLE_DEPOSIT_WITH_MESSAGE_SELECTOR,
                     deposit_message_payload(token, amount, appchain_recipient, true, message),
-                    nonce
+                    nonce,
                 );
 
             let dispatcher = IERC20Dispatcher { contract_address: token };
@@ -826,8 +832,8 @@ pub mod TokenBridge {
                         amount,
                         appchain_recipient,
                         message,
-                        nonce
-                    }
+                        nonce,
+                    },
                 );
         }
 
@@ -838,7 +844,7 @@ pub mod TokenBridge {
             token: ContractAddress,
             amount: u256,
             appchain_recipient: ContractAddress,
-            nonce: Nonce
+            nonce: Nonce,
         ) {
             self.reentrancy_guard.start();
             let no_message: Span<felt252> = array![].span();
@@ -849,7 +855,7 @@ pub mod TokenBridge {
                     self.appchain_bridge(),
                     constants::HANDLE_TOKEN_DEPOSIT_SELECTOR,
                     deposit_message_payload(token, amount, appchain_recipient, false, no_message),
-                    nonce
+                    nonce,
                 );
 
             let dispatcher = IERC20Dispatcher { contract_address: token };
@@ -860,8 +866,8 @@ pub mod TokenBridge {
             self
                 .emit(
                     DepositReclaimed {
-                        sender: get_caller_address(), token, amount, appchain_recipient, nonce
-                    }
+                        sender: get_caller_address(), token, amount, appchain_recipient, nonce,
+                    },
                 );
         }
 
@@ -880,6 +886,10 @@ pub mod TokenBridge {
                 return Bounded::MAX;
             }
             return max_total_balance;
+        }
+
+        fn get_appchain_token_bridge(self: @ContractState) -> ContractAddress {
+            self.appchain_bridge.read()
         }
     }
 

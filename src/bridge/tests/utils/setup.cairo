@@ -1,9 +1,9 @@
 use snforge_std as snf;
-use snforge_std::{ContractClassTrait, EventSpy};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpy};
 use starknet::ContractAddress;
-use starknet_bridge::mocks::{messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher},};
+use starknet_bridge::mocks::{messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}};
 use starknet_bridge::bridge::{
-    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge, types::TokenStatus
+    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge, types::TokenStatus,
 };
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use starknet_bridge::bridge::tests::constants::{OWNER, L3_BRIDGE_ADDRESS, DELAY_TIME};
@@ -12,13 +12,18 @@ use starknet_bridge::bridge::tests::utils::message_payloads;
 
 
 pub fn deploy_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
-    let erc20_class_hash = snf::declare("ERC20").unwrap();
+    let erc20_class_hash = snf::declare("ERC20").unwrap().contract_class();
     let mut constructor_args = ArrayTrait::new();
+    let fixed_supply: u256 = 1000000000;
+
     name.serialize(ref constructor_args);
     symbol.serialize(ref constructor_args);
-    let fixed_supply: u256 = 1000000000;
+    18.serialize(ref constructor_args); // decimals
     fixed_supply.serialize(ref constructor_args);
     OWNER().serialize(ref constructor_args);
+    OWNER().serialize(ref constructor_args);
+    OWNER().serialize(ref constructor_args);
+    10.serialize(ref constructor_args);
 
     let (usdc, _) = erc20_class_hash.deploy(@constructor_args).unwrap();
 
@@ -33,10 +38,10 @@ pub fn deploy_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
 }
 
 pub fn deploy_token_bridge_with_messaging() -> (
-    ITokenBridgeDispatcher, EventSpy, IMockMessagingDispatcher
+    ITokenBridgeDispatcher, EventSpy, IMockMessagingDispatcher,
 ) {
     // Deploy messaging mock with 5 days cancellation delay
-    let messaging_mock_class_hash = snf::declare("messaging_mock").unwrap();
+    let messaging_mock_class_hash = snf::declare("messaging_mock").unwrap().contract_class();
     // Deploying with 5 days as the delay time (5 * 86400 = 432000)
     let (messaging_contract_address, _) = messaging_mock_class_hash
         .deploy(@array![DELAY_TIME])
@@ -48,7 +53,7 @@ pub fn deploy_token_bridge_with_messaging() -> (
     // Declare owner
     let owner = OWNER();
 
-    let token_bridge_class_hash = snf::declare("TokenBridge").unwrap();
+    let token_bridge_class_hash = snf::declare("TokenBridge").unwrap().contract_class();
 
     // Deploy the bridge
     let mut calldata = ArrayTrait::new();
@@ -82,7 +87,7 @@ pub fn mock_state_testing() -> TokenBridge::ContractState {
 pub fn enroll_token_and_settle(
     token_bridge: ITokenBridgeDispatcher,
     messaging_mock: IMockMessagingDispatcher,
-    token: ContractAddress
+    token: ContractAddress,
 ) {
     assert(token_bridge.get_status(token) == TokenStatus::Unknown, 'Should be Unknown');
 
@@ -92,9 +97,10 @@ pub fn enroll_token_and_settle(
     // Settles the message sent to appchain
     messaging_mock
         .process_last_message_to_appchain(
+            token_bridge.contract_address,
             L3_BRIDGE_ADDRESS(),
             constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
-            message_payloads::deployment_message_payload(token)
+            message_payloads::deployment_message_payload(token),
         );
 
     token_bridge.check_deployment_status(token);

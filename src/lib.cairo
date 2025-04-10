@@ -3,7 +3,7 @@ pub mod bridge {
     pub mod interface;
     pub mod types;
 
-    #[cfg(test)]
+    #[cfg(target: 'test')]
     pub mod tests {
         pub mod constants;
         mod token_actions_test;
@@ -19,7 +19,7 @@ pub mod bridge {
         ITokenBridge, ITokenBridgeAdmin, IWithdrawalLimitStatus, ITokenBridgeDispatcher,
         ITokenBridgeAdminDispatcher, IWithdrawalLimitStatusDispatcher,
         IWithdrawalLimitStatusDispatcherTrait, ITokenBridgeDispatcherTrait,
-        ITokenBridgeAdminDispatcherTrait
+        ITokenBridgeAdminDispatcherTrait,
     };
 }
 
@@ -37,9 +37,16 @@ pub mod constants;
 
 pub mod mocks {
     pub mod erc20;
+
+    #[cfg(target: 'test')]
     pub mod messaging;
+    #[cfg(test)]
     pub mod messaging_malicious;
+
+    #[cfg(test)]
     pub mod withdrawal_limit_mock;
+
+    #[cfg(target: 'test')]
     pub mod hash;
 }
 

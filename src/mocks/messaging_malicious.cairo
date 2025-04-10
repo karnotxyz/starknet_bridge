@@ -15,25 +15,25 @@ mod messaging_malicious {
             ref self: ContractState,
             to_address: ContractAddress,
             selector: felt252,
-            payload: Span<felt252>
+            payload: Span<felt252>,
         ) -> (felt252, felt252) {
             (0, 0)
         }
 
         fn consume_message_from_appchain(
-            ref self: ContractState, from_address: ContractAddress, payload: Span<felt252>
+            ref self: ContractState, from_address: ContractAddress, payload: Span<felt252>,
         ) -> felt252 {
             0
         }
 
         fn sn_to_appchain_messages(
-            self: @ContractState, message_hash: felt252
+            self: @ContractState, message_hash: felt252,
         ) -> MessageToAppchainStatus {
-            MessageToAppchainStatus::SealedOrNotSent
+            MessageToAppchainStatus::NotSent
         }
 
         fn appchain_to_sn_messages(
-            self: @ContractState, message_hash: felt252
+            self: @ContractState, message_hash: felt252,
         ) -> MessageToStarknetStatus {
             MessageToStarknetStatus::NothingToConsume
         }

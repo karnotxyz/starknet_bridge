@@ -5,7 +5,7 @@ use starknet_bridge::bridge::{
     ITokenBridgeAdminDispatcherTrait, TokenBridge, TokenBridge::Event,
 };
 use openzeppelin::access::ownable::{
-    interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait}
+    interface::{IOwnableTwoStepDispatcher, IOwnableTwoStepDispatcherTrait},
 };
 use starknet::contract_address::{contract_address_const};
 use starknet_bridge::bridge::tests::utils::setup::{deploy_token_bridge};
@@ -16,7 +16,7 @@ use super::constants::{OWNER, L3_BRIDGE_ADDRESS, USDC_MOCK_ADDRESS};
 fn constructor_ok() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_ownable = IOwnableTwoStepDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
     assert(OWNER() == token_bridge_ownable.owner(), 'Incorrect owner');
 }
@@ -25,7 +25,7 @@ fn constructor_ok() {
 fn set_appchain_bridge_ok() {
     let (token_bridge, mut spy) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
     let token_bridge = ITokenBridgeDispatcher { contract_address: token_bridge.contract_address };
 
@@ -41,16 +41,16 @@ fn set_appchain_bridge_ok() {
     let new_appchain_bridge_address = contract_address_const::<'l3_bridge_address_new'>();
     token_bridge_admin.set_appchain_token_bridge(new_appchain_bridge_address);
     assert(
-        token_bridge.appchain_bridge() == new_appchain_bridge_address, 'Appchain bridge not set'
+        token_bridge.appchain_bridge() == new_appchain_bridge_address, 'Appchain bridge not set',
     );
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
     let expected_event = TokenBridge::SetAppchainBridge {
-        appchain_bridge: new_appchain_bridge_address
+        appchain_bridge: new_appchain_bridge_address,
     };
     spy
         .assert_emitted(
-            @array![(token_bridge.contract_address, Event::SetAppchainBridge(expected_event))]
+            @array![(token_bridge.contract_address, Event::SetAppchainBridge(expected_event))],
         );
 }
 
@@ -59,7 +59,7 @@ fn set_appchain_bridge_ok() {
 fn set_appchain_bridge_not_owner() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
     let token_bridge = ITokenBridgeDispatcher { contract_address: token_bridge.contract_address };
 
@@ -78,7 +78,7 @@ fn set_appchain_bridge_not_owner() {
 fn set_max_total_balance_not_owner() {
     let (token_bridge, _) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
 
     let usdc_address = USDC_MOCK_ADDRESS();
@@ -91,7 +91,7 @@ fn set_max_total_balance_not_owner() {
 fn set_max_total_balance_ok() {
     let (token_bridge, mut spy) = deploy_token_bridge();
     let token_bridge_admin = ITokenBridgeAdminDispatcher {
-        contract_address: token_bridge.contract_address
+        contract_address: token_bridge.contract_address,
     };
 
     let usdc_address = USDC_MOCK_ADDRESS();
@@ -106,11 +106,11 @@ fn set_max_total_balance_ok() {
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
     let expected_event = TokenBridge::SetMaxTotalBalance {
-        token: usdc_address, value: 50 * decimals
+        token: usdc_address, value: 50 * decimals,
     };
 
     spy
         .assert_emitted(
-            @array![(token_bridge.contract_address, Event::SetMaxTotalBalance(expected_event))]
+            @array![(token_bridge.contract_address, Event::SetMaxTotalBalance(expected_event))],
         );
 }

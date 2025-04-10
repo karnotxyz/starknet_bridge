@@ -1,17 +1,21 @@
 use snforge_std as snf;
+use starknet::contract_address_const;
+use starknet::storage::{StoragePointerWriteAccess, StorageMapReadAccess, StorageMapWriteAccess};
 use starknet_bridge::bridge::{ITokenBridge, ITokenBridgeAdmin, types::{TokenStatus, TokenSettings}};
 use starknet_bridge::bridge::tests::utils::setup::mock_state_testing;
 
-use starknet_bridge::bridge::tests::constants::{OWNER, USDC_MOCK_ADDRESS,};
+use starknet_bridge::bridge::TokenBridge;
+use starknet_bridge::bridge::tests::constants::{OWNER, USDC_MOCK_ADDRESS, L3_BRIDGE_ADDRESS};
 
 #[test]
 fn deactivate_token_ok() {
     let mut mock = mock_state_testing();
     let usdc_address = USDC_MOCK_ADDRESS();
-
-    mock.ownable.Ownable_owner.write(OWNER());
     snf::start_cheat_caller_address_global(OWNER());
 
+    TokenBridge::constructor(
+        ref mock, L3_BRIDGE_ADDRESS(), contract_address_const::<'messaging_mock'>(), OWNER(),
+    );
     // Setting the token active
     let old_settings = mock.token_settings.read(usdc_address);
     mock
@@ -157,7 +161,7 @@ fn reactivate_token_ok() {
     mock
         .token_settings
         .write(
-            usdc_address, TokenSettings { token_status: TokenStatus::Deactivated, ..old_settings }
+            usdc_address, TokenSettings { token_status: TokenStatus::Deactivated, ..old_settings },
         );
 
     mock.ownable.Ownable_owner.write(OWNER());
@@ -179,7 +183,7 @@ fn reactivate_token_not_owner() {
     mock
         .token_settings
         .write(
-            usdc_address, TokenSettings { token_status: TokenStatus::Deactivated, ..old_settings }
+            usdc_address, TokenSettings { token_status: TokenStatus::Deactivated, ..old_settings },
         );
 
     snf::start_cheat_caller_address_global(snf::test_address());

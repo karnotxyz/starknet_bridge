@@ -9,19 +9,26 @@ use starknet::ContractAddress;
 ///
 /// # Arguments
 ///
-/// * `nonce` - Nonce of the message.
+/// * `from_address` - Contract address of the message sender on the Appchain.
 /// * `to_address` - Contract address to send the message to on the Appchain.
 /// * `selector` - The `l1_handler` function selector of the contract on the Appchain
 ///                to execute.
 /// * `payload` - The message payload.
+/// * `nonce` - Nonce of the message.
 ///
 /// # Returns
 ///
 /// The hash of the message from Starknet to the Appchain.
 pub fn compute_message_hash_sn_to_appc(
-    nonce: felt252, to_address: ContractAddress, selector: felt252, payload: Span<felt252>
+    from_address: ContractAddress,
+    to_address: ContractAddress,
+    selector: felt252,
+    payload: Span<felt252>,
+    nonce: felt252,
 ) -> felt252 {
-    let mut hash_data = array![nonce, to_address.into(), selector,];
+    let mut hash_data = array![
+        from_address.into(), to_address.into(), nonce, selector, payload.len().into(),
+    ];
 
     let mut i = 0_usize;
     loop {
@@ -49,7 +56,7 @@ pub fn compute_message_hash_sn_to_appc(
 ///
 /// The hash of the message from the Appchain to Starknet.
 pub fn compute_message_hash_appc_to_sn(
-    from_address: ContractAddress, to_address: ContractAddress, payload: Span<felt252>
+    from_address: ContractAddress, to_address: ContractAddress, payload: Span<felt252>,
 ) -> felt252 {
     let mut hash_data: Array<felt252> = array![
         from_address.into(), to_address.into(), payload.len().into(),
