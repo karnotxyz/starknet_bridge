@@ -206,7 +206,7 @@ program
     await sleep(20000);
     await getL3Balance(
       process.env.ACCOUNT_L3_ADDRESS as string,
-      "ERC20"
+      "ERC20_OZ"
     );
 
     Logger.success("Full flow completed successfully!");
