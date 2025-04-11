@@ -40,15 +40,23 @@ fn decrease_withdrawal_limit_ok() {
 
     snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
 
-    token_bridge_admin.decrease_withdrawal_limit(usdc_address, 10);
+    let new_limit = 10;
+
+    token_bridge_admin.decrease_withdrawal_limit(usdc_address, new_limit);
 
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
     assert(withdrawal_limit.is_withdrawal_limit_applied(usdc_address), 'Limit not applied');
 
+    assert(
+        withdrawal_limit.get_daily_withdrawal_limit_pct(usdc_address) == new_limit,
+        'Limit not changed',
+    );
+
     let exepected_limit_enabled = TokenBridge::WithdrawalLimitDecreased {
-        sender: SECURITY_AGENT(), token: usdc_address, daily_withdrawal_limit_pct: 10,
+        sender: SECURITY_AGENT(), token: usdc_address, daily_withdrawal_limit_pct: new_limit,
     };
+
     spy
         .assert_emitted(
             @array![
@@ -94,17 +102,23 @@ fn increase_withdrawal_limit_ok() {
 
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
+    let new_limit = 20;
+
     snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_ADMIN());
 
-    token_bridge_admin.increase_withdrawal_limit(usdc_address, 20);
+    token_bridge_admin.increase_withdrawal_limit(usdc_address, new_limit);
 
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
     assert(withdrawal_limit.is_withdrawal_limit_applied(usdc_address), 'Limit not applied');
-
+    assert(
+        withdrawal_limit.get_daily_withdrawal_limit_pct(usdc_address) == new_limit,
+        'Limit not changed',
+    );
     let exepected_limit_enabled = TokenBridge::WithdrawalLimitIncreased {
-        sender: SECURITY_ADMIN(), token: usdc_address, daily_withdrawal_limit_pct: 20,
+        sender: SECURITY_ADMIN(), token: usdc_address, daily_withdrawal_limit_pct: new_limit,
     };
+
     spy
         .assert_emitted(
             @array![
@@ -181,11 +195,10 @@ fn disable_withdrawal_limit_ok() {
 
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
-    println!(
-        "is_withdrawal_limit_applied after disable: {}",
-        withdrawal_limit.is_withdrawal_limit_applied(usdc_address),
-    );
     assert(!withdrawal_limit.is_withdrawal_limit_applied(usdc_address), 'Limit not applied');
+    assert(
+        withdrawal_limit.get_daily_withdrawal_limit_pct(usdc_address) == 100, 'Limit not disabled',
+    );
 
     let expected_limit_disabled = TokenBridge::WithdrawalLimitIncreased {
         sender: SECURITY_ADMIN(), token: usdc_address, daily_withdrawal_limit_pct: 100,

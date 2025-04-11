@@ -8,6 +8,7 @@ use starknet_bridge::access_control::roles::Roles;
 use starknet_bridge::bridge::tests::constants::{
     APP_GOVERNOR, GOVERNANCE_ADMIN, SECURITY_ADMIN, SECURITY_AGENT, TOKEN_ADMIN, UPGRADE_GOVERNOR,
 };
+use starknet_bridge::access_control::tests::utils::has_role_only;
 
 fn deploy_access_control() -> (IAccessControlDispatcher, EventSpy) {
     let access_control_mock_class_hash = snf::declare("access_control_mock")
@@ -39,19 +40,31 @@ fn test_access_control_roles() {
 
     // Test role assignments
     assert!(
-        access_control.has_role(Roles::APP_GOVERNOR, APP_GOVERNOR()), "App governor not granted",
+        has_role_only(access_control, Roles::GOVERNANCE_ADMIN, GOVERNANCE_ADMIN()),
+        "Gov admin not granted",
     );
+
     assert!(
-        access_control.has_role(Roles::SECURITY_ADMIN, SECURITY_ADMIN()),
+        has_role_only(access_control, Roles::APP_GOVERNOR, APP_GOVERNOR()),
+        "App governor not granted",
+    );
+
+    assert!(
+        has_role_only(access_control, Roles::SECURITY_ADMIN, SECURITY_ADMIN()),
         "Security admin not granted",
     );
+
     assert!(
-        access_control.has_role(Roles::SECURITY_AGENT, SECURITY_AGENT()),
+        has_role_only(access_control, Roles::SECURITY_AGENT, SECURITY_AGENT()),
         "Security agent not granted",
     );
-    assert!(access_control.has_role(Roles::TOKEN_ADMIN, TOKEN_ADMIN()), "Token admin not granted");
+
     assert!(
-        access_control.has_role(Roles::UPGRADE_GOVERNOR, UPGRADE_GOVERNOR()),
+        has_role_only(access_control, Roles::TOKEN_ADMIN, TOKEN_ADMIN()), "Token admin not granted",
+    );
+
+    assert!(
+        has_role_only(access_control, Roles::UPGRADE_GOVERNOR, UPGRADE_GOVERNOR()),
         "Upgrade governor not granted",
     );
 

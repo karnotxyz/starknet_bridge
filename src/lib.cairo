@@ -38,6 +38,7 @@ pub mod access_control {
     #[cfg(test)]
     pub mod tests {
         mod access_control_test;
+        mod utils;
     }
 }
 
