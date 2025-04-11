@@ -31,7 +31,7 @@ export const tokenBridgeL3Contract: Contract = {
 };
 
 export const erc20Contract: Contract = {
-  name: "ERC20",
+  name: "ERC20_OZ",
   layer: Layer.L2,
   package: starknetBridgePackage,
 };

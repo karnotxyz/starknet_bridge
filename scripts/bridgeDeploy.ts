@@ -302,7 +302,7 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
 
 export async function enrollToken(
   acc_l2: Account,
-  token: string = "ERC20"
+  token: string = "ERC20_OZ"
 ) {
   // Create a contract object for the token and get its existing data
   const tokenContract: Contract = {
