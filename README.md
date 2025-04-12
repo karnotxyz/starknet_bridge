@@ -13,7 +13,7 @@ The bridge relies on the core messaging contract from [piltover](https://github.
 The bridge implements a hierarchical access control system with different roles for flexibility. While the system offers multiple roles, you can choose to use only the roles that are necessary for your specific implementation after proper setup.
 
 ### TokenBridge Access Control
-The TokenBridge has a more complex role hierarchy:
+The TokenBridge has the following role hierarchy:
 - GOVERNANCE_ADMIN: Top-level admin role
 - APP_GOVERNOR: Manages TOKEN_ADMIN role
 - SECURITY_ADMIN: Manages SECURITY_AGENT role
