@@ -1,8 +1,8 @@
-// This contract has been taken from
+// This contract has been adapted from
 // https://github.com/starknet-io/starkgate-contracts/blob/v2.0.1/src/openzeppelin/token/erc20_v070/erc20.cairo
-// only the Constructor has been modified to use ByteArray for name and symbol instead of felt252o
-// This is to avoid the felt252 limitation of 31 characters for the name and symbol The above is the
-// current recommendation, and is used in OpenZeppelin contracts
+// The constructor has been modified to use ByteArray for name and symbol instead of felt252.
+// This modification addresses the felt252 limitation of 31 characters for name and symbol fields.
+// This approach follows current best practices and is used in OpenZeppelin contracts.
 
 //! SPDX-License-Identifier: MIT
 //! OpenZeppelin Contracts for Cairo v0.7.0 (token/erc20/erc20.cairo)
@@ -540,7 +540,7 @@ mod ERC20 {
             true
         }
 
-        /// Sets `amount` as the allowance of `spender` over the caller’s tokens.
+        /// Sets `amount` as the allowance of `spender` over the caller's tokens.
         fn approve(ref self: ContractState, spender: ContractAddress, amount: u256) -> bool {
             let caller = get_caller_address();
             self._approve(caller, spender, amount);
