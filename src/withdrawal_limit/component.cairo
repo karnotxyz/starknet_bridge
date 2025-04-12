@@ -1,15 +1,10 @@
 #[starknet::component]
 pub mod WithdrawalLimitComponent {
-    use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
-    use starknet_bridge::{constants, bridge::IWithdrawalLimitStatus};
     use core::num::traits::Bounded;
-    use starknet::storage::Map;
-    use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapWriteAccess,
-        StorageMapReadAccess,
-    };
-
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::{ContractAddress, get_block_timestamp, get_contract_address};
+    use starknet_bridge::constants;
     use starknet_bridge::withdrawal_limit::interface::IWithdrawalLimit;
 
     #[storage]
@@ -20,7 +15,18 @@ pub mod WithdrawalLimitComponent {
         // but the limit flag was turned off.
         pub remaining_intraday_withdraw_quota: Map<(ContractAddress, u64), u256>,
         // The daily withdrawal limit percentage.
-        pub daily_withdrawal_limit_pct: u8,
+        // 0 means that the limit is not applied, or the limit is 100%
+        // For all the other values, the limit is constants::DAILY_WITHDRAWAL_LIMIT_PCT_OFFSET + the
+        // value Hence for 0% limit, we store 0 + constants::DAILY_WITHDRAWAL_LIMIT_PCT_OFFSET = 1
+        pub daily_withdrawal_limit_pct: Map<ContractAddress, u8>,
+    }
+
+    //
+    // Errors
+    //
+    pub mod Errors {
+        pub const LIMIT_PCT_TOO_HIGH: felt252 = 'LIMIT_PCT_TOO_HIGH';
+        pub const LIMIT_EXCEEDED: felt252 = 'LIMIT_EXCEEDED';
     }
 
     #[event]
@@ -44,7 +50,7 @@ pub mod WithdrawalLimitComponent {
 
     #[embeddable_as(WithdrawalLimitImpl)]
     pub impl WithdrawalLimit<
-        TContractState, +HasComponent<TContractState>, +IWithdrawalLimitStatus<TContractState>,
+        TContractState, +HasComponent<TContractState>,
     > of IWithdrawalLimit<ComponentState<TContractState>> {
         // Returns the current remaining withdrawal quota for a given token. If there is no limit,
         // returns max uint256. If the limit was not set yet, we calculate it based on the total
@@ -53,7 +59,7 @@ pub mod WithdrawalLimitComponent {
             self: @ComponentState<TContractState>, token: ContractAddress,
         ) -> u256 {
             // If there is no limt, return max uint256.
-            if self.get_contract().is_withdrawal_limit_applied(:token) == false {
+            if !self.is_withdrawal_limit_applied(token) {
                 return Bounded::MAX;
             }
             let remaining_quota = self.read_withdrawal_quota_slot(:token);
@@ -64,17 +70,29 @@ pub mod WithdrawalLimitComponent {
             }
             remaining_quota - constants::REMAINING_QUOTA_OFFSET
         }
+
+        fn get_daily_withdrawal_limit_pct(
+            self: @ComponentState<TContractState>, token: ContractAddress,
+        ) -> u8 {
+            if !self.is_withdrawal_limit_applied(token) {
+                return 100;
+            }
+            self.daily_withdrawal_limit_pct.read(token)
+                - constants::DAILY_WITHDRAWAL_LIMIT_PCT_OFFSET
+        }
+
+
+        fn is_withdrawal_limit_applied(
+            self: @ComponentState<TContractState>, token: ContractAddress,
+        ) -> bool {
+            self.daily_withdrawal_limit_pct.read(token) != 0
+        }
     }
 
     #[generate_trait]
     pub impl InternalImpl<
-        TContractState, +HasComponent<TContractState>, +IWithdrawalLimitStatus<TContractState>,
+        TContractState, +HasComponent<TContractState>,
     > of InternalTrait<TContractState> {
-        // This initializes the withdrawal_limit component
-        fn initialize(ref self: ComponentState<TContractState>, daily_withdrawal_limit_pct: u8) {
-            self.daily_withdrawal_limit_pct.write(daily_withdrawal_limit_pct);
-        }
-
         // Sets the remaining withdrawal quota for today.
         fn set_remaining_withdrawal_quota(
             ref self: ComponentState<TContractState>, token: ContractAddress, amount: u256,
@@ -104,12 +122,12 @@ pub mod WithdrawalLimitComponent {
             token: ContractAddress,
             amount_to_withdraw: u256,
         ) {
-            if (!self.get_contract().is_withdrawal_limit_applied(:token)) {
+            if !self.is_withdrawal_limit_applied(token) {
                 return;
             }
             let remaining_withdrawal_quota = self.get_remaining_withdrawal_quota(token);
 
-            assert(remaining_withdrawal_quota >= amount_to_withdraw, 'LIMIT_EXCEEDED');
+            assert(remaining_withdrawal_quota >= amount_to_withdraw, Errors::LIMIT_EXCEEDED);
             self
                 .set_remaining_withdrawal_quota(
                     :token, amount: remaining_withdrawal_quota - amount_to_withdraw,
@@ -125,20 +143,28 @@ pub mod WithdrawalLimitComponent {
         ) -> u256 {
             let dispatcher = IERC20Dispatcher { contract_address: token };
             let balance = dispatcher.balance_of(get_contract_address());
-            let daily_withdrawal_limit_pct: u256 = self.get_daily_withdrawal_limit_pct().into();
+            let daily_withdrawal_limit_pct: u256 = self
+                .get_daily_withdrawal_limit_pct(token)
+                .into();
             balance * daily_withdrawal_limit_pct / 100
         }
 
-        fn get_daily_withdrawal_limit_pct(self: @ComponentState<TContractState>) -> u8 {
-            self.daily_withdrawal_limit_pct.read()
-        }
-
-
         fn write_daily_withdrawal_limit_pct(
-            ref self: ComponentState<TContractState>, daily_withdrawal_limit_pct: u8,
+            ref self: ComponentState<TContractState>,
+            token: ContractAddress,
+            daily_withdrawal_limit_pct: u8,
         ) {
-            assert(daily_withdrawal_limit_pct <= 100, 'LIMIT_PCT_TOO_HIGH');
-            self.daily_withdrawal_limit_pct.write(daily_withdrawal_limit_pct);
+            assert(daily_withdrawal_limit_pct <= 100, Errors::LIMIT_PCT_TOO_HIGH);
+            if daily_withdrawal_limit_pct == 100 {
+                self.daily_withdrawal_limit_pct.write(token, 0);
+            } else {
+                self
+                    .daily_withdrawal_limit_pct
+                    .write(
+                        token,
+                        daily_withdrawal_limit_pct + constants::DAILY_WITHDRAWAL_LIMIT_PCT_OFFSET,
+                    );
+            }
 
             self
                 .emit(

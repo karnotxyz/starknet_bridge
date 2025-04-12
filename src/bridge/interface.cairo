@@ -9,11 +9,18 @@ pub trait ITokenBridgeAdmin<TContractState> {
     fn deactivate_token(ref self: TContractState, token: ContractAddress);
     fn reactivate_token(ref self: TContractState, token: ContractAddress);
 
-    fn enable_withdrawal_limit(ref self: TContractState, token: ContractAddress);
+    fn increase_withdrawal_limit(
+        ref self: TContractState, token: ContractAddress, daily_withdrawal_limit_pct: u8,
+    );
+    fn decrease_withdrawal_limit(
+        ref self: TContractState, token: ContractAddress, daily_withdrawal_limit_pct: u8,
+    );
     fn disable_withdrawal_limit(ref self: TContractState, token: ContractAddress);
     fn set_max_total_balance(
         ref self: TContractState, token: ContractAddress, max_total_balance: u256,
     );
+    fn pause(ref self: TContractState);
+    fn unpause(ref self: TContractState);
 }
 
 #[starknet::interface]
@@ -78,9 +85,4 @@ pub trait ITokenBridge<TContractState> {
     );
     fn get_max_total_balance(self: @TContractState, token: ContractAddress) -> u256;
     fn get_appchain_token_bridge(self: @TContractState) -> ContractAddress;
-}
-
-#[starknet::interface]
-pub trait IWithdrawalLimitStatus<TContractState> {
-    fn is_withdrawal_limit_applied(self: @TContractState, token: ContractAddress) -> bool;
 }

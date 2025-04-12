@@ -1,14 +1,16 @@
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpy};
 use starknet::ContractAddress;
-use starknet_bridge::mocks::{messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}};
-use starknet_bridge::bridge::{
-    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge, types::TokenStatus,
+use starknet_bridge::bridge::tests::constants::{
+    APP_GOVERNOR, DELAY_TIME, GOVERNANCE_ADMIN, L3_BRIDGE_ADDRESS, OWNER, SECURITY_ADMIN,
+    SECURITY_AGENT, TOKEN_ADMIN,
 };
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-use starknet_bridge::bridge::tests::constants::{OWNER, L3_BRIDGE_ADDRESS, DELAY_TIME};
-use starknet_bridge::constants;
 use starknet_bridge::bridge::tests::utils::message_payloads;
+use starknet_bridge::bridge::types::TokenStatus;
+use starknet_bridge::bridge::{ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge};
+use starknet_bridge::constants;
+use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessagingDispatcherTrait};
 
 
 pub fn deploy_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
@@ -53,13 +55,30 @@ pub fn deploy_token_bridge_with_messaging() -> (
     // Declare owner
     let owner = OWNER();
 
+    // Declare timelock contract
+    let timelock = snf::declare("TimelockController").unwrap().contract_class();
+
+    let min_delay = 86400; // 24h
+
+    let mut timelock_args: Array<felt252> = ArrayTrait::new();
+    min_delay.serialize(ref timelock_args); // 1 min delay
+    [owner].span().serialize(ref timelock_args); // 1 proposer
+    [owner].span().serialize(ref timelock_args); // 1 executor
+    owner.serialize(ref timelock_args); // 1 default admin
+    let (timelock_address, _) = timelock.deploy(@timelock_args).unwrap();
+
     let token_bridge_class_hash = snf::declare("TokenBridge").unwrap().contract_class();
 
     // Deploy the bridge
     let mut calldata = ArrayTrait::new();
     appchain_bridge_address.serialize(ref calldata);
     messaging_contract_address.serialize(ref calldata);
-    owner.serialize(ref calldata);
+    [GOVERNANCE_ADMIN()].span().serialize(ref calldata);
+    [APP_GOVERNOR()].span().serialize(ref calldata);
+    [SECURITY_ADMIN()].span().serialize(ref calldata);
+    [SECURITY_AGENT()].span().serialize(ref calldata);
+    [TOKEN_ADMIN()].span().serialize(ref calldata);
+    timelock_address.serialize(ref calldata);
 
     let (token_bridge_address, _) = token_bridge_class_hash.deploy(@calldata).unwrap();
 

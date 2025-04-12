@@ -30,6 +30,12 @@ export const tokenBridgeL3Contract: Contract = {
   package: starkgatePackage,
 };
 
+export const timelockContract: Contract = {
+  name: "TimelockController",
+  layer: Layer.L2,
+  package: starknetBridgePackage,
+}
+
 export const erc20Contract: Contract = {
   name: "ERC20_OZ",
   layer: Layer.L2,

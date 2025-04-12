@@ -22,6 +22,10 @@ pub const SECONDS_IN_DAY: u64 = 86400;
 // that 0 will mean that it was not set yet.
 pub const REMAINING_QUOTA_OFFSET: u256 = 1;
 
+// When storing the daily withdrawal limit percentage, we add 1 to the value. This is because we
+// want that 0 will mean that it was not set yet.
+pub const DAILY_WITHDRAWAL_LIMIT_PCT_OFFSET: u8 = 1;
+
 // starknet_keccak('on_receive').
 pub const ON_RECEIVE_SELECTOR: felt252 =
     480768629706071032051132431608482761444818804172389941599997570483678682398;

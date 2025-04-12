@@ -1,20 +1,21 @@
 use core::array::ArrayTrait;
 use core::option::OptionTrait;
 use core::traits::TryInto;
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;
 use snforge_std::{EventSpy, EventSpyAssertionsTrait};
 use starknet::ContractAddress;
-use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher};
-use starknet_bridge::bridge::{
-    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge, TokenBridge::Event,
+use starknet_bridge::bridge::TokenBridge::Event;
+use starknet_bridge::bridge::interface::{
+    ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait,
 };
-
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-use starknet::contract_address::{contract_address_const};
-use super::constants::DELAY_TIME;
 use starknet_bridge::bridge::tests::utils::setup::{
     deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle,
 };
+use starknet_bridge::bridge::{ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, TokenBridge};
+use starknet_bridge::mocks::messaging::IMockMessagingDispatcher;
+use super::constants::{DELAY_TIME, SECURITY_AGENT};
+
 
 fn setup() -> (ITokenBridgeDispatcher, EventSpy, ContractAddress, IMockMessagingDispatcher) {
     let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
@@ -72,6 +73,22 @@ fn deposit_reclaim_ok() {
 }
 
 #[test]
+#[should_panic(expected: ('Pausable: paused',))]
+fn deposit_reclaim_paused() {
+    let (token_bridge, _, usdc_address, _) = setup();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    // Set up security agent before pausing
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.pause();
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 1);
+}
+
+#[test]
 #[should_panic(expected: ('CANCELLATION_NOT_ALLOWED_YET',))]
 fn deposit_reclaim_delay_not_reached() {
     let (token_bridge, _, usdc_address, _) = setup();
@@ -119,7 +136,7 @@ fn deposit_reclaim_different_user() {
         starknet::get_block_timestamp() + DELAY_TIME.try_into().unwrap() + 10,
     );
 
-    snf::start_cheat_caller_address_global(contract_address_const::<'user2'>());
+    snf::start_cheat_caller_address_global('user2'.try_into().unwrap());
     token_bridge.deposit_reclaim(usdc_address, 100, snf::test_address(), 1);
 }
 
@@ -184,6 +201,23 @@ fn deposit_with_message_reclaim_ok() {
                 ),
             ],
         );
+}
+
+#[test]
+#[should_panic(expected: ('Pausable: paused',))]
+fn deposit_with_message_reclaim_paused() {
+    let (token_bridge, _, usdc_address, _) = setup();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    // Set up security agent before pausing
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.pause();
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    token_bridge
+        .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), array![].span(), 1);
 }
 
 #[test]
@@ -254,7 +288,7 @@ fn deposit_reclaim_with_message_different_user() {
         starknet::get_block_timestamp() + DELAY_TIME.try_into().unwrap() + 10,
     );
 
-    snf::start_cheat_caller_address_global(contract_address_const::<'user2'>());
+    snf::start_cheat_caller_address_global('user2'.try_into().unwrap());
     token_bridge
         .deposit_with_message_reclaim(usdc_address, 100, snf::test_address(), calldata.span(), 1);
 }

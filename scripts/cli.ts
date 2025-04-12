@@ -34,6 +34,7 @@ import {
   deposit,
   getL3Balance,
   initiateTokenL2toL3Withdrawal,
+  deployTimelockContract,
 } from "./bridgeDeploy.ts";
 import {
   Layer
@@ -166,6 +167,14 @@ program
     await initiateTokenL2toL3Withdrawal(acc_l3, amount, options.token);
   });
 
+// Deploy Timelock Contract Command
+program
+  .command("deploy-timelock")
+  .description("Deploy the timelock contract to L2")
+  .action(async () => {
+    await deployTimelockContract();
+  });
+
 // Setup Command (Combined operations)
 program
   .command("setup")
@@ -189,6 +198,7 @@ program
     // Setup
     Logger.step(1, "Setting up bridges...");
     await deployAppchainBridge();
+    await deployTimelockContract();
     await deployL2Bridge();
 
     Logger.step(2, "Configuring the bridges...");
