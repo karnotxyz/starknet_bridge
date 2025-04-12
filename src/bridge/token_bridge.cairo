@@ -495,7 +495,6 @@ pub mod TokenBridge {
     #[abi(embed_v0)]
     impl TokenBrdigeAdminImpl of ITokenBridgeAdmin<ContractState> {
         fn set_appchain_token_bridge(ref self: ContractState, appchain_bridge: ContractAddress) {
-            self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_app_governor();
             self.appchain_bridge.write(appchain_bridge);
 
@@ -509,7 +508,6 @@ pub mod TokenBridge {
         // Emits a `TokenBlocked` event when the blocking is successful.
         // Throws an error if the token is not `Unknown` or if the sender is not the owner.
         fn block_token(ref self: ContractState, token: ContractAddress) {
-            self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_token_admin();
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::NOT_UNKNOWN);
 
@@ -523,7 +521,6 @@ pub mod TokenBridge {
         // @dev This unblocks a token which can be enrolled now
         // @param token The address of the token to unblock
         fn unblock_token(ref self: ContractState, token: ContractAddress) {
-            self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_token_admin();
             assert(self.get_status(token) == TokenStatus::Blocked, Errors::NOT_BLOCKED);
 
@@ -538,7 +535,6 @@ pub mod TokenBridge {
         // check `block_token()`
         // @param token The token to be deactivated
         fn deactivate_token(ref self: ContractState, token: ContractAddress) {
-            self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_token_admin();
             let status = self.get_status(token);
             assert(status == TokenStatus::Active, Errors::NOT_ACTIVE);
@@ -554,7 +550,6 @@ pub mod TokenBridge {
         // @dev This is reactivates back a token to `Active` that was deactivated
         // @param token The address of the token to be reactivated
         fn reactivate_token(ref self: ContractState, token: ContractAddress) {
-            self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_token_admin();
             let status = self.get_status(token);
             assert(status == TokenStatus::Deactivated, Errors::NOT_DEACTIVATED);
@@ -573,7 +568,6 @@ pub mod TokenBridge {
         fn increase_withdrawal_limit(
             ref self: ContractState, token: ContractAddress, daily_withdrawal_limit_pct: u8,
         ) {
-            self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_security_admin();
 
             let current_pct = self.withdrawal.get_daily_withdrawal_limit_pct(token);
@@ -595,7 +589,6 @@ pub mod TokenBridge {
         fn decrease_withdrawal_limit(
             ref self: ContractState, token: ContractAddress, daily_withdrawal_limit_pct: u8,
         ) {
-            self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_security_agent();
 
             let current_pct = self.withdrawal.get_daily_withdrawal_limit_pct(token);
@@ -616,7 +609,6 @@ pub mod TokenBridge {
         // sets the limit to 100%
         // @param token The address of the token on which to disable withdrawal limit
         fn disable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
-            self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_security_admin();
             assert(
                 self.withdrawal.is_withdrawal_limit_applied(token),
@@ -633,7 +625,6 @@ pub mod TokenBridge {
         fn set_max_total_balance(
             ref self: ContractState, token: ContractAddress, max_total_balance: u256,
         ) {
-            self.pausable.assert_not_paused();
             self.bridge_access_control.assert_only_app_governor();
             let new_settings = TokenSettings {
                 max_total_balance: max_total_balance, ..self.token_settings.read(token),
@@ -1007,7 +998,6 @@ pub mod TokenBridge {
     #[abi(embed_v0)]
     impl UpgradeableImpl of IUpgradeable<ContractState> {
         fn upgrade(ref self: ContractState, new_class_hash: ClassHash) {
-            self.pausable.assert_not_paused();
             // This function can only be called by the owner
             self.bridge_access_control.assert_only_upgrade_governor();
 
