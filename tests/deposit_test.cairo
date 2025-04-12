@@ -1,18 +1,18 @@
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;
 use snforge_std::{EventSpy, EventSpyAssertionsTrait};
 use starknet::ContractAddress;
-use starknet_bridge::mocks::messaging::IMockMessagingDispatcher;
-use starknet_bridge::bridge::{
-    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, ITokenBridgeAdminDispatcher,
-    ITokenBridgeAdminDispatcherTrait, TokenBridge, TokenBridge::Event,
-};
-
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-use starknet::contract_address::{contract_address_const};
-use super::constants::{OWNER};
+use starknet_bridge::bridge::TokenBridge::Event;
 use starknet_bridge::bridge::tests::utils::setup::{
     deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle,
 };
+use starknet_bridge::bridge::{
+    ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, ITokenBridgeDispatcher,
+    ITokenBridgeDispatcherTrait, TokenBridge,
+};
+use starknet_bridge::mocks::messaging::IMockMessagingDispatcher;
+use super::constants::{SECURITY_AGENT, TOKEN_ADMIN};
+
 
 fn setup() -> (ITokenBridgeDispatcher, EventSpy, ContractAddress, IMockMessagingDispatcher) {
     let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
@@ -46,6 +46,21 @@ fn deposit_ok() {
     spy.assert_emitted(@array![(token_bridge.contract_address, Event::Deposit(expected_deposit))]);
 }
 
+#[test]
+#[should_panic(expected: ('Pausable: paused',))]
+fn deposit_paused() {
+    let (token_bridge, _, usdc_address, _) = setup();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    // Set up security agent before pausing
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.pause();
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    token_bridge.deposit(usdc_address, 100, snf::test_address());
+}
 
 #[test]
 #[should_panic(expected: ('ERC20: insufficient balance',))]
@@ -73,9 +88,9 @@ fn deposit_deactivated() {
         contract_address: token_bridge.contract_address,
     };
 
-    snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
+    snf::start_cheat_caller_address(token_bridge.contract_address, TOKEN_ADMIN());
     token_bridge_admin.deactivate_token(usdc_address);
-    snf::stop_cheat_caller_address(OWNER());
+    snf::stop_cheat_caller_address(TOKEN_ADMIN());
 
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 }
@@ -117,6 +132,22 @@ fn deposit_with_message_ok() {
                 ),
             ],
         );
+}
+
+#[test]
+#[should_panic(expected: ('Pausable: paused',))]
+fn deposit_with_message_paused() {
+    let (token_bridge, _, usdc_address, _) = setup();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    // Set up security agent before pausing
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.pause();
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    token_bridge.deposit_with_message(usdc_address, 100, snf::test_address(), array![].span());
 }
 
 #[test]
@@ -189,9 +220,9 @@ fn deposit_with_message_deactivated() {
         contract_address: token_bridge.contract_address,
     };
 
-    snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
+    snf::start_cheat_caller_address(token_bridge.contract_address, TOKEN_ADMIN());
     token_bridge_admin.deactivate_token(usdc_address);
-    snf::stop_cheat_caller_address(OWNER());
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
 
     let mut calldata = ArrayTrait::new();
     'param1'.serialize(ref calldata);
@@ -229,6 +260,21 @@ fn deposit_cancel_request_ok() {
         );
 }
 
+#[test]
+#[should_panic(expected: ('Pausable: paused',))]
+fn deposit_cancel_request_paused() {
+    let (token_bridge, _, usdc_address, _) = setup();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    // Set up security agent before pausing
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.pause();
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 1);
+}
 
 #[test]
 #[should_panic(expected: ('NO_MESSAGE_TO_CANCEL',))]
@@ -246,9 +292,7 @@ fn deposit_cancel_request_different_user() {
     usdc.approve(token_bridge.contract_address, 100);
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 
-    snf::start_cheat_caller_address(
-        token_bridge.contract_address, contract_address_const::<'user2'>(),
-    );
+    snf::start_cheat_caller_address(token_bridge.contract_address, 'user2'.try_into().unwrap());
     token_bridge.deposit_cancel_request(usdc_address, 100, snf::test_address(), 2);
 }
 
@@ -290,6 +334,24 @@ fn deposit_with_message_cancel_request_ok() {
         );
 }
 
+#[test]
+#[should_panic(expected: ('Pausable: paused',))]
+fn deposit_with_message_cancel_request_paused() {
+    let (token_bridge, _, usdc_address, _) = setup();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    // Set up security agent before pausing
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.pause();
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    token_bridge
+        .deposit_with_message_cancel_request(
+            usdc_address, 100, snf::test_address(), array![].span(), 1,
+        );
+}
 
 #[test]
 #[should_panic(expected: ('NO_MESSAGE_TO_CANCEL',))]
@@ -319,9 +381,7 @@ fn deposit_with_message_cancel_request_different_user() {
     usdc.approve(token_bridge.contract_address, 100);
     token_bridge.deposit_with_message(usdc_address, 100, snf::test_address(), calldata.span());
 
-    snf::start_cheat_caller_address(
-        token_bridge.contract_address, contract_address_const::<'user2'>(),
-    );
+    snf::start_cheat_caller_address(token_bridge.contract_address, 'user2'.try_into().unwrap());
     token_bridge
         .deposit_with_message_cancel_request(
             usdc_address, 100, snf::test_address(), calldata.span(), 2,

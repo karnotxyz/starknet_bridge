@@ -1,22 +1,18 @@
-use piltover::messaging::interface::IMessagingDispatcherTrait;
-
-use starknet::storage::{StoragePointerWriteAccess};
-use starknet_bridge::bridge::token_bridge::TokenBridge::{TokenBridgeInternal};
+use piltover::messaging::interface::{IMessagingDispatcher, IMessagingDispatcherTrait};
+use piltover::messaging::types::MessageToAppchainStatus;
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, DeclareResultTrait};
-use starknet_bridge::mocks::{
-    messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}, hash,
-};
+use starknet::storage::StoragePointerWriteAccess;
 use starknet_bridge::bridge::TokenBridge;
-use piltover::messaging::interface::IMessagingDispatcher;
-use starknet_bridge::bridge::{
-    tests::constants::{L3_BRIDGE_ADDRESS, OWNER, USDC_MOCK_ADDRESS, DELAY_TIME},
+use starknet_bridge::bridge::tests::constants::{
+    DELAY_TIME, L3_BRIDGE_ADDRESS, TIMELOCK_ADDRESS, USDC_MOCK_ADDRESS,
 };
-use piltover::messaging::types::MessageToAppchainStatus;
-use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, mock_state_testing};
 use starknet_bridge::bridge::tests::utils::message_payloads;
-use starknet::contract_address::{contract_address_const};
+use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, mock_state_testing};
+use starknet_bridge::bridge::token_bridge::TokenBridge::TokenBridgeInternal;
 use starknet_bridge::constants;
+use starknet_bridge::mocks::hash;
+use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessagingDispatcherTrait};
 
 
 #[test]
@@ -24,10 +20,8 @@ fn deploy_message_payload_ok() {
     let usdc_address = deploy_erc20("USDC", "USDC");
     let calldata = TokenBridge::deployment_message_payload(usdc_address);
 
-    println!("calldata: {:?}", calldata);
-
     let expected_calldata: Span<felt252> = array![
-        1735287220490242646849127034349817040427485508531977630937607944683610398217, // usdc_address
+        2001674650675320615195032075302485379933169890409294838135260466102026843722, // usdc_address
         0,
         1431520323,
         4, // "USDC"
@@ -71,7 +65,17 @@ fn send_deploy_message_ok() {
     let messaging = IMessagingDispatcher { contract_address: messaging_contract_address };
 
     snf::start_cheat_caller_address_global(snf::test_address());
-    TokenBridge::constructor(ref mock, L3_BRIDGE_ADDRESS(), messaging_contract_address, OWNER());
+    TokenBridge::constructor(
+        ref mock,
+        L3_BRIDGE_ADDRESS(),
+        messaging_contract_address,
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        TIMELOCK_ADDRESS(),
+    );
 
     mock.send_deploy_message(usdc_address);
     let hash = hash::compute_message_hash_sn_to_appc(
@@ -108,7 +112,17 @@ fn send_deposit_message_ok() {
         .deploy(@array![DELAY_TIME])
         .unwrap();
     let messaging = IMessagingDispatcher { contract_address: messaging_contract_address };
-    TokenBridge::constructor(ref mock, L3_BRIDGE_ADDRESS(), messaging_contract_address, OWNER());
+    TokenBridge::constructor(
+        ref mock,
+        L3_BRIDGE_ADDRESS(),
+        messaging_contract_address,
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        TIMELOCK_ADDRESS(),
+    );
 
     let no_message: Span<felt252> = array![].span();
     snf::start_cheat_caller_address_global(snf::test_address());
@@ -166,7 +180,17 @@ fn consume_message_ok() {
         .deploy(@array![DELAY_TIME])
         .unwrap();
 
-    TokenBridge::constructor(ref mock, L3_BRIDGE_ADDRESS(), messaging_contract_address, OWNER());
+    TokenBridge::constructor(
+        ref mock,
+        L3_BRIDGE_ADDRESS(),
+        messaging_contract_address,
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        TIMELOCK_ADDRESS(),
+    );
 
     let messaging_mock = IMockMessagingDispatcher { contract_address: messaging_contract_address };
     // Register a withdraw message from appchain to piltover
@@ -195,7 +219,17 @@ fn consume_message_no_message() {
         .deploy(@array![DELAY_TIME])
         .unwrap();
 
-    TokenBridge::constructor(ref mock, L3_BRIDGE_ADDRESS(), messaging_contract_address, OWNER());
+    TokenBridge::constructor(
+        ref mock,
+        L3_BRIDGE_ADDRESS(),
+        messaging_contract_address,
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        array![].span(),
+        TIMELOCK_ADDRESS(),
+    );
 
     mock.consume_message(usdc_address, 100, snf::test_address());
 }
@@ -216,5 +250,5 @@ fn consume_message_zero_recipient() {
     let usdc_address = USDC_MOCK_ADDRESS();
 
     mock.appchain_bridge.write(L3_BRIDGE_ADDRESS());
-    mock.consume_message(usdc_address, 100, contract_address_const::<0>());
+    mock.consume_message(usdc_address, 100, 0.try_into().unwrap());
 }

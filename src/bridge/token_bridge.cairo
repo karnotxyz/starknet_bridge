@@ -1,63 +1,71 @@
 #[starknet::contract]
 pub mod TokenBridge {
-    use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapWriteAccess,
-        StorageMapReadAccess,
-    };
-    use starknet::SyscallResultTrait;
-    use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
-    use core::option::OptionTrait;
-    use core::traits::TryInto;
-    use core::starknet::event::EventEmitter;
-    use starknet::storage::Map;
     use core::array::ArrayTrait;
-    use core::serde::Serde;
     use core::num::traits::Bounded;
+    use core::num::traits::zero::Zero;
+    use core::option::OptionTrait;
+    use core::serde::Serde;
+    use core::to_byte_array::FormatAsByteArray;
+    use core::traits::TryInto;
+    use openzeppelin::access::accesscontrol::AccessControlComponent;
+    use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin::introspection::src5::SRC5Component::{
+        InternalImpl as SRC5InternalImpl, SRC5Impl,
+    };
+    use openzeppelin::security::pausable::PausableComponent;
+    use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent;
+    use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent::InternalTrait as InternalReentrancyGuardImpl;
     use openzeppelin::token::erc20::interface::{
-        IERC20Dispatcher, IERC20MetadataDispatcher, IERC20DispatcherTrait,
+        IERC20Dispatcher, IERC20DispatcherTrait, IERC20MetadataDispatcher,
         IERC20MetadataDispatcherTrait,
     };
-    use starknet::syscalls::call_contract_syscall;
-    use core::to_byte_array::FormatAsByteArray;
-
-    use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
-    use openzeppelin::security::reentrancyguard::{
-        ReentrancyGuardComponent,
-        ReentrancyGuardComponent::InternalTrait as InternalReentrancyGuardImpl,
+    use piltover::messaging::interface::{IMessagingDispatcher, IMessagingDispatcherTrait};
+    use piltover::messaging::types::{MessageHash, MessageToAppchainStatus, Nonce};
+    use starknet::event::EventEmitter;
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
     };
-
-    use piltover::messaging::types::MessageToAppchainStatus;
-
-
+    use starknet::syscalls::call_contract_syscall;
+    use starknet::{
+        ClassHash, ContractAddress, SyscallResultTrait, get_block_timestamp, get_caller_address,
+        get_contract_address,
+    };
+    use starknet_bridge::access_control::component::BridgeAccessControlComponent;
+    use starknet_bridge::bridge::interface::{ITokenBridge, ITokenBridgeAdmin};
+    use starknet_bridge::bridge::types::{TokenSettings, TokenStatus};
+    use starknet_bridge::constants;
     use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent;
+    use starknet_bridge::withdrawal_limit::component::WithdrawalLimitComponent::InternalTrait;
 
-    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
+    component!(path: AccessControlComponent, storage: access_control, event: AccessControlEvent);
+    component!(
+        path: BridgeAccessControlComponent,
+        storage: bridge_access_control,
+        event: BridgeAccessControlEvent,
+    );
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
     component!(path: WithdrawalLimitComponent, storage: withdrawal, event: WithdrawalEvent);
     component!(
         path: ReentrancyGuardComponent, storage: reentrancy_guard, event: ReentrancyGuardEvent,
     );
-
-    use core::num::traits::zero::Zero;
-    use starknet::{ContractAddress, get_contract_address, get_caller_address, get_block_timestamp};
-
-    use starknet_bridge::bridge::{
-        types::{TokenStatus, TokenSettings},
-        interface::{ITokenBridge, ITokenBridgeAdmin, IWithdrawalLimitStatus},
-    };
-    use piltover::messaging::{
-        interface::{IMessagingDispatcher, IMessagingDispatcherTrait}, types::{MessageHash, Nonce},
-    };
-    use starknet_bridge::constants;
-    use starknet::ClassHash;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    component!(path: PausableComponent, storage: pausable, event: PausableEvent);
 
 
-    // Ownable
+    // AccessControl
     #[abi(embed_v0)]
-    impl OwnableTwoStepImpl = OwnableComponent::OwnableTwoStepImpl<ContractState>;
-    impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
+    impl AccessControlComponentImpl =
+        AccessControlComponent::AccessControlImpl<ContractState>;
+    impl BridgeAccessControlInternalImpl =
+        BridgeAccessControlComponent::InternalImpl<ContractState>;
+
+    // Pausable
+    #[abi(embed_v0)]
+    impl PausableImpl = PausableComponent::PausableImpl<ContractState>;
+    impl PausableInternal = PausableComponent::InternalImpl<ContractState>;
 
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
 
@@ -65,7 +73,7 @@ pub mod TokenBridge {
     #[abi(embed_v0)]
     impl WithdrawalLimitImpl =
         WithdrawalLimitComponent::WithdrawalLimitImpl<ContractState>;
-    impl WithdrawalLimitInternal = WithdrawalLimitComponent::InternalImpl<ContractState>;
+    // impl WithdrawalLimitInternal = WithdrawalLimitComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
@@ -76,13 +84,19 @@ pub mod TokenBridge {
         // All token related settings and its status
         pub token_settings: Map<ContractAddress, TokenSettings>,
         #[substorage(v0)]
-        pub ownable: OwnableComponent::Storage,
+        pub upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
-        upgradeable: UpgradeableComponent::Storage,
+        pub withdrawal: WithdrawalLimitComponent::Storage,
         #[substorage(v0)]
-        withdrawal: WithdrawalLimitComponent::Storage,
+        pub reentrancy_guard: ReentrancyGuardComponent::Storage,
         #[substorage(v0)]
-        reentrancy_guard: ReentrancyGuardComponent::Storage,
+        pub access_control: AccessControlComponent::Storage,
+        #[substorage(v0)]
+        pub bridge_access_control: BridgeAccessControlComponent::Storage,
+        #[substorage(v0)]
+        pub pausable: PausableComponent::Storage,
+        #[substorage(v0)]
+        pub src5: SRC5Component::Storage,
     }
 
     //
@@ -102,6 +116,8 @@ pub mod TokenBridge {
         pub const INVALID_RECIPIENT: felt252 = 'Invalid recipient';
         pub const MAX_BALANCE_EXCEEDED: felt252 = 'Max Balance Exceeded';
         pub const TOKENS_NOT_TRANSFERRED: felt252 = 'Tokens not transferred';
+        pub const NEW_LIMIT_MUST_BE_GREATER: felt252 = 'New limit must be greater';
+        pub const WITHDRAWAL_LIMIT_NOT_APPLIED: felt252 = 'Withdrawal limit not applied';
     }
 
 
@@ -121,18 +137,24 @@ pub mod TokenBridge {
         DepositReclaimed: DepositReclaimed,
         DepositWithMessageReclaimed: DepositWithMessageReclaimed,
         Withdrawal: Withdrawal,
-        WithdrawalLimitEnabled: WithdrawalLimitEnabled,
-        WithdrawalLimitDisabled: WithdrawalLimitDisabled,
+        WithdrawalLimitIncreased: WithdrawalLimitIncreased,
+        WithdrawalLimitDecreased: WithdrawalLimitDecreased,
         SetMaxTotalBalance: SetMaxTotalBalance,
         SetAppchainBridge: SetAppchainBridge,
-        #[flat]
-        OwnableEvent: OwnableComponent::Event,
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
         #[flat]
         WithdrawalEvent: WithdrawalLimitComponent::Event,
         #[flat]
         ReentrancyGuardEvent: ReentrancyGuardComponent::Event,
+        #[flat]
+        AccessControlEvent: AccessControlComponent::Event,
+        #[flat]
+        BridgeAccessControlEvent: BridgeAccessControlComponent::Event,
+        #[flat]
+        PausableEvent: PausableComponent::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -254,19 +276,21 @@ pub mod TokenBridge {
     }
 
     #[derive(Drop, starknet::Event)]
-    pub struct WithdrawalLimitEnabled {
+    pub struct WithdrawalLimitIncreased {
         #[key]
         pub sender: ContractAddress,
         #[key]
         pub token: ContractAddress,
+        pub daily_withdrawal_limit_pct: u8,
     }
 
     #[derive(Drop, starknet::Event)]
-    pub struct WithdrawalLimitDisabled {
+    pub struct WithdrawalLimitDecreased {
         #[key]
         pub sender: ContractAddress,
         #[key]
         pub token: ContractAddress,
+        pub daily_withdrawal_limit_pct: u8,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -288,14 +312,27 @@ pub mod TokenBridge {
         ref self: ContractState,
         appchain_bridge: ContractAddress,
         messaging_contract: ContractAddress,
-        owner: ContractAddress,
+        governance_admins: Span<ContractAddress>,
+        app_governors: Span<ContractAddress>,
+        security_admins: Span<ContractAddress>,
+        security_agents: Span<ContractAddress>,
+        token_admins: Span<ContractAddress>,
+        timelock: ContractAddress,
     ) {
         self.appchain_bridge.write(appchain_bridge);
         self
             .messaging_contract
             .write(IMessagingDispatcher { contract_address: messaging_contract });
-        self.withdrawal.initialize(5);
-        self.ownable.initializer(owner);
+        self
+            .bridge_access_control
+            .initializer(
+                governance_admins,
+                app_governors,
+                security_admins,
+                security_agents,
+                token_admins,
+                timelock,
+            );
     }
 
 
@@ -458,7 +495,7 @@ pub mod TokenBridge {
     #[abi(embed_v0)]
     impl TokenBrdigeAdminImpl of ITokenBridgeAdmin<ContractState> {
         fn set_appchain_token_bridge(ref self: ContractState, appchain_bridge: ContractAddress) {
-            self.ownable.assert_only_owner();
+            self.bridge_access_control.assert_only_app_governor();
             self.appchain_bridge.write(appchain_bridge);
 
             self.emit(SetAppchainBridge { appchain_bridge });
@@ -471,7 +508,7 @@ pub mod TokenBridge {
         // Emits a `TokenBlocked` event when the blocking is successful.
         // Throws an error if the token is not `Unknown` or if the sender is not the owner.
         fn block_token(ref self: ContractState, token: ContractAddress) {
-            self.ownable.assert_only_owner();
+            self.bridge_access_control.assert_only_token_admin();
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::NOT_UNKNOWN);
 
             let new_settings = TokenSettings {
@@ -484,7 +521,7 @@ pub mod TokenBridge {
         // @dev This unblocks a token which can be enrolled now
         // @param token The address of the token to unblock
         fn unblock_token(ref self: ContractState, token: ContractAddress) {
-            self.ownable.assert_only_owner();
+            self.bridge_access_control.assert_only_token_admin();
             assert(self.get_status(token) == TokenStatus::Blocked, Errors::NOT_BLOCKED);
 
             let new_settings = TokenSettings {
@@ -498,7 +535,7 @@ pub mod TokenBridge {
         // check `block_token()`
         // @param token The token to be deactivated
         fn deactivate_token(ref self: ContractState, token: ContractAddress) {
-            self.ownable.assert_only_owner();
+            self.bridge_access_control.assert_only_token_admin();
             let status = self.get_status(token);
             assert(status == TokenStatus::Active, Errors::NOT_ACTIVE);
 
@@ -513,7 +550,7 @@ pub mod TokenBridge {
         // @dev This is reactivates back a token to `Active` that was deactivated
         // @param token The address of the token to be reactivated
         fn reactivate_token(ref self: ContractState, token: ContractAddress) {
-            self.ownable.assert_only_owner();
+            self.bridge_access_control.assert_only_token_admin();
             let status = self.get_status(token);
             assert(status == TokenStatus::Deactivated, Errors::NOT_DEACTIVATED);
 
@@ -528,22 +565,58 @@ pub mod TokenBridge {
 
         // @dev This can be used to enable daily withdrawal limits on a token,
         // @param token The address of the token on which to enable withdrawal limit
-        fn enable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
-            self.ownable.assert_only_owner();
-            let new_settings = TokenSettings {
-                withdrawal_limit_applied: true, ..self.token_settings.read(token),
-            };
-            self.token_settings.write(token, new_settings);
-            self.emit(WithdrawalLimitEnabled { sender: get_caller_address(), token });
+        fn increase_withdrawal_limit(
+            ref self: ContractState, token: ContractAddress, daily_withdrawal_limit_pct: u8,
+        ) {
+            self.bridge_access_control.assert_only_security_admin();
+
+            let current_pct = self.withdrawal.get_daily_withdrawal_limit_pct(token);
+            assert(daily_withdrawal_limit_pct > current_pct, Errors::NEW_LIMIT_MUST_BE_GREATER);
+            self.withdrawal.write_daily_withdrawal_limit_pct(token, daily_withdrawal_limit_pct);
+
+            self
+                .emit(
+                    WithdrawalLimitIncreased {
+                        sender: get_caller_address(), token, daily_withdrawal_limit_pct,
+                    },
+                );
         }
 
+
+        // @notice This can only be called by the security agent
+        // @dev This can be used to decrease daily withdrawal limits on a token,
+        // @param token The address of the token on which to decrease withdrawal limit
+        fn decrease_withdrawal_limit(
+            ref self: ContractState, token: ContractAddress, daily_withdrawal_limit_pct: u8,
+        ) {
+            self.bridge_access_control.assert_only_security_agent();
+
+            let current_pct = self.withdrawal.get_daily_withdrawal_limit_pct(token);
+            assert(daily_withdrawal_limit_pct < current_pct, Errors::NEW_LIMIT_MUST_BE_GREATER);
+            self.withdrawal.write_daily_withdrawal_limit_pct(token, daily_withdrawal_limit_pct);
+
+            self
+                .emit(
+                    WithdrawalLimitDecreased {
+                        sender: get_caller_address(), token, daily_withdrawal_limit_pct,
+                    },
+                );
+        }
+
+
+        // @notice This can only be called by the security admin
+        // @dev This can be used to disable daily withdrawal limits on a token,
+        // sets the limit to 100%
+        // @param token The address of the token on which to disable withdrawal limit
         fn disable_withdrawal_limit(ref self: ContractState, token: ContractAddress) {
-            self.ownable.assert_only_owner();
-            let new_settings = TokenSettings {
-                withdrawal_limit_applied: false, ..self.token_settings.read(token),
-            };
-            self.token_settings.write(token, new_settings);
-            self.emit(WithdrawalLimitDisabled { sender: get_caller_address(), token });
+            self.bridge_access_control.assert_only_security_admin();
+            assert(
+                self.withdrawal.is_withdrawal_limit_applied(token),
+                Errors::WITHDRAWAL_LIMIT_NOT_APPLIED,
+            );
+
+            // To disable the limit, we set the limit to 100%
+            self.increase_withdrawal_limit(token, 100);
         }
 
         // Use this to add a max total balance on the token. Beyond this value no more deposits
@@ -552,12 +625,30 @@ pub mod TokenBridge {
         fn set_max_total_balance(
             ref self: ContractState, token: ContractAddress, max_total_balance: u256,
         ) {
-            self.ownable.assert_only_owner();
+            self.bridge_access_control.assert_only_app_governor();
             let new_settings = TokenSettings {
                 max_total_balance: max_total_balance, ..self.token_settings.read(token),
             };
             self.token_settings.write(token, new_settings);
             self.emit(SetMaxTotalBalance { token, value: max_total_balance });
+        }
+
+        // This function is used to pause the contract.
+        // It can only be called by the security agent.
+        // The function checks if the contract is not already paused
+        fn pause(ref self: ContractState) {
+            self.pausable.assert_not_paused();
+            self.bridge_access_control.assert_only_security_agent();
+            self.pausable.pause();
+        }
+
+        // This function is used to unpause the contract.
+        // It can only be called by the security admin.
+        // The function checks if the contract is paused
+        fn unpause(ref self: ContractState) {
+            self.pausable.assert_paused();
+            self.bridge_access_control.assert_only_security_admin();
+            self.pausable.unpause();
         }
     }
 
@@ -594,6 +685,8 @@ pub mod TokenBridge {
         //    exist.
 
         fn enroll_token(ref self: ContractState, token: ContractAddress) {
+            self.pausable.assert_not_paused();
+
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::ALREADY_ENROLLED);
 
             // Send message to appchain
@@ -624,6 +717,7 @@ pub mod TokenBridge {
             amount: u256,
             appchain_recipient: ContractAddress,
         ) {
+            self.pausable.assert_not_paused();
             self.reentrancy_guard.start();
             let no_message: Span<felt252> = array![].span();
             self.accept_deposit(token, amount);
@@ -654,6 +748,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             message: Span<felt252>,
         ) {
+            self.pausable.assert_not_paused();
             self.accept_deposit(token, amount);
             let nonce = self
                 .send_deposit_message(
@@ -681,6 +776,7 @@ pub mod TokenBridge {
         //     processing: check the l2-l3 deployment message. set status to `Active` if consumed.
         //     if not consumed after the expected duration, it returns the status to `Unknown`.
         fn check_deployment_status(ref self: ContractState, token: ContractAddress) {
+            self.pausable.assert_not_paused();
             let settings = self.token_settings.read(token);
             if (settings.token_status != TokenStatus::Pending) {
                 return;
@@ -714,6 +810,7 @@ pub mod TokenBridge {
             amount: u256,
             recipient: ContractAddress,
         ) {
+            self.pausable.assert_not_paused();
             self.reentrancy_guard.start();
 
             self.consume_message(token, amount, recipient);
@@ -748,6 +845,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             nonce: Nonce,
         ) {
+            self.pausable.assert_not_paused();
             let no_message: Span<felt252> = array![].span();
             self
                 .messaging_contract
@@ -776,6 +874,7 @@ pub mod TokenBridge {
             message: Span<felt252>,
             nonce: Nonce,
         ) {
+            self.pausable.assert_not_paused();
             self
                 .messaging_contract
                 .read()
@@ -808,6 +907,7 @@ pub mod TokenBridge {
             message: Span<felt252>,
             nonce: Nonce,
         ) {
+            self.pausable.assert_not_paused();
             self.reentrancy_guard.start();
             self
                 .messaging_contract
@@ -846,6 +946,7 @@ pub mod TokenBridge {
             appchain_recipient: ContractAddress,
             nonce: Nonce,
         ) {
+            self.pausable.assert_not_paused();
             self.reentrancy_guard.start();
             let no_message: Span<felt252> = array![].span();
             self
@@ -895,18 +996,10 @@ pub mod TokenBridge {
 
 
     #[abi(embed_v0)]
-    impl WithdrawalLimitStatusImpl of IWithdrawalLimitStatus<ContractState> {
-        fn is_withdrawal_limit_applied(self: @ContractState, token: ContractAddress) -> bool {
-            self.token_settings.read(token).withdrawal_limit_applied
-        }
-    }
-
-
-    #[abi(embed_v0)]
     impl UpgradeableImpl of IUpgradeable<ContractState> {
         fn upgrade(ref self: ContractState, new_class_hash: ClassHash) {
             // This function can only be called by the owner
-            self.ownable.assert_only_owner();
+            self.bridge_access_control.assert_only_upgrade_governor();
 
             // Replace the class hash upgrading the contract
             self.upgradeable.upgrade(new_class_hash);

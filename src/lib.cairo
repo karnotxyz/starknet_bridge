@@ -1,26 +1,24 @@
 pub mod bridge {
-    pub mod token_bridge;
     pub mod interface;
+    pub mod token_bridge;
     pub mod types;
 
     #[cfg(target: 'test')]
     pub mod tests {
         pub mod constants;
-        mod token_actions_test;
         mod messaging_test;
+        mod token_actions_test;
         pub mod utils {
             pub mod message_payloads;
             pub mod setup;
         }
     }
+    pub use interface::{
+        ITokenBridge, ITokenBridgeAdmin, ITokenBridgeAdminDispatcher,
+        ITokenBridgeAdminDispatcherTrait, ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait,
+    };
 
     pub use token_bridge::TokenBridge;
-    pub use interface::{
-        ITokenBridge, ITokenBridgeAdmin, IWithdrawalLimitStatus, ITokenBridgeDispatcher,
-        ITokenBridgeAdminDispatcher, IWithdrawalLimitStatusDispatcher,
-        IWithdrawalLimitStatusDispatcherTrait, ITokenBridgeDispatcherTrait,
-        ITokenBridgeAdminDispatcherTrait,
-    };
 }
 
 pub mod withdrawal_limit {
@@ -33,20 +31,38 @@ pub mod withdrawal_limit {
     }
 }
 
+pub mod access_control {
+    pub mod component;
+    pub mod roles;
+
+    #[cfg(test)]
+    pub mod tests {
+        mod access_control_test;
+        mod utils;
+    }
+}
+
+pub mod timelock {
+    pub mod timelock;
+}
+
 pub mod constants;
 
 pub mod mocks {
+    #[cfg(test)]
+    pub mod access_control_mock;
     pub mod erc20;
 
     #[cfg(target: 'test')]
+    pub mod hash;
+
+    #[cfg(target: 'test')]
     pub mod messaging;
+
     #[cfg(test)]
     pub mod messaging_malicious;
 
     #[cfg(test)]
     pub mod withdrawal_limit_mock;
-
-    #[cfg(target: 'test')]
-    pub mod hash;
 }
 

@@ -19,11 +19,12 @@ pub trait IMockMessaging<TState> {
 
 #[starknet::contract]
 mod messaging_mock {
-    use piltover::messaging::{messaging_cpt, messaging_cpt::InternalTrait as MessagingInternal};
+    use piltover::messaging::messaging_cpt;
+    use piltover::messaging::messaging_cpt::InternalTrait as MessagingInternal;
     use piltover::messaging::types::MessageToAppchainStatus;
     use starknet::ContractAddress;
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet_bridge::mocks::hash;
-    use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess, StorageMapReadAccess};
     use super::IMockMessaging;
 
     component!(path: messaging_cpt, storage: messaging, event: MessagingEvent);

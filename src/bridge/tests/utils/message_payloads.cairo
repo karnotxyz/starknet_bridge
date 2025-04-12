@@ -1,9 +1,8 @@
-use starknet::ContractAddress;
-use starknet_bridge::constants;
-
 use openzeppelin::token::erc20::interface::{
     IERC20MetadataDispatcher, IERC20MetadataDispatcherTrait,
 };
+use starknet::ContractAddress;
+use starknet_bridge::constants;
 
 pub fn deposit_message_payload(
     token: ContractAddress,

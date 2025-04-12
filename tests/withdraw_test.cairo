@@ -1,19 +1,17 @@
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;
 use snforge_std::EventSpy;
-use starknet_bridge::mocks::{messaging::{IMockMessagingDispatcherTrait, IMockMessagingDispatcher}};
-use starknet_bridge::bridge::{
-    ITokenBridgeDispatcher, ITokenBridgeDispatcherTrait, ITokenBridgeAdminDispatcher,
-    ITokenBridgeAdminDispatcherTrait,
-};
-
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-use starknet::contract_address::{contract_address_const};
-use super::constants::{OWNER, L3_BRIDGE_ADDRESS};
+use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet_bridge::bridge::tests::utils::setup::{
     deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle,
 };
+use starknet_bridge::bridge::{
+    ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, ITokenBridgeDispatcher,
+    ITokenBridgeDispatcherTrait,
+};
 use starknet_bridge::constants;
-use starknet_bridge::bridge::tests::utils::message_payloads;
+use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessagingDispatcherTrait};
+use super::constants::{L3_BRIDGE_ADDRESS, OWNER, SECURITY_AGENT};
 
 
 fn setup() -> (ITokenBridgeDispatcher, EventSpy, IERC20Dispatcher, IMockMessagingDispatcher, u256) {
@@ -77,6 +75,22 @@ fn withdraw_ok() {
 }
 
 #[test]
+#[should_panic(expected: ('Pausable: paused',))]
+fn withdraw_paused() {
+    let (token_bridge, _, usdc, _, amount) = setup();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    // Set up security agent before pausing
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.pause();
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    token_bridge.withdraw(usdc.contract_address, amount, snf::test_address());
+}
+
+#[test]
 #[should_panic(expected: ('INVALID_MESSAGE_TO_CONSUME',))]
 fn withdraw_incorrect_recipient() {
     let (token_bridge, _, usdc, messaging_mock, amount) = setup();
@@ -91,7 +105,7 @@ fn withdraw_incorrect_recipient() {
             ),
         );
 
-    token_bridge.withdraw(usdc.contract_address, amount, contract_address_const::<'user2'>());
+    token_bridge.withdraw(usdc.contract_address, amount, 'user2'.try_into().unwrap());
 }
 
 
@@ -104,8 +118,8 @@ fn withdraw_limit_reached() {
         contract_address: token_bridge.contract_address,
     };
 
-    snf::start_cheat_caller_address(token_bridge.contract_address, OWNER());
-    token_bridge_admin.enable_withdrawal_limit(usdc.contract_address);
+    snf::start_cheat_caller_address(token_bridge.contract_address, SECURITY_AGENT());
+    token_bridge_admin.decrease_withdrawal_limit(usdc.contract_address, 10);
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
     let withdraw_amount = 50;
