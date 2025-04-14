@@ -209,14 +209,14 @@ program
     // Deploy and enroll token
     Logger.step(3, "Deploying and enrolling token...");
     await deployERC20();
-    await enrollToken(acc_l2, "ERC20");
+    await enrollToken(acc_l2, "ERC20_OZ");
 
     // Check the corresponding token and balance
     Logger.step(4, "Check the corresponding token and balance on l3");
     await sleep(20000);
     await getL3Balance(
       process.env.ACCOUNT_L3_ADDRESS as string,
-      "ERC20"
+      "ERC20_OZ"
     );
 
     Logger.success("Full flow completed successfully!");

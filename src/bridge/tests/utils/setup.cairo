@@ -14,7 +14,7 @@ use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessaging
 
 
 pub fn deploy_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
-    let erc20_class_hash = snf::declare("ERC20").unwrap().contract_class();
+    let erc20_class_hash = snf::declare("ERC20_OZ").unwrap().contract_class();
     let mut constructor_args = ArrayTrait::new();
     let fixed_supply: u256 = 1000000000;
 

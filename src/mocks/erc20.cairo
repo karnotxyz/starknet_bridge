@@ -12,7 +12,7 @@
 // 💀💀💀💀💀💀💀💀💀💀💀💀💀💀
 
 #[starknet::contract]
-pub mod ERC20 {
+pub mod ERC20_OZ {
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use starknet::ContractAddress;
 
