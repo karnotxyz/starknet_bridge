@@ -136,14 +136,14 @@ program
   .description("Deposit tokens from L2 to L3")
   .option("-t, --token <token>", "Token name", "ERC20_starknet_bridge")
   .option(
-    "-a, --amount amount",
+    "-a, --amount <amount>",
     "Amount of tokens to deposit",
     "10n * 10n ** 18n"
   )
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
-    await deposit(acc_l2, BigInt(options.amount));
-  }); // Get L3 Balance Command program .command('get-l3-balance') .description('Get the L3 balance for an address') .argument('<address>', 'Address to check') .option('-t, --token <token>', 'Token name', 'MyL2GameToken') .action(async (address, options) => { await getL3Balance(address, options.token); });
+    await deposit(acc_l2, options.token, BigInt(options.amount));
+  });
 
 // Get L3 Balance Command
 program

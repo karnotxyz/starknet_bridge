@@ -369,12 +369,19 @@ export async function enrollToken(
  */
 export async function deposit(
   acc_l2: Account,
+  token: string = "ERC20_OZ",
   amount: bigint = 10n * 10n ** 18n
 ) {
-  getContract(erc20Contract);
+  // Create a contract object for the token and get its existing data
+  const tokenContract: Contract = {
+    name: token,
+    layer: Layer.L2,
+    package: starknetBridgePackage
+  };
+  getContract(tokenContract);
   getContract(tokenBridgeL2Contract);
 
-  if (!erc20Contract.address) {
+  if (!tokenContract.address) {
     throw new Error("ERC20 contract address not found");
   }
 
@@ -382,7 +389,7 @@ export async function deposit(
     throw new Error("L2 Bridge contract address not found");
   }
 
-  const tokenAddress = erc20Contract.address;
+  const tokenAddress = tokenContract.address;
   const tokenBridge = tokenBridgeL2Contract.address;
 
   // Approval
