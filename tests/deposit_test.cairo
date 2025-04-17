@@ -95,6 +95,13 @@ fn deposit_should_activate_token() {
 }
 
 #[test]
+#[should_panic(expected: ('Only servicing tokens',))]
+fn deposit_should_activate_token_pending() {
+    let (token_bridge, _, usdc_address, _) = setup(false);
+    token_bridge.deposit(usdc_address, 100, snf::test_address());
+}
+
+#[test]
 #[should_panic(expected: ('Pausable: paused',))]
 fn deposit_paused() {
     let (token_bridge, _, usdc_address, _) = setup(true);
