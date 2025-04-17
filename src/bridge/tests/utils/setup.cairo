@@ -103,7 +103,7 @@ pub fn mock_state_testing() -> TokenBridge::ContractState {
     TokenBridge::contract_state_for_testing()
 }
 
-pub fn enroll_token_and_settle(
+pub fn enroll_token(
     token_bridge: ITokenBridgeDispatcher,
     messaging_mock: IMockMessagingDispatcher,
     token: ContractAddress,
@@ -112,6 +112,14 @@ pub fn enroll_token_and_settle(
 
     token_bridge.enroll_token(token);
     assert(token_bridge.get_status(token) == TokenStatus::Pending, 'Should be Pending');
+}
+
+pub fn enroll_token_and_settle(
+    token_bridge: ITokenBridgeDispatcher,
+    messaging_mock: IMockMessagingDispatcher,
+    token: ContractAddress,
+) {
+    enroll_token(token_bridge, messaging_mock, token);
 
     // Settles the message sent to appchain
     messaging_mock
@@ -121,7 +129,6 @@ pub fn enroll_token_and_settle(
             constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
             message_payloads::deployment_message_payload(token),
         );
-
     token_bridge.check_deployment_status(token);
 
     let final_status = token_bridge.get_status(token);
