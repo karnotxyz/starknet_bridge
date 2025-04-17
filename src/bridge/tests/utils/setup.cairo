@@ -112,20 +112,6 @@ pub fn enroll_token(
 
     token_bridge.enroll_token(token);
     assert(token_bridge.get_status(token) == TokenStatus::Pending, 'Should be Pending');
-
-    // Settles the message sent to appchain
-    messaging_mock
-        .process_last_message_to_appchain(
-            token_bridge.contract_address,
-            L3_BRIDGE_ADDRESS(),
-            constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
-            message_payloads::deployment_message_payload(token),
-        );
-
-    token_bridge.check_deployment_status(token);
-
-    let final_status = token_bridge.get_status(token);
-    assert(final_status == TokenStatus::Active, 'Should be Active');
 }
 
 pub fn enroll_token_and_settle(
@@ -135,6 +121,14 @@ pub fn enroll_token_and_settle(
 ) {
     enroll_token(token_bridge, messaging_mock, token);
 
+    // Settles the message sent to appchain
+    messaging_mock
+        .process_last_message_to_appchain(
+            token_bridge.contract_address,
+            L3_BRIDGE_ADDRESS(),
+            constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
+            message_payloads::deployment_message_payload(token),
+        );
     token_bridge.check_deployment_status(token);
 
     let final_status = token_bridge.get_status(token);
