@@ -12,8 +12,10 @@ use starknet_bridge::bridge::{
     ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, ITokenBridgeDispatcher,
     ITokenBridgeDispatcherTrait, TokenBridge,
 };
-use starknet_bridge::mocks::messaging::IMockMessagingDispatcher;
-use super::constants::{SECURITY_AGENT, TOKEN_ADMIN};
+use starknet_bridge::constants;
+use starknet_bridge::bridge::tests::utils::message_payloads;
+use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessagingDispatcherTrait};
+use super::constants::{SECURITY_AGENT, TOKEN_ADMIN, L3_BRIDGE_ADDRESS};
 
 
 fn setup(
@@ -57,11 +59,21 @@ fn deposit_ok() {
 
 #[test]
 fn deposit_should_activate_token() {
-    let (token_bridge, mut spy, usdc_address, _) = setup(false);
+    let (token_bridge, mut spy, usdc_address, messaging_mock) = setup(false);
 
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
     let initial_bridge_balance = usdc.balance_of(token_bridge.contract_address);
     usdc.approve(token_bridge.contract_address, 100);
+
+    // Settles the message sent to appchain
+    messaging_mock
+        .process_last_message_to_appchain(
+            token_bridge.contract_address,
+            L3_BRIDGE_ADDRESS(),
+            constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
+            message_payloads::deployment_message_payload(usdc_address),
+        );
+
     token_bridge.deposit(usdc_address, 100, snf::test_address());
 
     assert(
