@@ -686,6 +686,7 @@ pub mod TokenBridge {
 
         fn enroll_token(ref self: ContractState, token: ContractAddress) {
             self.pausable.assert_not_paused();
+            self.reentrancy_guard.start();
 
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::ALREADY_ENROLLED);
 
@@ -704,6 +705,8 @@ pub mod TokenBridge {
 
             self.token_settings.write(token, new_settings);
             self.emit(TokenEnrollmentInitiated { token, deployment_message_hash });
+
+            self.reentrancy_guard.end();
         }
 
         // @dev Used to create a deposit of for the token,
@@ -719,9 +722,11 @@ pub mod TokenBridge {
         ) {
             self.pausable.assert_not_paused();
             self.reentrancy_guard.start();
+
             let no_message: Span<felt252> = array![].span();
             self.check_deployment_status(token);
             self.accept_deposit(token, amount);
+
             let nonce = self
                 .send_deposit_message(
                     token,
@@ -850,6 +855,8 @@ pub mod TokenBridge {
             nonce: Nonce,
         ) {
             self.pausable.assert_not_paused();
+            self.reentrancy_guard.start();
+
             let no_message: Span<felt252> = array![].span();
             self
                 .messaging_contract
@@ -866,6 +873,8 @@ pub mod TokenBridge {
                         sender: get_caller_address(), token, amount, appchain_recipient, nonce,
                     },
                 );
+
+            self.reentrancy_guard.end();
         }
 
         // @dev If the deposit was initiated by `deposit_with_message()` then use this.
@@ -879,6 +888,8 @@ pub mod TokenBridge {
             nonce: Nonce,
         ) {
             self.pausable.assert_not_paused();
+            self.reentrancy_guard.start();
+
             self
                 .messaging_contract
                 .read()
@@ -899,6 +910,8 @@ pub mod TokenBridge {
                         nonce,
                     },
                 );
+
+            self.reentrancy_guard.end();
         }
 
         // Similar to `deposit_reclaim()` with the difference of deposit initiated with
