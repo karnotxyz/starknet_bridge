@@ -720,6 +720,7 @@ pub mod TokenBridge {
             self.pausable.assert_not_paused();
             self.reentrancy_guard.start();
             let no_message: Span<felt252> = array![].span();
+            self.check_deployment_status(token);
             self.accept_deposit(token, amount);
             let nonce = self
                 .send_deposit_message(
@@ -733,7 +734,6 @@ pub mod TokenBridge {
             let caller = get_caller_address();
             self.emit(Deposit { sender: caller, token, amount, appchain_recipient, nonce });
 
-            self.check_deployment_status(token);
             self.reentrancy_guard.end();
         }
 
@@ -749,6 +749,11 @@ pub mod TokenBridge {
             message: Span<felt252>,
         ) {
             self.pausable.assert_not_paused();
+
+            self.reentrancy_guard.start();
+            // Piggy-back the deposit tx to check and update the status of token bridge deployment.
+            self.check_deployment_status(token);
+
             self.accept_deposit(token, amount);
             let nonce = self
                 .send_deposit_message(
@@ -766,8 +771,7 @@ pub mod TokenBridge {
                         sender: caller, token, amount, appchain_recipient, message, nonce,
                     },
                 );
-            // Piggy-back the deposit tx to check and update the status of token bridge deployment.
-            self.check_deployment_status(token);
+
             self.reentrancy_guard.end();
         }
 
