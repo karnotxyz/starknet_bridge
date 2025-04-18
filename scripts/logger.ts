@@ -8,6 +8,12 @@ const consoleFormat = format.printf(({ level, message, timestamp }) => {
   return `${timestamp} ${level}: ${message}`;
 });
 
+// Custom format for file output
+const fileFormat = format.combine(
+  format.timestamp(),
+  format.json()
+);
+
 export class Logger {
   private static instance: Logger;
   private winstonLogger: WinstonLogger;
@@ -20,6 +26,7 @@ export class Logger {
   public static getInstance(): Logger {
     if (!Logger.instance) {
       Logger.instance = new Logger();
+      Logger.instance.initialize();
     }
     return Logger.instance;
   }
@@ -49,10 +56,8 @@ export class Logger {
     // Create a Winston logger
     this.winstonLogger = createLogger({
       level,
-      format: format.combine(
-        format.timestamp(),
-        format.json()
-      ),
+      format: fileFormat,
+      exitOnError: false, // Don't exit on handled exceptions
       transports: [
         // Console transport with colors and emojis
         new transports.Console({
@@ -62,19 +67,39 @@ export class Logger {
             consoleFormat
           )
         }),
-        // File transport with rotation
+        // Error log file transport
         new transports.File({
           filename: path.join(logsDir, 'error.log'),
           level: 'error',
+          format: fileFormat,
           maxsize: maxSize,
           maxFiles: maxFiles,
+          handleExceptions: true, // Handle exceptions in error log
+          handleRejections: true  // Handle promise rejections
         }),
+        // Combined log file transport
         new transports.File({
           filename: path.join(logsDir, 'combined.log'),
+          format: fileFormat,
           maxsize: maxSize,
           maxFiles: maxFiles,
+          handleExceptions: true, // Handle exceptions in combined log
+          handleRejections: true  // Handle promise rejections
         })
       ]
+    });
+
+    // Add event listeners for uncaught exceptions and unhandled rejections
+    process.on('uncaughtException', (error) => {
+      this.winstonLogger.error('Uncaught Exception:', error);
+      // Give Winston time to write the logs before exiting
+      setTimeout(() => process.exit(1), 1000);
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      this.winstonLogger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      // Give Winston time to write the logs before exiting
+      setTimeout(() => process.exit(1), 1000);
     });
 
     this.initialized = true;

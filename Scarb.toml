@@ -16,5 +16,8 @@ casm = true
 allowed-libfuncs-list.name = "experimental"
 build-external-contracts = ["piltover::appchain::appchain"]
 
+[tool.voyager]
+TokenBridge = { path = "src/bridge/token_bridge.cairo" }
+
 [scripts]
 test = "snforge test"

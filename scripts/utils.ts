@@ -5,7 +5,7 @@ import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
 import { Logger } from "./logger.ts";
 import { sepolia } from 'viem/chains'
-import { Layer, Contract } from './types'
+import { Layer, Contract, NewRoles } from './types'
 
 export async function checkEnvVars() {
   console.log('===============================')
@@ -38,9 +38,9 @@ export function getContract(contract: Contract): Contract {
   const contracts = JSON.parse(readFileSync(PATH, { encoding: 'utf-8' }));
 
   // Try to get class hash if it exists in stored contracts
-  if (contracts.class_hashes && 
-      contracts.class_hashes[contract.layer] && 
-      contracts.class_hashes[contract.layer][`${contract.name}_${contract.package.name}`]) {
+  if (contracts.class_hashes &&
+    contracts.class_hashes[contract.layer] &&
+    contracts.class_hashes[contract.layer][`${contract.name}_${contract.package.name}`]) {
     contract.classHash = contracts.class_hashes[contract.layer][`${contract.name}_${contract.package.name}`];
   }
 
@@ -59,6 +59,21 @@ export function getContracts() {
     return JSON.parse(readFileSync(PATH, { encoding: 'utf-8' }))
   }
   return {}
+}
+
+export function getRoles(): NewRoles {
+  const path = "./scripts/finalRoles.json";
+  if (existsSync(path)) {
+    let roles = JSON.parse(readFileSync(path, { encoding: 'utf-8' }));
+    return {
+      tokenAdmin: roles.tokenAdmin,
+      securityAgent: roles.securityAgent,
+      appGovernor: roles.appGovernor,
+      securityAdmin: roles.securityAdmin,
+      governanceAdmin: roles.governanceAdmin,
+    }
+  }
+  throw new Error('Roles file not found');
 }
 
 // TODO: Incorporate the layer also
