@@ -6,56 +6,73 @@ import { FinalRoles, L2TokenBridgeRoleIds, TimelockControllerRoleIds } from "./t
 
 async function grantRoleRevokeSelf(acc_l2: Account, contract: Contract, role: L2TokenBridgeRoleIds | TimelockControllerRoleIds, address: string[] | string) {
   if (Array.isArray(address)) {
-    logger.info(`Granting role ${role} to multiple addresses: ${address.join(', ')}`);
+    logger.step(1, `Granting role ${role} to multiple addresses`);
+    logger.address("Target addresses", address.join(', '));
+    
     for (const addr of address) {
       const call = contract.populate("grant_role", [role, addr]);
       let tx = await acc_l2.execute([call]);
       await acc_l2.waitForTransaction(tx.transaction_hash);
-      logger.info(`Granted role ${role} to address ${addr}, tx: ${tx.transaction_hash}`);
+      logger.txHash(tx.transaction_hash);
+      logger.success(`Granted role ${role} to address ${addr}`);
     }
   } else {
-    logger.info(`Granting role ${role} to address ${address}`);
+    logger.step(1, `Granting role ${role} to address`);
+    logger.address("Target address", address);
+    
     const call = contract.populate("grant_role", [role, address]);
     let tx = await acc_l2.execute([call]);
     await acc_l2.waitForTransaction(tx.transaction_hash);
-    logger.info(`Granted role ${role} to address ${address}, tx: ${tx.transaction_hash}`);
+    logger.txHash(tx.transaction_hash);
+    logger.success(`Granted role ${role} to address ${address}`);
   }
-  logger.info(`Revoking role ${role} from self (${acc_l2.address})`);
+
+  logger.step(2, `Revoking role ${role} from self`);
+  logger.address("Self address", acc_l2.address);
+  
   const call = contract.populate("renounce_role", [role, acc_l2.address]);
   let tx = await acc_l2.execute([call]);
   await acc_l2.waitForTransaction(tx.transaction_hash);
-  logger.info(`Revoked role ${role} from self, tx: ${tx.transaction_hash}`);
+  logger.txHash(tx.transaction_hash);
+  logger.success(`Revoked role ${role} from self`);
 }
 
 async function changeRoleWithMethod(acc_l3: Account, contract: Contract, address: string[] | string, method: string) {
   if (Array.isArray(address)) {
-    logger.info(`Executing ${method} for multiple addresses: ${address.join(', ')}`);
+    logger.step(1, `Executing ${method} for multiple addresses`);
+    logger.address("Target addresses", address.join(', '));
+    
     for (const addr of address) {
       const call = contract.populate(method, [addr]);
       let tx = await acc_l3.execute([call]);
       await acc_l3.waitForTransaction(tx.transaction_hash);
-      logger.info(`Executed ${method} for address ${addr}, tx: ${tx.transaction_hash}`);
+      logger.txHash(tx.transaction_hash);
+      logger.success(`Executed ${method} for address ${addr}`);
     }
   } else {
-    logger.info(`Executing ${method} for address ${address}`);
+    logger.step(1, `Executing ${method} for address`);
+    logger.address("Target address", address);
+    
     const call = contract.populate(method, [address]);
     let tx = await acc_l3.execute([call]);
     await acc_l3.waitForTransaction(tx.transaction_hash);
-    logger.info(`Executed ${method} for address ${address}, tx: ${tx.transaction_hash}`);
+    logger.txHash(tx.transaction_hash);
+    logger.success(`Executed ${method} for address ${address}`);
   }
 }
 
 export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles: FinalRoles) {
   logger.info('Starting role transfer process');
-  logger.info('=== L2 Token Bridge Roles ===');
-
+  
+  // L2 Token Bridge
+  logger.step(1, 'Configuring L2 Token Bridge Roles');
   let tokenBridgeL2 = getContract(tokenBridgeL2Contract);
   if (!tokenBridgeL2.address) {
     const error = "L2 Bridge contract address not found";
     logger.error(error);
     throw new Error(error);
   }
-  logger.info(`Using L2 Bridge contract at ${tokenBridgeL2.address}`);
+  logger.address("L2 Bridge contract", tokenBridgeL2.address);
 
   let tokenBridgeCls = await acc_l2.getClassAt(tokenBridgeL2.address);
   let tokenBridgeContract_l2 = new Contract(tokenBridgeCls.abi, tokenBridgeL2.address, acc_l2);
@@ -69,13 +86,15 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
   await grantRoleRevokeSelf(acc_l2, tokenBridgeContract_l2, L2TokenBridgeRoleIds.GOVERNANCE_ADMIN, l2Roles_TokenBridge.GOVERNANCE_ADMIN);
 
 
-  logger.info('=== L2 Timelock Controller Roles ===');
+  // L2 Timelock
+  logger.step(2, 'Configuring L2 Timelock Controller Roles');
   let timelock = getContract(timelockContract);
   if (!timelock.address) {
     const error = "Timelock contract address not found";
     logger.error(error);
     throw new Error(error);
   }
+  logger.address("Timelock contract", timelock.address);
 
   let timelockCls = await acc_l2.getClassAt(timelock.address);
   let timelockContract_l2 = new Contract(timelockCls.abi, timelock.address, acc_l2);
@@ -87,13 +106,15 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
   await grantRoleRevokeSelf(acc_l2, timelockContract_l2, TimelockControllerRoleIds.DEFAULT_ADMIN, l2Roles_TimelockController[TimelockControllerRoleIds.DEFAULT_ADMIN]);
 
 
-  logger.info('=== L2 Appchain Roles ===');
+  // L2 Appchain
+  logger.step(3, 'Configuring L2 Appchain Roles');
   const appchain = getContract(appchainContract);
   if (!appchain.address) {
     const error = "Appchain contract address not found";
     logger.error(error);
     throw new Error(error);
   }
+  logger.address("Appchain contract", appchain.address);
 
   let appchainCls = await acc_l2.getClassAt(appchain.address);
   let appchainContract_l2 = new Contract(appchainCls.abi, appchain.address, acc_l2);
@@ -111,13 +132,15 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
 
   // ========================== L3 ==========================
 
-  logger.info('=== L3 Token Bridge Roles ===');
+  // L3 Token Bridge
+  logger.step(4, 'Configuring L3 Token Bridge Roles');
   const l3_tokenBridge = getContract(tokenBridgeL3Contract);
   if (!l3_tokenBridge.address) {
     const error = "L3 Bridge contract address not found";
     logger.error(error);
     throw new Error(error);
   }
+  logger.address("L3 Bridge contract", l3_tokenBridge.address);
 
   let l3_tokenBridgeCls = await acc_l3.getClassAt(l3_tokenBridge.address);
   let l3_tokenBridgeContract_l3 = new Contract(l3_tokenBridgeCls.abi, l3_tokenBridge.address, acc_l3);
@@ -145,6 +168,6 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
   await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.SecurityAdmin, "remove_security_admin");
   await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.GovernanceAdmin, "remove_governance_admin");
 
-  logger.info('Role transfer process completed successfully');
+  logger.success('Role transfer process completed successfully');
 }
 

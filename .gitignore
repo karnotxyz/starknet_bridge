@@ -5,4 +5,3 @@ node_modules/
 .env
 contracts.json
 logs/
-scripts/finalRoles.json

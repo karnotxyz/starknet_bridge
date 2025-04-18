@@ -16,7 +16,15 @@ export interface Contract {
   address?: string;
 }
 
-/// =========================== Role IDs ===========================
+
+/// ======================== All Roles =========================
+
+export interface FinalRoles {
+  l2: L2Roles;
+  l3: L3Roles;
+}
+
+/// =========================== L2 Token Bridge Roles ===========================
 
 export enum L2TokenBridgeRoleIds {
   UPGRADE_GOVERNOR = 'UPGRADE_GOVERNOR',
@@ -35,7 +43,8 @@ export interface L2TokenBridgeRoles {
     [L2TokenBridgeRoleIds.GOVERNANCE_ADMIN]: string[];
 }
 
-/// =========================== Timelock Controller ===========================
+
+/// =========================== L2 Timelock Controller Roles ===========================
 
 export interface L2Roles {
     TokenBridge: L2TokenBridgeRoles;
@@ -57,7 +66,9 @@ export interface TimelockControllerRoles {
     [TimelockControllerRoleIds.DEFAULT_ADMIN]: string;
 }
 
-/// =========================== Appchain (Piltover core contract) ===========================
+
+
+/// =========================== L2 Appchain(Piltover core contract) Roles ===========================
 
 export interface AppchainRoles {
     owner: string;
@@ -72,14 +83,9 @@ export interface L3Roles {
   TokenBridge: L3TokenBridgeRoles;
 }
 
-export interface FinalRoles {
-  l2: L2Roles;
-  l3: L3Roles;
-}
-
 export interface L3TokenBridgeRoles {
-    GovernanceAdmin: string[];
-    AppRoleAdmin: string[];
+  GovernanceAdmin: string[];
+  AppRoleAdmin: string[];
     AppGovernor: string[];
     Operator: string[];
     TokenAdmin: string[];
