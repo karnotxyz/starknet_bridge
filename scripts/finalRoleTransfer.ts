@@ -120,7 +120,7 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
   let appchainContract_l2 = new Contract(appchainCls.abi, appchain.address, acc_l2);
 
   const l2Roles_Appchain = finalRoles.l2.appchain;
-  await changeRoleWithMethod(acc_l2, appchainContract_l2, l2Roles_Appchain.operators, "register_operators");
+  await changeRoleWithMethod(acc_l2, appchainContract_l2, l2Roles_Appchain.operators, "register_operator");
   await changeRoleWithMethod(acc_l2, appchainContract_l2, l2Roles_Appchain.owner, "register_operator");
   await changeRoleWithMethod(acc_l2, appchainContract_l2, l2Roles_Appchain.owner, "unregister_operator");
   {
