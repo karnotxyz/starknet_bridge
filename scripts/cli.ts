@@ -195,31 +195,31 @@ program
     logger.success("Starting full flow setup...");
 
     // Setup
-    logger.step(1, "Setting up bridges...");
+     logger.info("MAIN STEP 1: Setting up bridges...");
     await deployAppchainBridge();
     // Deploy timelock contract with 0 `min_delay` initially
     await deployTimelockContract(0);
     await deployL2Bridge();
 
-    logger.step(2, "Configuring the bridges...");
+    logger.info("MAIN STEP 2: Configuring the bridges...");
     await configureAppchainBridge(acc_l3);
     await setL2Bridge(acc_l3);
     await declareAndSetERC20L3(acc_l3);
 
     // Deploy and enroll token
-    logger.step(3, "Deploying and enrolling token...");
+    logger.info("MAIN STEP 3: Deploying and enrolling token...");
     await deployERC20();
     await enrollToken(acc_l2, "ERC20_OZ");
 
     // Check the corresponding token and balance
-    logger.step(4, "Check the corresponding token and balance on l3");
+    logger.info("MAIN STEP 4: Check the corresponding token and balance on l3");
     await sleep(20000);
     await getL3Balance(
       process.env.ACCOUNT_L3_ADDRESS as string,
       "ERC20_OZ"
     );
 
-    logger.step(5, "Transferring roles...");
+    logger.info("MAIN STEP 5: Transferring roles...");
     await transferRoles(acc_l2, acc_l3, finalRoles);
 
     logger.success("Full flow completed successfully!");

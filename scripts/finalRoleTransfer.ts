@@ -6,7 +6,7 @@ import { FinalRoles, L2TokenBridgeRoleIds, TimelockControllerRoleIds } from "./t
 
 async function grantRoleRevokeSelf(acc_l2: Account, contract: Contract, role: L2TokenBridgeRoleIds | TimelockControllerRoleIds, address: string[] | string) {
   if (Array.isArray(address)) {
-    logger.step(1, `Granting role ${role} to multiple addresses`);
+    logger.info(`SUB-STEP 1: Granting role ${role} to multiple addresses`);
     logger.address("Target addresses", address.join(', '));
     
     for (const addr of address) {
@@ -17,7 +17,7 @@ async function grantRoleRevokeSelf(acc_l2: Account, contract: Contract, role: L2
       logger.success(`Granted role ${role} to address ${addr}`);
     }
   } else {
-    logger.step(1, `Granting role ${role} to address`);
+    logger.info(`SUB-STEP 1: Granting role ${role} to address`);
     logger.address("Target address", address);
     
     const call = contract.populate("grant_role", [role, address]);
@@ -27,7 +27,7 @@ async function grantRoleRevokeSelf(acc_l2: Account, contract: Contract, role: L2
     logger.success(`Granted role ${role} to address ${address}`);
   }
 
-  logger.step(2, `Revoking role ${role} from self`);
+  logger.info(`SUB-STEP 2: Revoking role ${role} from self`);
   logger.address("Self address", acc_l2.address);
   
   const call = contract.populate("renounce_role", [role, acc_l2.address]);
@@ -39,7 +39,7 @@ async function grantRoleRevokeSelf(acc_l2: Account, contract: Contract, role: L2
 
 async function changeRoleWithMethod(acc_l3: Account, contract: Contract, address: string[] | string, method: string) {
   if (Array.isArray(address)) {
-    logger.step(1, `Executing ${method} for multiple addresses`);
+    logger.info(`SUB-STEP 1: Executing ${method} for multiple addresses`);
     logger.address("Target addresses", address.join(', '));
     
     for (const addr of address) {
@@ -50,7 +50,7 @@ async function changeRoleWithMethod(acc_l3: Account, contract: Contract, address
       logger.success(`Executed ${method} for address ${addr}`);
     }
   } else {
-    logger.step(1, `Executing ${method} for address`);
+    logger.info(`SUB-STEP 1: Executing ${method} for address`);
     logger.address("Target address", address);
     
     const call = contract.populate(method, [address]);
@@ -65,7 +65,7 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
   logger.info('Starting role transfer process');
   
   // L2 Token Bridge
-  logger.step(1, 'Configuring L2 Token Bridge Roles');
+  logger.info('ROLE TRANSFER STEP 1: Configuring L2 Token Bridge Roles');
   let tokenBridgeL2 = getContract(tokenBridgeL2Contract);
   if (!tokenBridgeL2.address) {
     const error = "L2 Bridge contract address not found";
@@ -87,7 +87,7 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
 
 
   // L2 Timelock
-  logger.step(2, 'Configuring L2 Timelock Controller Roles');
+  logger.info('ROLE TRANSFER STEP 2: Configuring L2 Timelock Controller Roles');
   let timelock = getContract(timelockContract);
   if (!timelock.address) {
     const error = "Timelock contract address not found";
@@ -107,7 +107,7 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
 
 
   // L2 Appchain
-  logger.step(3, 'Configuring L2 Appchain Roles');
+  logger.info('ROLE TRANSFER STEP 3: Configuring L2 Appchain Roles');
   const appchain = getContract(appchainContract);
   if (!appchain.address) {
     const error = "Appchain contract address not found";
@@ -133,7 +133,7 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
   // ========================== L3 ==========================
 
   // L3 Token Bridge
-  logger.step(4, 'Configuring L3 Token Bridge Roles');
+  logger.info('ROLE TRANSFER STEP 4: Configuring L3 Token Bridge Roles');
   const l3_tokenBridge = getContract(tokenBridgeL3Contract);
   if (!l3_tokenBridge.address) {
     const error = "L3 Bridge contract address not found";
