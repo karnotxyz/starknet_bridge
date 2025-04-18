@@ -159,7 +159,7 @@ export async function transferTokenBridgeL3Roles(acc_l3: Account, finalRoles: Fi
   await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.UpgradeGovernor, "register_upgrade_governor");
   await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.SecurityAdmin, "register_security_admin");
   await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.SecurityAgent, "register_security_agent");
-  await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.L2TokenGovernance, "register_l2_token_governance");
+  await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.L2TokenGovernance, "set_l2_token_governance");
 
   // Revoke roles
   await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.TokenAdmin, "remove_token_admin");

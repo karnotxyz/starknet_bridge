@@ -3,7 +3,7 @@ import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContra
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
-import { Logger } from "./logger.ts";
+import { Logger, logger } from "./logger.ts";
 import { sepolia } from 'viem/chains'
 import { Layer, Contract, FinalRoles, L2TokenBridgeRoleIds, TimelockControllerRoleIds } from './types'
 
@@ -149,7 +149,7 @@ export async function declareContract(contract: Contract) {
   try {
     let tx: { transaction_hash: string; class_hash: string; };
     if (layer === Layer.L3) {
-      Logger.getInstance().info('Declaring on L3');
+      logger.info('Declaring on L3');
       tx = await acc.declareIfNot(payload, {
         maxFee: 0,
         resourceBounds: {
@@ -164,7 +164,7 @@ export async function declareContract(contract: Contract) {
         }
       });
     } else {
-      Logger.getInstance().info('Declaring on L2');
+      logger.info('Declaring on L2');
       tx = await acc.declareIfNot(payload);
     }
     await provider.waitForTransaction(tx.transaction_hash, {
