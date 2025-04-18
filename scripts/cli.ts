@@ -36,7 +36,8 @@ import {
 import {
   Layer
 } from "./types.ts"
-
+import { finalRoles } from "./finalRoles.ts";
+import { transferRoles } from "./finalRoleTransfer.ts";
 const program = new Command();
 
 program
@@ -217,6 +218,9 @@ program
       process.env.ACCOUNT_L3_ADDRESS as string,
       "ERC20_OZ"
     );
+
+    logger.step(5, "Transferring roles...");
+    await transferRoles(acc_l2, acc_l3, finalRoles);
 
     logger.success("Full flow completed successfully!");
   });

@@ -45,7 +45,7 @@ async function changeRoleWithMethod(acc_l3: Account, contract: Contract, address
   }
 }
 
-async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles: FinalRoles) {
+export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles: FinalRoles) {
   logger.info('Starting role transfer process');
   logger.info('=== L2 Token Bridge Roles ===');
 
