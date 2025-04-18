@@ -121,12 +121,15 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
 
   const l2Roles_Appchain = finalRoles.l2.appchain;
   await changeRoleWithMethod(acc_l2, appchainContract_l2, l2Roles_Appchain.operators, "register_operator");
-  await changeRoleWithMethod(acc_l2, appchainContract_l2, l2Roles_Appchain.owner, "register_operator");
-  await changeRoleWithMethod(acc_l2, appchainContract_l2, l2Roles_Appchain.owner, "unregister_operator");
+  await changeRoleWithMethod(acc_l2, appchainContract_l2, acc_l2.address, "register_operator");
+  await changeRoleWithMethod(acc_l2, appchainContract_l2, acc_l2.address, "unregister_operator");
   {
+    logger.info("SUB-STEP 1: Transferring Appchain ownership to new owner");
     const call = appchainContract_l2.populate("transfer_ownership", [l2Roles_Appchain.owner]);
     let tx = await acc_l2.execute([call]);
+    logger.txHash(tx.transaction_hash);
     await acc_l2.waitForTransaction(tx.transaction_hash);
+    logger.success("Ownership transferred to new owner");
   }
 
 
