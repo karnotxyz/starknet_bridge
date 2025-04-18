@@ -5,7 +5,7 @@ import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
 import { Logger } from "./logger.ts";
 import { sepolia } from 'viem/chains'
-import { Layer, Contract, NewRoles } from './types'
+import { Layer, Contract, FinalRoles, L2TokenBridgeRoleIds, TimelockControllerRoleIds } from './types'
 
 export async function checkEnvVars() {
   console.log('===============================')
@@ -59,21 +59,6 @@ export function getContracts() {
     return JSON.parse(readFileSync(PATH, { encoding: 'utf-8' }))
   }
   return {}
-}
-
-export function getRoles(): NewRoles {
-  const path = "./scripts/finalRoles.json";
-  if (existsSync(path)) {
-    let roles = JSON.parse(readFileSync(path, { encoding: 'utf-8' }));
-    return {
-      tokenAdmin: roles.tokenAdmin,
-      securityAgent: roles.securityAgent,
-      appGovernor: roles.appGovernor,
-      securityAdmin: roles.securityAdmin,
-      governanceAdmin: roles.governanceAdmin,
-    }
-  }
-  throw new Error('Roles file not found');
 }
 
 // TODO: Incorporate the layer also
@@ -164,7 +149,7 @@ export async function declareContract(contract: Contract) {
   try {
     let tx: { transaction_hash: string; class_hash: string; };
     if (layer === Layer.L3) {
-      Logger.info('Declaring on L3')
+      Logger.getInstance().info('Declaring on L3');
       tx = await acc.declareIfNot(payload, {
         maxFee: 0,
         resourceBounds: {
@@ -179,7 +164,7 @@ export async function declareContract(contract: Contract) {
         }
       });
     } else {
-      Logger.info('Declaring on L2')
+      Logger.getInstance().info('Declaring on L2');
       tx = await acc.declareIfNot(payload);
     }
     await provider.waitForTransaction(tx.transaction_hash, {
