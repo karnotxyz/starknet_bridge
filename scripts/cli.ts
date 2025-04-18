@@ -1,9 +1,6 @@
 #!/usr/bin/env tsx
 import * as dotenv from "dotenv";
 // Load environment variables
-console.log(
-  process.env.CI || process.env.CI == "true" || process.env.GITHUB_ACTIONS
-);
 dotenv.config({
   path:
     process.env.CI || process.env.CI == "true" || process.env.GITHUB_ACTIONS
@@ -21,7 +18,7 @@ import {
   setDumpPath,
   sleep,
 } from "./utils.ts";
-import { Logger } from "./logger.ts";
+import { logger } from "./logger.ts";
 import {
   deployCoreContract,
   deployAppchainBridge,
@@ -51,7 +48,7 @@ program
 program.hook("preAction", (thisCommand, actionCommand) => {
   const options = program.opts();
   setDumpPath(options.dumpPath);
-  Logger.info(`Using dump path: ${dumpPath}`);
+  logger.info(`Using dump path: ${dumpPath}`);
 });
 
 await checkEnvVars();
@@ -171,8 +168,9 @@ program
 program
   .command("deploy-timelock")
   .description("Deploy the timelock contract to L2")
-  .action(async () => {
-    await deployTimelockContract();
+  .option("-d, --delay <delay>", "Delay in seconds", "86400")
+  .action(async (options) => {
+    await deployTimelockContract(Number(options.delay));
   });
 
 // Setup Command (Combined operations)
@@ -182,7 +180,7 @@ program
   .action(async () => {
     const acc_l3 = getAccount(Layer.L3);
     await declareAndSetERC20L3(acc_l3);
-    Logger.success("Setup completed!");
+    logger.success("Setup completed!");
   });
 
 // Full flow command
@@ -193,33 +191,34 @@ program
     const acc_l2 = getAccount(Layer.L2);
     const acc_l3 = getAccount(Layer.L3);
 
-    Logger.success("Starting full flow setup...");
+    logger.success("Starting full flow setup...");
 
     // Setup
-    Logger.step(1, "Setting up bridges...");
+    logger.step(1, "Setting up bridges...");
     await deployAppchainBridge();
-    await deployTimelockContract();
+    // Deploy timelock contract with 0 `min_delay` initially
+    await deployTimelockContract(0);
     await deployL2Bridge();
 
-    Logger.step(2, "Configuring the bridges...");
+    logger.step(2, "Configuring the bridges...");
     await configureAppchainBridge(acc_l3);
     await setL2Bridge(acc_l3);
     await declareAndSetERC20L3(acc_l3);
 
     // Deploy and enroll token
-    Logger.step(3, "Deploying and enrolling token...");
+    logger.step(3, "Deploying and enrolling token...");
     await deployERC20();
     await enrollToken(acc_l2, "ERC20_OZ");
 
     // Check the corresponding token and balance
-    Logger.step(4, "Check the corresponding token and balance on l3");
+    logger.step(4, "Check the corresponding token and balance on l3");
     await sleep(20000);
     await getL3Balance(
       process.env.ACCOUNT_L3_ADDRESS as string,
       "ERC20_OZ"
     );
 
-    Logger.success("Full flow completed successfully!");
+    logger.success("Full flow completed successfully!");
   });
 
 program.parse(process.argv);

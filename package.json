@@ -16,7 +16,8 @@
     "commander": "^13.1.0",
     "dotenv": "^16.4.7",
     "starknet": "^6.23.1",
-    "viem": "^2.23.9"
+    "viem": "^2.23.9",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.9",
