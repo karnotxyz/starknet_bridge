@@ -8,7 +8,7 @@ async function grantRoleRevokeSelf(acc_l2: Account, contract: Contract, role: L2
   if (Array.isArray(address)) {
     logger.info(`SUB-STEP 1: Granting role ${role} to multiple addresses`);
     logger.address("Target addresses", address.join(', '));
-    
+
     for (const addr of address) {
       const call = contract.populate("grant_role", [role, addr]);
       let tx = await acc_l2.execute([call]);
@@ -19,7 +19,7 @@ async function grantRoleRevokeSelf(acc_l2: Account, contract: Contract, role: L2
   } else {
     logger.info(`SUB-STEP 1: Granting role ${role} to address`);
     logger.address("Target address", address);
-    
+
     const call = contract.populate("grant_role", [role, address]);
     let tx = await acc_l2.execute([call]);
     await acc_l2.waitForTransaction(tx.transaction_hash);
@@ -29,7 +29,7 @@ async function grantRoleRevokeSelf(acc_l2: Account, contract: Contract, role: L2
 
   logger.info(`SUB-STEP 2: Revoking role ${role} from self`);
   logger.address("Self address", acc_l2.address);
-  
+
   const call = contract.populate("renounce_role", [role, acc_l2.address]);
   let tx = await acc_l2.execute([call]);
   await acc_l2.waitForTransaction(tx.transaction_hash);
@@ -41,7 +41,7 @@ async function changeRoleWithMethod(acc_l3: Account, contract: Contract, address
   if (Array.isArray(address)) {
     logger.info(`SUB-STEP 1: Executing ${method} for multiple addresses`);
     logger.address("Target addresses", address.join(', '));
-    
+
     for (const addr of address) {
       const call = contract.populate(method, [addr]);
       let tx = await acc_l3.execute([call]);
@@ -52,7 +52,7 @@ async function changeRoleWithMethod(acc_l3: Account, contract: Contract, address
   } else {
     logger.info(`SUB-STEP 1: Executing ${method} for address`);
     logger.address("Target address", address);
-    
+
     const call = contract.populate(method, [address]);
     let tx = await acc_l3.execute([call]);
     await acc_l3.waitForTransaction(tx.transaction_hash);
@@ -61,10 +61,7 @@ async function changeRoleWithMethod(acc_l3: Account, contract: Contract, address
   }
 }
 
-export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles: FinalRoles) {
-  logger.info('Starting role transfer process');
-  
-  // L2 Token Bridge
+export async function transferTokenBridgeL2Roles(acc_l2: Account, finalRoles: FinalRoles) {
   logger.info('ROLE TRANSFER STEP 1: Configuring L2 Token Bridge Roles');
   let tokenBridgeL2 = getContract(tokenBridgeL2Contract);
   if (!tokenBridgeL2.address) {
@@ -84,8 +81,9 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
   await grantRoleRevokeSelf(acc_l2, tokenBridgeContract_l2, L2TokenBridgeRoleIds.APP_GOVERNOR, l2Roles_TokenBridge.APP_GOVERNOR);
   await grantRoleRevokeSelf(acc_l2, tokenBridgeContract_l2, L2TokenBridgeRoleIds.SECURITY_ADMIN, l2Roles_TokenBridge.SECURITY_ADMIN);
   await grantRoleRevokeSelf(acc_l2, tokenBridgeContract_l2, L2TokenBridgeRoleIds.GOVERNANCE_ADMIN, l2Roles_TokenBridge.GOVERNANCE_ADMIN);
+}
 
-
+export async function transferTimelockL2Roles(acc_l2: Account, finalRoles: FinalRoles) {
   // L2 Timelock
   logger.info('ROLE TRANSFER STEP 2: Configuring L2 Timelock Controller Roles');
   let timelock = getContract(timelockContract);
@@ -105,7 +103,9 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
   await grantRoleRevokeSelf(acc_l2, timelockContract_l2, TimelockControllerRoleIds.CANCELLER_ROLE, l2Roles_TimelockController.CANCELLER_ROLE);
   await grantRoleRevokeSelf(acc_l2, timelockContract_l2, TimelockControllerRoleIds.DEFAULT_ADMIN, l2Roles_TimelockController[TimelockControllerRoleIds.DEFAULT_ADMIN]);
 
+}
 
+export async function transferAppchainL2Roles(acc_l2: Account, finalRoles: FinalRoles) {
   // L2 Appchain
   logger.info('ROLE TRANSFER STEP 3: Configuring L2 Appchain Roles');
   const appchain = getContract(appchainContract);
@@ -123,18 +123,18 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
   await changeRoleWithMethod(acc_l2, appchainContract_l2, l2Roles_Appchain.operators, "register_operator");
   await changeRoleWithMethod(acc_l2, appchainContract_l2, acc_l2.address, "register_operator");
   await changeRoleWithMethod(acc_l2, appchainContract_l2, acc_l2.address, "unregister_operator");
-  {
-    logger.info("SUB-STEP 1: Transferring Appchain ownership to new owner");
-    const call = appchainContract_l2.populate("transfer_ownership", [l2Roles_Appchain.owner]);
-    let tx = await acc_l2.execute([call]);
-    logger.txHash(tx.transaction_hash);
-    await acc_l2.waitForTransaction(tx.transaction_hash);
-    logger.success("Ownership transferred to new owner");
-  }
+  // TODO: Commented out because the method is not available in the contract(yet)
+  // {
+  //   logger.info("SUB-STEP 1: Transferring Appchain ownership to new owner");
+  //   const call = appchainContract_l2.populate("transfer_ownership", [l2Roles_Appchain.owner]);
+  //   let tx = await acc_l2.execute([call]);
+  //   logger.txHash(tx.transaction_hash);
+  //   await acc_l2.waitForTransaction(tx.transaction_hash);
+  //   logger.success("Ownership transferred to new owner");
+  // }
+}
 
-
-  // ========================== L3 ==========================
-
+export async function transferTokenBridgeL3Roles(acc_l3: Account, finalRoles: FinalRoles) {
   // L3 Token Bridge
   logger.info('ROLE TRANSFER STEP 4: Configuring L3 Token Bridge Roles');
   const l3_tokenBridge = getContract(tokenBridgeL3Contract);
@@ -170,6 +170,17 @@ export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles
   await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.SecurityAgent, "remove_security_agent");
   await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.SecurityAdmin, "remove_security_admin");
   await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.GovernanceAdmin, "remove_governance_admin");
+
+}
+
+export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles: FinalRoles) {
+  logger.info('Starting role transfer process');
+
+  await transferTokenBridgeL2Roles(acc_l2, finalRoles);
+  await transferTimelockL2Roles(acc_l2, finalRoles);
+  await transferAppchainL2Roles(acc_l2, finalRoles);
+
+  await transferTokenBridgeL3Roles(acc_l3, finalRoles);
 
   logger.success('Role transfer process completed successfully');
 }

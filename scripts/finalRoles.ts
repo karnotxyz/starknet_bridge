@@ -4,37 +4,37 @@ export const finalRoles: FinalRoles = {
     l2: {
         TokenBridge: {
             TOKEN_ADMIN: [
-                "0xabcdf"
+                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
             ],
             SECURITY_AGENT: [
-                "0xabcdf"
+                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
             ],
             APP_GOVERNOR: [
-                "0xabcdf"
+                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
             ],
             SECURITY_ADMIN: [
-                "0xabcdf"
+                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
             ],
             GOVERNANCE_ADMIN: [
-                "0xabcdf"
+                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
             ]
         },
         TimelockController_starknet_bridge: {
             PROPOSER_ROLE: [
-                "0xabcdf"
+                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
             ],
             EXECUTOR_ROLE: [
-                "0xabcdf"
+                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
             ],
             CANCELLER_ROLE: [
-                "0xabcdf"
+                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
             ],
-            [TimelockControllerRoleIds.DEFAULT_ADMIN]: "0xabcdf"
+            [TimelockControllerRoleIds.DEFAULT_ADMIN]: "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
         },
         appchain: {
-            owner: "0xabcdf",
+            owner: "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6",
             operators: [
-                "0xabcdf"
+                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
             ]
         }
     },

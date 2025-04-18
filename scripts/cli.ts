@@ -37,7 +37,7 @@ import {
   Layer
 } from "./types.ts"
 import { finalRoles } from "./finalRoles.ts";
-import { transferRoles } from "./finalRoleTransfer.ts";
+import { transferRoles, transferAppchainL2Roles, transferTimelockL2Roles, transferTokenBridgeL2Roles, transferTokenBridgeL3Roles } from "./finalRoleTransfer.ts";
 const program = new Command();
 
 program
@@ -182,6 +182,43 @@ program
     const acc_l3 = getAccount(Layer.L3);
     await declareAndSetERC20L3(acc_l3);
     logger.success("Setup completed!");
+  });
+
+
+program.command("transfer-roles")
+  .description("Transfer roles to the new owner")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    const acc_l3 = getAccount(Layer.L3);
+    await transferRoles(acc_l2, acc_l3, finalRoles);
+  });
+
+program.command("transfer-roles-token-bridge-l2")
+  .description("Transfer roles to the new owner")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await transferTokenBridgeL2Roles(acc_l2, finalRoles);
+  });
+
+program.command("transfer-roles-timelock-l2")
+  .description("Transfer roles to the new owner")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await transferTimelockL2Roles(acc_l2, finalRoles);
+  });
+
+program.command("transfer-roles-appchain-l2")
+  .description("Transfer roles to the new owner")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await transferAppchainL2Roles(acc_l2, finalRoles);
+  }); 
+
+program.command("transfer-roles-token-bridge-l3")
+  .description("Transfer roles to the new owner")
+  .action(async () => {
+    const acc_l3 = getAccount(Layer.L3);
+    await transferTokenBridgeL3Roles(acc_l3, finalRoles);
   });
 
 // Full flow command
