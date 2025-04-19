@@ -109,13 +109,13 @@ export function getAccount(layer: Layer): Account {
  */
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export async function declareContract(contract: Contract) {
+export async function declareContract(contract: Contract, skipIfPresentInDump: boolean = true) {
   // First, check if we already have the contract declared and get existing information
   getContract(contract);
 
   // If contract already has a class hash, it's already declared
-  if (contract.classHash) {
-    console.log(`Contract ${contract.name} already declared with class hash ${contract.classHash}`);
+  if (contract.classHash && skipIfPresentInDump) {
+    logger.info(`Contract ${contract.name} already present in dump with class hash ${contract.classHash}`);
     return { transaction_hash: '', class_hash: contract.classHash };
   }
 
@@ -134,15 +134,8 @@ export async function declareContract(contract: Contract) {
     contract: compiledSierra,
     casm: compiledCasm
   };
-  //
-  const fee = await acc.estimateDeclareFee({
-    contract: compiledSierra,
-    casm: compiledCasm,
-  })
-  console.log('declare fee', Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
-  const result = extractContractHashes(payload);
-  console.log("classhash:", result.classHash);
 
+  logger.info(`Declaring: ${contract.name}_${contract.package.name}`);
   try {
     let tx: { transaction_hash: string; class_hash: string; };
     if (layer === Layer.L3) {
@@ -164,11 +157,15 @@ export async function declareContract(contract: Contract) {
       logger.info('Declaring on L2');
       tx = await acc.declareIfNot(payload);
     }
-    await provider.waitForTransaction(tx.transaction_hash, {
-      successStates: [TransactionFinalityStatus.ACCEPTED_ON_L2]
-    })
 
-    console.log(`Declaring: ${contract.name}_${contract.package.name}, tx: `, tx.transaction_hash);
+    if (tx.transaction_hash !== '') {
+      await provider.waitForTransaction(tx.transaction_hash, {
+        successStates: [TransactionFinalityStatus.ACCEPTED_ON_L2]
+      })
+    } else {
+      logger.info(`Contract ${contract.name} already declared with class hash ${tx.class_hash}`);
+    }
+
     if (!contracts.class_hashes) {
       contracts['class_hashes'] = {};
     }
@@ -178,15 +175,16 @@ export async function declareContract(contract: Contract) {
     // Todo attach cairo and scarb version. and commit ID
     contracts.class_hashes[layer][`${contract.name}_${contract.package.name}`] = tx.class_hash;
     saveContracts(contracts);
-    console.log(`Contract declared: ${contract.name}_${contract.package.name}`);
-    console.log(`Class hash: ${tx.class_hash}`)
+    logger.info(`Contract declared: ${contract.name}_${contract.package.name}`);
+    logger.info(`Class hash: ${tx.class_hash}`)
 
     // Update contract with class hash
     contract.classHash = tx.class_hash;
 
     return tx;
   } catch (e) {
-    console.log(e);
+    logger.error(e);
+    throw e;
   }
 }
 
