@@ -1,10 +1,10 @@
-import { Account, Contract } from "starknet";
+import { Account, Contract, hash } from "starknet";
 import { logger } from "./utils/logger";
-import { appchainContract, tokenBridgeL2Contract } from "./config/constants";
+import { appchainContract, timelockContract, tokenBridgeL2Contract } from "./config/constants";
 import { ABI as AppchainABI } from "./abis/starknet_bridge_appchain";
 import { declareContract, getContract } from "./utils/utils";
 import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge";
-
+import { ABI as TimelockABI } from "./abis/starknet_bridge_TimelockController";
 
 export async function upgradeAppchain(acc_l2: Account) {
     const appchain = getContract(appchainContract);
@@ -39,6 +39,13 @@ export async function upgradeTokenBridgeL2(acc_l2: Account) {
         throw new Error(error);
     }
 
+    const timelock = getContract(timelockContract);
+    if (!timelock.address) {
+        const error = "Timelock contract address not found";
+        logger.error(error);
+        throw new Error(error);
+    }
+   
     await declareContract(tokenBridgeL2Contract, false);
 
     const tokenBridge_new = getContract(tokenBridgeL2Contract);
@@ -48,10 +55,35 @@ export async function upgradeTokenBridgeL2(acc_l2: Account) {
         throw new Error(error);
     }
 
-    const tokenBridge_l2 = new Contract(TokenBridgeL2ABI, tokenBridge.address, acc_l2).typedv2(TokenBridgeL2ABI);
-    const tx = await tokenBridge_l2.upgrade(tokenBridge_new.classHash);
+    
+    const timelock_l2Contract = new Contract(TimelockABI, timelock.address, acc_l2).typedv2(TimelockABI);
+    const minDelay = await timelock_l2Contract.get_min_delay();
+    const proposalTx = await timelock_l2Contract.schedule(
+        { 
+            to: tokenBridge.address, 
+            selector: hash.getSelectorFromName("upgrade"),
+            calldata: [tokenBridge_new.classHash]
+        }, 
+        0, 
+        0, 
+        minDelay
+    );
 
-    await acc_l2.waitForTransaction(tx.transaction_hash);
-    logger.txHash(tx.transaction_hash);
+    await acc_l2.waitForTransaction(proposalTx.transaction_hash);
+    logger.txHash(proposalTx.transaction_hash);
+    logger.success("Scheduled token bridge upgrade on timelock");
+
+    const executeTx = await timelock_l2Contract.execute(
+        {
+            to: tokenBridge.address,
+            selector: hash.getSelectorFromName("upgrade"),
+            calldata: [tokenBridge_new.classHash]
+        },
+        0, 0 
+    );
+    await acc_l2.waitForTransaction(executeTx.transaction_hash);
+    logger.txHash(executeTx.transaction_hash);
+    logger.success("Executed token bridge upgrade on timelock");
+    
     logger.success("Upgraded token bridge on l2");
 }
