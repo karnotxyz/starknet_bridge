@@ -38,7 +38,7 @@ import {
 } from "./config/types.ts"
 import { finalRoles } from "./config/finalRoles.ts";
 import { transferRoles, transferAppchainL2Roles, transferTimelockL2Roles, transferTokenBridgeL2Roles, transferTokenBridgeL3Roles } from "./finalRoleTransfer.ts";
-import { upgradeAppchain } from "./upgrades.ts";
+import { upgradeAppchain, upgradeTokenBridgeL2 } from "./upgrades.ts";
 const program = new Command();
 
 program
@@ -229,6 +229,13 @@ program.command("upgrade-appchain")
     await upgradeAppchain(acc_l2);
   });
 
+program.command("upgrade-token-bridge-l2")
+  .description("Upgrade the token bridge on L2")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await upgradeTokenBridgeL2(acc_l2);
+  });
+
 // Full flow command
 program
   .command("full-flow")
@@ -264,8 +271,9 @@ program
       "ERC20_OZ"
     );
 
-    logger.info("MAIN STEP 5: Upgrading appchain...");
+    logger.info("MAIN STEP 5: Upgrading contracts...");
     await upgradeAppchain(acc_l2);
+    await upgradeTokenBridgeL2(acc_l2);
 
     logger.info("MAIN STEP 6: Transferring roles...");
     await transferRoles(acc_l2, acc_l3, finalRoles);
