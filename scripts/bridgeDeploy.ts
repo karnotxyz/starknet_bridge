@@ -6,10 +6,10 @@ import {
   getAccount,
   getContract,
   setDumpPath
-} from "./utils";
-import { Layer, Contract, Package } from "./types";
+} from "./utils/utils";
+import { Layer, Contract, Package } from "./config/types";
 import { Account, byteArray, Contract as StarknetContract, num } from "starknet";
-import { logger } from "./logger";
+import { logger } from "./utils/logger";
 import {
   appchainContract,
   tokenBridgeL2Contract,
@@ -18,7 +18,7 @@ import {
   erc20Contract,
   erc20L3Contract,
   starknetBridgePackage,
-} from "./constants";
+} from "./config/constants";
 
 
 /**

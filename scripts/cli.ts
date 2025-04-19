@@ -17,8 +17,8 @@ import {
   getEthereumClient,
   setDumpPath,
   sleep,
-} from "./utils.ts";
-import { logger } from "./logger.ts";
+} from "./utils/utils.ts";
+import { logger } from "./utils/logger.ts";
 import {
   deployCoreContract,
   deployAppchainBridge,
@@ -35,9 +35,10 @@ import {
 } from "./bridgeDeploy.ts";
 import {
   Layer
-} from "./types.ts"
-import { finalRoles } from "./finalRoles.ts";
+} from "./config/types.ts"
+import { finalRoles } from "./config/finalRoles.ts";
 import { transferRoles, transferAppchainL2Roles, transferTimelockL2Roles, transferTokenBridgeL2Roles, transferTokenBridgeL3Roles } from "./finalRoleTransfer.ts";
+import { upgradeAppchain } from "./upgrades.ts";
 const program = new Command();
 
 program
@@ -221,6 +222,13 @@ program.command("transfer-roles-token-bridge-l3")
     await transferTokenBridgeL3Roles(acc_l3, finalRoles);
   });
 
+program.command("upgrade-appchain")
+  .description("Upgrade the appchain")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await upgradeAppchain(acc_l2);
+  });
+
 // Full flow command
 program
   .command("full-flow")
@@ -256,7 +264,10 @@ program
       "ERC20_OZ"
     );
 
-    logger.info("MAIN STEP 5: Transferring roles...");
+    logger.info("MAIN STEP 5: Upgrading appchain...");
+    await upgradeAppchain(acc_l2);
+
+    logger.info("MAIN STEP 6: Transferring roles...");
     await transferRoles(acc_l2, acc_l3, finalRoles);
 
     logger.success("Full flow completed successfully!");

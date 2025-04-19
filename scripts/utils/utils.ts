@@ -3,9 +3,9 @@ import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContra
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
-import { Logger, logger } from "./logger.ts";
+import { logger } from "./logger.ts";
 import { sepolia } from 'viem/chains'
-import { Layer, Contract, FinalRoles, L2TokenBridgeRoleIds, TimelockControllerRoleIds } from './types'
+import { Layer, Contract } from '../config/types.ts'
 
 export async function checkEnvVars() {
   console.log('===============================')
@@ -52,7 +52,6 @@ export function getContract(contract: Contract): Contract {
   return contract;
 }
 
-// Legacy function for backward compatibility
 export function getContracts() {
   const PATH = dumpPath;
   if (existsSync(PATH)) {
@@ -61,8 +60,6 @@ export function getContracts() {
   return {}
 }
 
-// TODO: Incorporate the layer also
-// TODO: Add layer as a param
 function saveContracts(contracts: any) {
   const PATH = dumpPath;
   writeFileSync(PATH, JSON.stringify(contracts));

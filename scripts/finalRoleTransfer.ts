@@ -1,8 +1,8 @@
 import { Account, Contract } from "starknet";
-import { getContract } from "./utils";
-import { logger } from "./logger";
-import { appchainContract, timelockContract, tokenBridgeL2Contract, tokenBridgeL3Contract } from "./constants";
-import { FinalRoles, L2TokenBridgeRoleIds, TimelockControllerRoleIds } from "./types";
+import { getContract } from "./utils/utils";
+import { logger } from "./utils/logger";
+import { appchainContract, timelockContract, tokenBridgeL2Contract, tokenBridgeL3Contract } from "./config/constants";
+import { FinalRoles, L2TokenBridgeRoleIds, TimelockControllerRoleIds } from "./config/types";
 
 async function grantRoleRevokeSelf(acc_l2: Account, contract: Contract, role: L2TokenBridgeRoleIds | TimelockControllerRoleIds, address: string[] | string) {
   if (Array.isArray(address)) {
@@ -123,15 +123,14 @@ export async function transferAppchainL2Roles(acc_l2: Account, finalRoles: Final
   await changeRoleWithMethod(acc_l2, appchainContract_l2, l2Roles_Appchain.operators, "register_operator");
   await changeRoleWithMethod(acc_l2, appchainContract_l2, acc_l2.address, "register_operator");
   await changeRoleWithMethod(acc_l2, appchainContract_l2, acc_l2.address, "unregister_operator");
-  // TODO: Commented out because the method is not available in the contract(yet)
-  // {
-  //   logger.info("SUB-STEP 1: Transferring Appchain ownership to new owner");
-  //   const call = appchainContract_l2.populate("transfer_ownership", [l2Roles_Appchain.owner]);
-  //   let tx = await acc_l2.execute([call]);
-  //   logger.txHash(tx.transaction_hash);
-  //   await acc_l2.waitForTransaction(tx.transaction_hash);
-  //   logger.success("Ownership transferred to new owner");
-  // }
+  {
+    logger.info("SUB-STEP 1: Transferring Appchain ownership to new owner");
+    const call = appchainContract_l2.populate("transfer_ownership", [l2Roles_Appchain.owner]);
+    let tx = await acc_l2.execute([call]);
+    logger.txHash(tx.transaction_hash);
+    await acc_l2.waitForTransaction(tx.transaction_hash);
+    logger.success("Ownership transferred to new owner");
+  }
 }
 
 export async function transferTokenBridgeL3Roles(acc_l3: Account, finalRoles: FinalRoles) {
@@ -176,10 +175,10 @@ export async function transferTokenBridgeL3Roles(acc_l3: Account, finalRoles: Fi
 export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles: FinalRoles) {
   logger.info('Starting role transfer process');
 
+  // Execute each role transfer function sequentially
   await transferTokenBridgeL2Roles(acc_l2, finalRoles);
   await transferTimelockL2Roles(acc_l2, finalRoles);
   await transferAppchainL2Roles(acc_l2, finalRoles);
-
   await transferTokenBridgeL3Roles(acc_l3, finalRoles);
 
   logger.success('Role transfer process completed successfully');
