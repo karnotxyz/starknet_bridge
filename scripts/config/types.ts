@@ -16,6 +16,13 @@ export interface Contract {
   address?: string;
 }
 
+export enum TokenStatus {
+  Unknown = 0,
+  Pending = 1,
+  Active = 2,
+  Blocked = 3,
+  Deactivated = 4
+}
 
 /// ======================== All Roles =========================
 

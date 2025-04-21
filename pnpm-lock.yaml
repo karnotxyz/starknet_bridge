@@ -18,8 +18,8 @@ importers:
         specifier: ^16.4.7
         version: 16.4.7
       starknet:
-        specifier: ^6.23.1
-        version: 6.23.1
+        specifier: ^6.24.1
+        version: 6.24.1
       viem:
         specifier: ^2.23.9
         version: 2.23.9(typescript@5.8.2)
@@ -296,8 +296,8 @@ packages:
   stack-trace@0.0.10:
     resolution: {integrity: sha512-KGzahc7puUKkzyMt+IqAep+TVNbKP+k2Lmwhub39m1AsTSkaDutx56aDCo+HLDzf/D26BIHTJWNiTG1KAJiQCg==}
 
-  starknet@6.23.1:
-    resolution: {integrity: sha512-vQV9luXpmwZZs9RVZaRwm2iD8T0PYx1AzgZeQsCvD89tR0HwUF0paty27ZzuJrdPe0CmAs/ipAYFCE55jbj0RQ==}
+  starknet@6.24.1:
+    resolution: {integrity: sha512-g7tiCt73berhcNi41otlN3T3kxZnIvZhMi8WdC21Y6GC6zoQgbI2z1t7JAZF9c4xZiomlanwVnurcpyfEdyMpg==}
 
   string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
@@ -646,7 +646,7 @@ snapshots:
 
   stack-trace@0.0.10: {}
 
-  starknet@6.23.1:
+  starknet@6.24.1:
     dependencies:
       '@noble/curves': 1.7.0
       '@noble/hashes': 1.6.0

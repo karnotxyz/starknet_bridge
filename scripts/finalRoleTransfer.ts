@@ -1,8 +1,9 @@
-import { Account, Contract } from "starknet";
-import { getContract } from "./utils/utils";
+import { Account, Contract, num } from "starknet";
+import { getContract, standardiseAddress } from "./utils/utils";
 import { logger } from "./utils/logger";
 import { appchainContract, timelockContract, tokenBridgeL2Contract, tokenBridgeL3Contract } from "./config/constants";
 import { FinalRoles, L2TokenBridgeRoleIds, TimelockControllerRoleIds } from "./config/types";
+import { ABI as AppchainAbi } from "./abis/starknet_bridge_appchain";
 
 async function grantRoleRevokeSelf(acc_l2: Account, contract: Contract, role: L2TokenBridgeRoleIds | TimelockControllerRoleIds, address: string[] | string) {
   if (Array.isArray(address)) {
@@ -61,6 +62,36 @@ async function changeRoleWithMethod(acc_l3: Account, contract: Contract, address
   }
 }
 
+async function registerOperator(acc_l2: Account, appchain_address: string, operators: string[] | string) {
+  let appchainContract_l2 = new Contract(AppchainAbi, appchain_address, acc_l2).typedv2(AppchainAbi);
+  let currentOwner = standardiseAddress(await appchainContract_l2.owner());
+  if (Array.isArray(operators)) {
+    for (const operator of operators) {
+      const isRegistered = await appchainContract_l2.is_operator(operator);
+      if (isRegistered) continue; // Skip if operator is already registered
+      if (standardiseAddress(acc_l2.address) === currentOwner) {
+        await changeRoleWithMethod(acc_l2, appchainContract_l2, operator, "register_operator");
+      } else {
+        const error = `Cannot register operator ${operator} because current owner is ${currentOwner} and not ${acc_l2.address} from .env`;
+        logger.error(error);
+        throw new Error(error);
+      }
+    }
+  } else {
+    const isRegistered = await appchainContract_l2.is_operator(operators);
+    if (!isRegistered) {
+      if (currentOwner === acc_l2.address) {
+        await changeRoleWithMethod(acc_l2, appchainContract_l2, operators, "register_operator");
+      } else {
+        const error = `Cannot register operator ${operators} because current owner is ${currentOwner} and not ${acc_l2.address} from .env`;
+        logger.error(error);
+        throw new Error(error);
+      }
+    }
+  }
+}
+
+
 export async function transferTokenBridgeL2Roles(acc_l2: Account, finalRoles: FinalRoles) {
   logger.info('ROLE TRANSFER STEP 1: Configuring L2 Token Bridge Roles');
   let tokenBridgeL2 = getContract(tokenBridgeL2Contract);
@@ -116,19 +147,31 @@ export async function transferAppchainL2Roles(acc_l2: Account, finalRoles: Final
   }
   logger.address("Appchain contract", appchain.address);
 
-  let appchainCls = await acc_l2.getClassAt(appchain.address);
-  let appchainContract_l2 = new Contract(appchainCls.abi, appchain.address, acc_l2);
+  let appchainContract_l2 = new Contract(AppchainAbi, appchain.address, acc_l2).typedv2(AppchainAbi);
+  const l2Roles_Appchain = finalRoles.l2.appchain
 
-  const l2Roles_Appchain = finalRoles.l2.appchain;
-  await changeRoleWithMethod(acc_l2, appchainContract_l2, l2Roles_Appchain.operators, "register_operator");
-  await changeRoleWithMethod(acc_l2, appchainContract_l2, acc_l2.address, "register_operator");
-  await changeRoleWithMethod(acc_l2, appchainContract_l2, acc_l2.address, "unregister_operator");
+  // Register operators
+  await registerOperator(acc_l2, appchain.address, l2Roles_Appchain.operators);
+
+  // Unregister current owner as operator if it is registered
+  const isRegistered = await appchainContract_l2.is_operator(acc_l2.address);
+  if (isRegistered) {
+    const currentOwner = standardiseAddress(await appchainContract_l2.owner());
+    if (standardiseAddress(acc_l2.address) === currentOwner) {
+      await changeRoleWithMethod(acc_l2, appchainContract_l2, acc_l2.address, "unregister_operator");
+    } else {
+      const error = `Cannot unregister operator ${acc_l2.address} because current owner is ${l2Roles_Appchain.owner} and not ${acc_l2.address} from .env`;
+      logger.error(error);
+      throw new Error(error);
+    }
+  }
+
+  // Transfer ownership
   {
     logger.info("SUB-STEP 1: Transferring Appchain ownership to new owner");
-    const call = appchainContract_l2.populate("transfer_ownership", [l2Roles_Appchain.owner]);
-    let tx = await acc_l2.execute([call]);
+    const tx = await appchainContract_l2.transfer_ownership(l2Roles_Appchain.owner);
     logger.txHash(tx.transaction_hash);
-    await acc_l2.waitForTransaction(tx.transaction_hash);
+    let receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
     logger.success("Ownership transferred to new owner");
   }
 }

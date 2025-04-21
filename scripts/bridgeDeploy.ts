@@ -19,6 +19,7 @@ import {
   erc20L3Contract,
   starknetBridgePackage,
 } from "./config/constants";
+import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge";
 
 
 /**
@@ -271,19 +272,23 @@ export async function setL2Bridge(acc_l3: Account) {
 /**
  * Deploy an ERC20 token on L2
  */
-export async function deployERC20() {
+export async function deployERC20(
+  name: string = "My token name",
+  symbol: string = "MTK",
+  decimals: number = 18
+) {
   await declareContract(erc20Contract);
   logger.success("ERC20 declared!");
 
   await deployContract(
     erc20Contract,
     [
-      byteArray.byteArrayFromString("My token name"), // name
-      byteArray.byteArrayFromString("MTK"), // symbol
-      18, // decimals
+      byteArray.byteArrayFromString(name), // name
+      byteArray.byteArrayFromString(symbol), // symbol
+      decimals, // decimals
       10000n * 10n ** 18n, // initial_supply
       0,
-      process.env.ACCOUNT_L2_ADDRESS as string, // initia_recepient
+      process.env.ACCOUNT_L2_ADDRESS as string, // initial_recepient
       process.env.ACCOUNT_L2_ADDRESS as string, // l2_token_governance
       process.env.ACCOUNT_L2_ADDRESS as string, // permitted_minter
       0, // upgrade delay
@@ -433,20 +438,18 @@ export async function deposit(
 
   // Deposit
   {
-    const Bridgecls = await acc_l2.getClassAt(tokenBridge);
     const tokenBridgeContract = new StarknetContract(
-      Bridgecls.abi,
+      TokenBridgeL2ABI,
       tokenBridge,
       acc_l2
-    );
+    ).typedv2(TokenBridgeL2ABI);
 
-    const call = tokenBridgeContract.populate("deposit", {
+    const result = await tokenBridgeContract.deposit({
       token: tokenAddress,
       amount,
       appchain_recipient: process.env.ACCOUNT_L3_ADDRESS as string,
       message: 0,
     });
-    let result = await acc_l2.execute([call]);
 
     await acc_l2.waitForTransaction(result.transaction_hash);
     logger.success("Deposit success!");

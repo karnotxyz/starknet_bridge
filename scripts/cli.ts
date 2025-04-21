@@ -36,9 +36,10 @@ import {
 import {
   Layer
 } from "./config/types.ts"
-import { finalRoles } from "./config/finalRoles.ts";
+import { finalRoles } from "./config/newRoles.ts";
 import { transferRoles, transferAppchainL2Roles, transferTimelockL2Roles, transferTokenBridgeL2Roles, transferTokenBridgeL3Roles } from "./finalRoleTransfer.ts";
 import { upgradeAppchain, upgradeTokenBridgeL2 } from "./upgrades.ts";
+import { testTokenActions } from "./tokenActions.ts";
 const program = new Command();
 
 program
@@ -102,8 +103,15 @@ program
 program
   .command("deploy-erc20")
   .description("Deploy an ERC20 token to L2")
-  .action(async () => {
-    await deployERC20();
+  .option("-n, --name <name>", "Token name", "My token name")
+  .option("-s, --symbol <symbol>", "Token symbol", "MTK")
+  .option("-d, --decimals <decimals>", "Number of decimals", "18")
+  .action(async (options) => {
+    await deployERC20(
+      options.name,
+      options.symbol,
+      parseInt(options.decimals, 10)
+    );
   });
 
 // Declare And Set ERC20 L3 Command
@@ -236,6 +244,14 @@ program.command("upgrade-token-bridge-l2")
     await upgradeTokenBridgeL2(acc_l2);
   });
 
+program.command("token-actions")
+  .description("Perform actions on a token")
+  .option("-t, --token <token>", "Token name", "ERC20_OZ")
+  .action(async (options) => {
+    const acc_l2 = getAccount(Layer.L2);
+    await testTokenActions(acc_l2, options.token);
+  });
+
 // Full flow command
 program
   .command("full-flow")
@@ -270,13 +286,6 @@ program
       process.env.ACCOUNT_L3_ADDRESS as string,
       "ERC20_OZ"
     );
-
-    logger.info("MAIN STEP 5: Upgrading contracts...");
-    await upgradeAppchain(acc_l2);
-    await upgradeTokenBridgeL2(acc_l2);
-
-    logger.info("MAIN STEP 6: Transferring roles...");
-    await transferRoles(acc_l2, acc_l3, finalRoles);
 
     logger.success("Full flow completed successfully!");
   });

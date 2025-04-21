@@ -140,3 +140,10 @@ jobs:
 
       - name: Run Bridge Deployment Script
         run: tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
+
+      - name: Run Token Actions
+        run: |
+          tsx ./scripts/cli.ts --dump-path=./contracts.json token-actions --token=ERC20_OZ
+
+      - name: Run Role Transfer Script
+        run: tsx ./scripts/cli.ts --dump-path=./contracts.json transfer-roles

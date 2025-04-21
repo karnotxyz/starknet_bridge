@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContractHashes, hash, json, provider } from 'starknet'
+import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContractHashes, hash, json, num, provider } from 'starknet'
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
@@ -92,14 +92,24 @@ export function getAccount(layer: Layer): Account {
   if (layer == Layer.L2) {
     const privateKey = process.env.ACCOUNT_L2_PRIVATE_KEY as string;
     const accountAddress: string = process.env.ACCOUNT_L2_ADDRESS as string;
-    return new Account(provider, accountAddress, privateKey, undefined, "0x3");
+    return new Account(provider, accountAddress, privateKey, '1');
   } else if (layer == Layer.L3) {
     const privateKey = process.env.ACCOUNT_L3_PRIVATE_KEY as string;
     const accountAddress: string = process.env.ACCOUNT_L3_ADDRESS as string;
-    return new Account(provider, accountAddress, privateKey, undefined, "0x3");
+    return new Account(provider, accountAddress, privateKey, '1', "0x3");
   } else {
     throw new Error('Invalid layer');
   }
+}
+
+
+export function standardiseAddress(address: string | bigint) {
+  let _a = address;
+  if (!address) {
+    _a = "0";
+  }
+  const a = num.getHexString(num.getDecimalString(_a.toString()));
+  return a;
 }
 
 /**

@@ -4,7 +4,7 @@ export const finalRoles: FinalRoles = {
     l2: {
         TokenBridge: {
             TOKEN_ADMIN: [
-                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
+            "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
             ],
             SECURITY_AGENT: [
                 "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
@@ -32,9 +32,9 @@ export const finalRoles: FinalRoles = {
             [TimelockControllerRoleIds.DEFAULT_ADMIN]: "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
         },
         appchain: {
-            owner: "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6",
+            owner: "0x06dBC7e4e075aD5c5F9aCa6fAa7765A06541e20C862Be997b8E8AA3C8C53FD57",
             operators: [
-                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
+                "0x06dBC7e4e075aD5c5F9aCa6fAa7765A06541e20C862Be997b8E8AA3C8C53FD57"
             ]
         }
     },
