@@ -85,6 +85,20 @@ The following functions are publicly accessible without requiring any specific r
 - `get_identity` - Gets the contract identity
 - `get_version` - Gets the contract version
 
+## Token Status Flow
+The token bridge implements a state machine for token status management. The following diagram illustrates how token status can change:
+
+![Token Status Flow](./docs/TokenStatusFlow.svg)
+
+Token status transitions:
+- **Unknown → Pending**: When a token enrollment is initiated
+- **Pending → Active**: When a token is successfully enrolled and activated in the bridge
+- **Active → Deactivated**: When a token is deactivated by the TOKEN_ADMIN
+- **Deactivated → Active**: When a token is reactivated by the TOKEN_ADMIN
+- **Unknown → Blocked**: When a token is blocked by the TOKEN_ADMIN
+- **Blocked → Unknown**: When a token is unblocked by the TOKEN_ADMIN
+
+
 ## Build
 To build the project, run: 
 ```shell
