@@ -86,8 +86,8 @@ jobs:
         run: |
           cd starkgate-contracts 
           git checkout dev-2.9.2
-          ./scripts/setup.sh && \
-          ./scripts/build-cairo.sh 
+          cd .. 
+          bash ./scripts/shell/build.sh
 
       - name: Build bridge contracts
         run: scarb build
