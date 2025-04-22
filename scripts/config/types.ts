@@ -17,11 +17,11 @@ export interface Contract {
 }
 
 export enum TokenStatus {
-  Unknown,
-  Pending,
-  Active,
-  Blocked,
-  Deactivated
+  Unknown = "Unknown",
+  Pending = "Pending",
+  Active = "Active",
+  Blocked = "Blocked",
+  Deactivated = "Deactivated"
 }
 
 /// ======================== All Roles =========================
