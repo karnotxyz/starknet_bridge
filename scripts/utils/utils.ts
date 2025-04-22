@@ -92,7 +92,7 @@ export function getAccount(layer: Layer): Account {
   if (layer == Layer.L2) {
     const privateKey = process.env.ACCOUNT_L2_PRIVATE_KEY as string;
     const accountAddress: string = process.env.ACCOUNT_L2_ADDRESS as string;
-    return new Account(provider, accountAddress, privateKey, '1');
+    return new Account(provider, accountAddress, privateKey, '1', "0x3");
   } else if (layer == Layer.L3) {
     const privateKey = process.env.ACCOUNT_L3_PRIVATE_KEY as string;
     const accountAddress: string = process.env.ACCOUNT_L3_ADDRESS as string;

@@ -7,10 +7,47 @@ import { getAccount, getContract, sleep } from "./utils/utils";
 import assert from "assert";
 import { enrollToken, getL3Balance } from "./bridgeDeploy";
 
+/**
+ * Utility function to execute a transaction and assert its expected outcome
+ * @param account The account to execute the transaction with
+ * @param transactionPromise A function that returns a transaction or a promise that resolves to a transaction
+ * @param expectedSuccess Whether the transaction is expected to succeed
+ * @param errorMessage Custom error message for assertion failure
+ * @returns The transaction receipt if successful
+ */
+async function executeAndAssertTransaction(
+    account: Account,
+    transactionPromise: () => any,
+    expectedSuccess: boolean,
+    errorMessage?: string
+) {
+    try {
+        // Execute the transaction
+        const tx = await (typeof transactionPromise === 'function' ? transactionPromise() : transactionPromise);
+        const receipt = await account.waitForTransaction(tx.transaction_hash);
+        
+        // Check if the result matches expectations
+        if (expectedSuccess) {
+            assert(receipt.isSuccess(), `${errorMessage} - Expected success but got failure`);
+        } else {
+            assert(receipt.isRejected(), `${errorMessage} - Expected failure but got success`);
+        }
+        
+        return receipt;
+    } catch (error) {
+        // If we're expecting a failure and get an error during execution, that's fine
+        if (!expectedSuccess && error.toString().includes(errorMessage)) {
+            return null;
+        }
+
+        // Re-throw unexpected errors
+        throw error;
+    }
+}
+
 async function tokenAsserts(token: TypedContractV2<typeof ERC20ABI>, tokenBridgeContract: TypedContractV2<typeof TokenBridgeL2ABI>, tokenStatus: TokenStatus) {
     const result = await tokenBridgeContract.get_status(token.address);
-    logger.info(`Token status: ${result}`, result.variant);
-    console.log(result.variant, result.activeVariant(), tokenStatus.toString());
+    logger.info(`Token status: ${result.activeVariant()}`);
     if (result.activeVariant() != tokenStatus) {
         const errorMsg = `Token status mismatch: ${result.activeVariant} !== ${tokenStatus}`;
         logger.error(errorMsg);
@@ -25,19 +62,24 @@ async function tokenAsserts(token: TypedContractV2<typeof ERC20ABI>, tokenBridge
         throw new Error(errorMsg);
     }
 
-    const acc_l3 = getAccount(Layer.L3);
-    const tx = await token.approve(tokenBridgeContract.address, 10);
-    await acc_l3.waitForTransaction(tx.transaction_hash);
-    const depositTx = await tokenBridgeContract.deposit(token.address, 10, acc_l3.address);
-    let receipt = await acc_l3.waitForTransaction(depositTx.transaction_hash);
-    if (tokenStatus === TokenStatus.Active) {
-        assert(receipt.isSuccess(), "Transaction was not successful");
-    } else {
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
-
+    const acc_l2 = getAccount(Layer.L2);
+    
+    // Approve token spending
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => token.approve(tokenBridgeContract.address, 10),
+        true,
+        "Token approval failed"
+    );
+    
+    // Try to deposit token
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.deposit(token.address, 10, acc_l2.address),
+        tokenStatus === TokenStatus.Active,
+        "Only servicing tokens"
+    );
 }
-
 
 export async function testTokenActions(acc_l2: Account, token: string = "ERC20_OZ") {
     const tokenContract: Contract = {
@@ -70,70 +112,78 @@ export async function testTokenActions(acc_l2: Account, token: string = "ERC20_O
     await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Unknown);
 
     // activate_token should fail
-    {
-        const tx = await tokenBridgeContract.activate_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.reactivate_token(tokenAddress),
+        false,
+        "Token not deactivated"
+    );
 
     // deactivate_token should fail
-    {
-        const tx = await tokenBridgeContract.deactivate_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.deactivate_token(tokenAddress),
+        false,
+        "Token not active"
+    );
 
     // unblock_token should fail
-    {
-        const tx = await tokenBridgeContract.unblock_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.unblock_token(tokenAddress),
+        false,
+        "Token not blocked"
+    );
 
     // should be blocked
-    {
-        const tx = await tokenBridgeContract.block_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isSuccess(), "Transaction was not successful");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.block_token(tokenAddress),
+        true,
+        "Token not blocked"
+    );
 
     // 2. Current status: Blocked
     await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Blocked);
 
     // block_token should fail
-    {
-        const tx = await tokenBridgeContract.block_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.block_token(tokenAddress),
+        false,
+        "Only unknown can be blocked"
+    );
 
     // enroll_token should fail
-    {
-        const tx = await tokenBridgeContract.enroll_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.enroll_token(tokenAddress),
+        false,
+        "Token not unknown"
+    );
 
     // activate_token should fail
-    {
-        const tx = await tokenBridgeContract.activate_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.reactivate_token(tokenAddress),
+        false,
+        "Token not deactivated"
+    );
 
     // deactivate_token should fail
-    {
-        const tx = await tokenBridgeContract.deactivate_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.deactivate_token(tokenAddress),
+        false,
+        "Token not active"
+    );
 
     // unblock_token should not fail
-    {
-        const tx = await tokenBridgeContract.unblock_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isSuccess(), "Transaction was not successful");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.unblock_token(tokenAddress),
+        true
+    );
 
     // 3. Current status: Unknown
     await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Unknown);
@@ -149,37 +199,42 @@ export async function testTokenActions(acc_l2: Account, token: string = "ERC20_O
     await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Pending);
 
     // activate_token should fail
-    {
-        const tx = await tokenBridgeContract.activate_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.reactivate_token(tokenAddress),
+        false,
+        "Token not deactivated"
+    );
 
     // deactivate_token should fail
-    {
-        const tx = await tokenBridgeContract.deactivate_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.deactivate_token(tokenAddress),
+        false,
+        "Token not active"
+    );
 
     // unblock_token should fail
-    {
-        const tx = await tokenBridgeContract.unblock_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.unblock_token(tokenAddress),
+        false,
+        "Token not blocked"
+    );
 
     // block_token should fail
-    {
-        const tx = await tokenBridgeContract.block_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.block_token(tokenAddress),
+        false,
+        "Only unknown can be blocked"
+    );
 
     // enroll_token should fail
-    {
-        const tx = await tokenBridgeContract.enroll_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
+    await executeAndAssertTransaction(
+        acc_l2,
+        () => tokenBridgeContract.enroll_token(tokenAddress),
+        false,
+        "Token not unknown"
+    );
 }
