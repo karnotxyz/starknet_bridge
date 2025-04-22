@@ -1,4 +1,4 @@
-import { Account, logger, Contract as StarknetContract, TypedContractV2 } from "starknet";
+import { Account, logger, CairoEnum,  Contract as StarknetContract, TypedContractV2 } from "starknet";
 import { Layer, Contract, TokenStatus } from "./config/types";
 import { starknetBridgePackage, tokenBridgeL2Contract } from "./config/constants";
 import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge";
@@ -8,9 +8,10 @@ import assert from "assert";
 
 async function tokenAsserts(token: TypedContractV2<typeof ERC20ABI>, tokenBridgeContract: TypedContractV2<typeof TokenBridgeL2ABI>, tokenStatus: TokenStatus) {
     const result = await tokenBridgeContract.get_status(token.address);
-    logger.info(`Token status: ${result}`);
-    if (Number(result) !== tokenStatus) {
-        const errorMsg = `Token status mismatch: ${result} !== ${tokenStatus}`;
+    logger.info(`Token status: ${result}`, result.variant);
+    console.log(result.variant, result.activeVariant(), tokenStatus.toString());
+    if (result.activeVariant() !== tokenStatus.toString()) {
+        const errorMsg = `Token status mismatch: ${result.activeVariant} !== ${tokenStatus}`;
         logger.error(errorMsg);
         throw new Error(errorMsg);
     }
