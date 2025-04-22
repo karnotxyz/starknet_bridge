@@ -103,8 +103,8 @@ program
 program
   .command("deploy-erc20")
   .description("Deploy an ERC20 token to L2")
-  .option("-n, --name <name>", "Token name", "My token name")
-  .option("-s, --symbol <symbol>", "Token symbol", "MTK")
+  .option("-n, --name <name>", "Token name", "Token name")
+  .option("-s, --symbol <symbol>", "Token symbol", "TST")
   .option("-d, --decimals <decimals>", "Number of decimals", "18")
   .action(async (options) => {
     await deployERC20(
@@ -221,7 +221,7 @@ program.command("transfer-roles-appchain-l2")
   .action(async () => {
     const acc_l2 = getAccount(Layer.L2);
     await transferAppchainL2Roles(acc_l2, finalRoles);
-  }); 
+  });
 
 program.command("transfer-roles-token-bridge-l3")
   .description("Transfer roles to the new owner")
@@ -256,14 +256,15 @@ program.command("token-actions")
 program
   .command("full-flow")
   .description("Run the full flow of operations")
-  .action(async () => {
+  .option("-e, --with-enroll", "To deploy a token and ernroll post the setup", false)
+  .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
     const acc_l3 = getAccount(Layer.L3);
 
     logger.success("Starting full flow setup...");
 
     // Setup
-     logger.info("MAIN STEP 1: Setting up bridges...");
+    logger.info("MAIN STEP 1: Setting up bridges...");
     await deployAppchainBridge();
     // Deploy timelock contract with 0 `min_delay` initially
     await deployTimelockContract(0);
@@ -274,18 +275,20 @@ program
     await setL2Bridge(acc_l3);
     await declareAndSetERC20L3(acc_l3);
 
-    // Deploy and enroll token
-    logger.info("MAIN STEP 3: Deploying and enrolling token...");
-    await deployERC20();
-    await enrollToken(acc_l2, "ERC20_OZ");
+    if (options.withEnroll) {
+      // Deploy and enroll token
+      logger.info("MAIN STEP 3: Deploying and enrolling token...");
+      await deployERC20();
+      await enrollToken(acc_l2, "ERC20_OZ");
 
-    // Check the corresponding token and balance
-    logger.info("MAIN STEP 4: Check the corresponding token and balance on l3");
-    await sleep(20000);
-    await getL3Balance(
-      process.env.ACCOUNT_L3_ADDRESS as string,
-      "ERC20_OZ"
-    );
+      // Check the corresponding token and balance
+      logger.info("MAIN STEP 4: Check the corresponding token and balance on l3");
+      await sleep(15000);
+      await getL3Balance(
+        process.env.ACCOUNT_L3_ADDRESS as string,
+        "ERC20_OZ"
+      );
+    }
 
     logger.success("Full flow completed successfully!");
   });

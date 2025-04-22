@@ -139,7 +139,10 @@ jobs:
           echo "Server is ready!"
 
       - name: Run Bridge Deployment Script
-        run: tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
+        run: |
+           tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
+           tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-erc20 
+
 
       - name: Run Token Actions
         run: |

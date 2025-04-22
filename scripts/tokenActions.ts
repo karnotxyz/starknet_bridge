@@ -1,16 +1,17 @@
-import { Account, logger, CairoEnum,  Contract as StarknetContract, TypedContractV2 } from "starknet";
+import { Account, logger, CairoEnum, Contract as StarknetContract, TypedContractV2 } from "starknet";
 import { Layer, Contract, TokenStatus } from "./config/types";
 import { starknetBridgePackage, tokenBridgeL2Contract } from "./config/constants";
 import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge";
 import { ABI as ERC20ABI } from "./abis/starknet_bridge_ERC20";
-import { getAccount, getContract } from "./utils/utils";
+import { getAccount, getContract, sleep } from "./utils/utils";
 import assert from "assert";
+import { enrollToken, getL3Balance } from "./bridgeDeploy";
 
 async function tokenAsserts(token: TypedContractV2<typeof ERC20ABI>, tokenBridgeContract: TypedContractV2<typeof TokenBridgeL2ABI>, tokenStatus: TokenStatus) {
     const result = await tokenBridgeContract.get_status(token.address);
     logger.info(`Token status: ${result}`, result.variant);
     console.log(result.variant, result.activeVariant(), tokenStatus.toString());
-    if (result.activeVariant() !== tokenStatus.toString()) {
+    if (result.activeVariant() != tokenStatus) {
         const errorMsg = `Token status mismatch: ${result.activeVariant} !== ${tokenStatus}`;
         logger.error(errorMsg);
         throw new Error(errorMsg);
@@ -29,12 +30,12 @@ async function tokenAsserts(token: TypedContractV2<typeof ERC20ABI>, tokenBridge
     await acc_l3.waitForTransaction(tx.transaction_hash);
     const depositTx = await tokenBridgeContract.deposit(token.address, 10, acc_l3.address);
     let receipt = await acc_l3.waitForTransaction(depositTx.transaction_hash);
-    if(tokenStatus === TokenStatus.Active) {
+    if (tokenStatus === TokenStatus.Active) {
         assert(receipt.isSuccess(), "Transaction was not successful");
     } else {
         assert(receipt.isRejected(), "Transaction was not rejected");
     }
-    
+
 }
 
 
@@ -65,46 +66,7 @@ export async function testTokenActions(acc_l2: Account, token: string = "ERC20_O
 
     const tokenBridgeContract = new StarknetContract(TokenBridgeL2ABI, tokenBridge, acc_l2).typedv2(TokenBridgeL2ABI);
 
-    // 1. Current status: Pending 
-    await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Pending);
-
-    // activate_token should fail
-    {
-        const tx = await tokenBridgeContract.activate_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
-
-    // deactivate_token should fail
-    {
-        const tx = await tokenBridgeContract.deactivate_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
-
-    // unblock_token should fail
-    {
-        const tx = await tokenBridgeContract.unblock_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
-
-    // block_token should fail
-    {
-        const tx = await tokenBridgeContract.block_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
-
-    // enroll_token should fail
-    {
-        const tx = await tokenBridgeContract.enroll_token(tokenAddress);
-        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-        assert(receipt.isRejected(), "Transaction was not rejected");
-    }
-
-
-    // 2. Current status: Unknown
+    // 1. Current status: Unknown
     await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Unknown);
 
     // activate_token should fail
@@ -127,7 +89,6 @@ export async function testTokenActions(acc_l2: Account, token: string = "ERC20_O
         const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
         assert(receipt.isRejected(), "Transaction was not rejected");
     }
-
 
     // should be blocked
     {
@@ -176,4 +137,49 @@ export async function testTokenActions(acc_l2: Account, token: string = "ERC20_O
 
     // 3. Current status: Unknown
     await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Unknown);
+
+    await enrollToken(acc_l2, token);
+    await sleep(15000);
+    await getL3Balance(
+        process.env.ACCOUNT_L3_ADDRESS as string,
+        "ERC20_OZ"
+    );
+
+    // 1. Current status: Pending 
+    await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Pending);
+
+    // activate_token should fail
+    {
+        const tx = await tokenBridgeContract.activate_token(tokenAddress);
+        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
+        assert(receipt.isRejected(), "Transaction was not rejected");
+    }
+
+    // deactivate_token should fail
+    {
+        const tx = await tokenBridgeContract.deactivate_token(tokenAddress);
+        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
+        assert(receipt.isRejected(), "Transaction was not rejected");
+    }
+
+    // unblock_token should fail
+    {
+        const tx = await tokenBridgeContract.unblock_token(tokenAddress);
+        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
+        assert(receipt.isRejected(), "Transaction was not rejected");
+    }
+
+    // block_token should fail
+    {
+        const tx = await tokenBridgeContract.block_token(tokenAddress);
+        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
+        assert(receipt.isRejected(), "Transaction was not rejected");
+    }
+
+    // enroll_token should fail
+    {
+        const tx = await tokenBridgeContract.enroll_token(tokenAddress);
+        const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
+        assert(receipt.isRejected(), "Transaction was not rejected");
+    }
 }
