@@ -222,7 +222,7 @@ fn reactivate_token_not_deactivated() {
 }
 
 #[test]
-#[should_panic(expected: ('Incorrect token status',))]
+#[should_panic(expected: ('Token not unknown',))]
 fn enroll_token_blocked() {
     let mut mock = mock_state_testing();
 

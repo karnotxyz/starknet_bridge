@@ -4,7 +4,7 @@ export const finalRoles: FinalRoles = {
     l2: {
         TokenBridge: {
             TOKEN_ADMIN: [
-            "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
+                "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"
             ],
             SECURITY_AGENT: [
                 "0x015465662A637494E435CF06F7A73E690b149EC1e19FC7fA9A533bfd868581E6"

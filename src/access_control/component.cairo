@@ -8,11 +8,20 @@ pub mod BridgeAccessControlComponent {
     use openzeppelin::introspection::src5::SRC5Component::{
         InternalImpl as SRC5InternalImpl, SRC5Impl,
     };
+    use openzeppelin::access::accesscontrol::interface::IAccessControl;
     use starknet::ContractAddress;
     use starknet_bridge::access_control::roles::Roles;
 
     #[storage]
     pub struct Storage {}
+
+    //
+    // Errors
+    //
+    pub mod Errors {
+        pub const GOV_ADMIN_CANNOT_RENOUNCE: felt252 = 'Gov admin cannot renounce';
+        pub const SEC_ADMIN_CANNOT_RENOUNCE: felt252 = 'Sec admin cannot renounce';
+    }
 
 
     #[generate_trait]
@@ -20,7 +29,7 @@ pub mod BridgeAccessControlComponent {
         TContractState,
         +HasComponent<TContractState>,
         impl AccessControl: AccessControlComponent::HasComponent<TContractState>,
-        impl SRC5: SRC5Component::HasComponent<TContractState>,
+        +SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         fn initializer(
@@ -96,6 +105,50 @@ pub mod BridgeAccessControlComponent {
         fn assert_only_token_admin(self: @ComponentState<TContractState>) {
             let access_control = get_dep_component!(self, AccessControl);
             access_control.assert_only_role(Roles::TOKEN_ADMIN);
+        }
+    }
+
+    #[embeddable_as(BridgeAccessControlImpl)]
+    pub impl AccessControlImpl<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl AccessControl: AccessControlComponent::HasComponent<TContractState>,
+        +SRC5Component::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of IAccessControl<ComponentState<TContractState>> {
+        fn has_role(
+            self: @ComponentState<TContractState>, role: felt252, account: ContractAddress,
+        ) -> bool {
+            let access_control = get_dep_component!(self, AccessControl);
+            access_control.has_role(role, account)
+        }
+
+        fn get_role_admin(self: @ComponentState<TContractState>, role: felt252) -> felt252 {
+            let access_control = get_dep_component!(self, AccessControl);
+            access_control.get_role_admin(role)
+        }
+
+        fn grant_role(
+            ref self: ComponentState<TContractState>, role: felt252, account: ContractAddress,
+        ) {
+            let mut access_control = get_dep_component_mut!(ref self, AccessControl);
+            access_control.grant_role(role, account)
+        }
+
+        fn revoke_role(
+            ref self: ComponentState<TContractState>, role: felt252, account: ContractAddress,
+        ) {
+            let mut access_control = get_dep_component_mut!(ref self, AccessControl);
+            access_control.revoke_role(role, account)
+        }
+
+        fn renounce_role(
+            ref self: ComponentState<TContractState>, role: felt252, account: ContractAddress,
+        ) {
+            assert(role != Roles::GOVERNANCE_ADMIN, Errors::GOV_ADMIN_CANNOT_RENOUNCE);
+
+            let mut access_control = get_dep_component_mut!(ref self, AccessControl);
+            access_control.renounce_role(role, account)
         }
     }
 }

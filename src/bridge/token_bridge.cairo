@@ -57,8 +57,8 @@ pub mod TokenBridge {
 
     // AccessControl
     #[abi(embed_v0)]
-    impl AccessControlComponentImpl =
-        AccessControlComponent::AccessControlImpl<ContractState>;
+    impl BridgeAccessControlImpl =
+        BridgeAccessControlComponent::BridgeAccessControlImpl<ContractState>;
     impl BridgeAccessControlInternalImpl =
         BridgeAccessControlComponent::InternalImpl<ContractState>;
 
@@ -73,7 +73,6 @@ pub mod TokenBridge {
     #[abi(embed_v0)]
     impl WithdrawalLimitImpl =
         WithdrawalLimitComponent::WithdrawalLimitImpl<ContractState>;
-    // impl WithdrawalLimitInternal = WithdrawalLimitComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
