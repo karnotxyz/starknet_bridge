@@ -44,6 +44,11 @@ pub mod access_control {
 
 pub mod timelock {
     pub mod timelock;
+
+    #[cfg(test)]
+    pub mod tests {
+        mod timelock_test;
+    }
 }
 
 pub mod constants;
