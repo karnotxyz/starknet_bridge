@@ -15,8 +15,8 @@ mod access_control_mock {
 
 
     #[abi(embed_v0)]
-    impl AccessControlImpl =
-        AccessControlComponent::AccessControlImpl<ContractState>;
+    impl BridgeAccessControlImpl =
+        BridgeAccessControlComponent::BridgeAccessControlImpl<ContractState>;
     impl BridgeAccessControlInternal = BridgeAccessControlComponent::InternalImpl<ContractState>;
     impl AccessControlInternal = AccessControlComponent::InternalImpl<ContractState>;
 

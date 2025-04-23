@@ -111,5 +111,6 @@ fn test_access_control_roles() {
 #[should_panic(expected: ('Gov admin cannot renounce',))]
 fn test_governance_admin_cannot_renounce() {
     let (access_control, _) = deploy_access_control();
+    snf::start_cheat_caller_address_global(GOVERNANCE_ADMIN());
     access_control.renounce_role(Roles::GOVERNANCE_ADMIN, GOVERNANCE_ADMIN());
 }
