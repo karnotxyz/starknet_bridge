@@ -105,3 +105,11 @@ fn test_access_control_roles() {
         "Upgrade_gov: incorrect admin",
     );
 }
+
+
+#[test]
+#[should_panic(expected: ('Gov admin cannot renounce',))]
+fn test_governance_admin_cannot_renounce() {
+    let (access_control, _) = deploy_access_control();
+    access_control.renounce_role(Roles::GOVERNANCE_ADMIN, GOVERNANCE_ADMIN());
+}

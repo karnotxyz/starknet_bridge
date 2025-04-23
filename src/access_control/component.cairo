@@ -20,7 +20,8 @@ pub mod BridgeAccessControlComponent {
     //
     pub mod Errors {
         pub const GOV_ADMIN_CANNOT_RENOUNCE: felt252 = 'Gov admin cannot renounce';
-        pub const SEC_ADMIN_CANNOT_RENOUNCE: felt252 = 'Sec admin cannot renounce';
+        pub const INVALID_ADDRESS: felt252 = 'Invalid 0 address';
+        pub const ZERO_LENGTH_SPAN: felt252 = 'Zero length span';
     }
 
 
@@ -41,6 +42,15 @@ pub mod BridgeAccessControlComponent {
             token_admins: Span<ContractAddress>,
             upgrade_governor: ContractAddress,
         ) {
+            check_addresses(
+                governance_admins,
+                app_governors,
+                security_admins,
+                security_agents,
+                token_admins,
+                upgrade_governor,
+            );
+
             let mut access_control = get_dep_component_mut!(ref self, AccessControl);
             access_control.initializer();
 
@@ -105,6 +115,29 @@ pub mod BridgeAccessControlComponent {
         fn assert_only_token_admin(self: @ComponentState<TContractState>) {
             let access_control = get_dep_component!(self, AccessControl);
             access_control.assert_only_role(Roles::TOKEN_ADMIN);
+        }
+    }
+
+    fn check_addresses(
+        governance_admins: Span<ContractAddress>,
+        app_governors: Span<ContractAddress>,
+        security_admins: Span<ContractAddress>,
+        security_agents: Span<ContractAddress>,
+        token_admins: Span<ContractAddress>,
+        upgrade_governor: ContractAddress,
+    ) {
+        assert(upgrade_governor != 0.try_into().unwrap(), Errors::INVALID_ADDRESS);
+        check_valid_addresses(governance_admins);
+        check_valid_addresses(app_governors);
+        check_valid_addresses(security_admins);
+        check_valid_addresses(security_agents);
+        check_valid_addresses(token_admins);
+    }
+
+    fn check_valid_addresses(addresses: Span<ContractAddress>) {
+        assert(addresses.len() > 0, Errors::ZERO_LENGTH_SPAN);
+        for address in addresses {
+            assert(*address != 0.try_into().unwrap(), Errors::INVALID_ADDRESS);
         }
     }
 
