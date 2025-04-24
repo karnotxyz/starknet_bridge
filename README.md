@@ -40,7 +40,7 @@ The Timelock contract maintains its own access control with a DEFAULT_ADMIN role
 
 The UPGRADE_GOVERNOR role is exclusively assigned to the Timelock contract, ensuring all upgrades go through a predefined delay period for enhanced security.
 
-![Access Control Roles](./docs/access_control.png)
+![Access Control Roles](./docs/access_control.svg)
 
 ## Functions by Role
 The TokenBridge contract implements role-based access control for various functions. Below is a comprehensive list of functions that each role can call:
