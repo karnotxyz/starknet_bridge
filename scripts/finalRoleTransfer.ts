@@ -1,4 +1,4 @@
-import { Account, Contract } from "starknet";
+import { Account, Contract, num } from "starknet";
 import { getContract, standardiseAddress } from "./utils/utils";
 import { logger } from "./utils/logger";
 import { appchainContract, timelockContract, tokenBridgeL2Contract, tokenBridgeL3Contract } from "./config/constants";
@@ -18,12 +18,18 @@ async function changeRole(acc_l2: Account, contract: TypedContractV2<typeof Time
   logger.address("Target addresses", address.join(', '));
 
   for (const addr of address) {
-    const hasRole = await contract.has_role(role, acc_l2.address);
+    const hasRole = await contract.has_role(role, addr);
     if (method === "renounce_role") {
-      if(!hasRole) continue;
+      if (!hasRole) {
+        logger.info(`Skipping granting role ${role} to ${addr} as 'has_role' function returned ${hasRole}`);
+        continue;
+      }
       assert(acc_l2.address == standardiseAddress(addr), "Renouncing can be done for self only");
     } else if (method === "grant_role") {
-      if(hasRole) continue;
+      if (hasRole) {
+        logger.info(`Skipping granting role ${role} to ${addr} as 'has_role' function returned ${hasRole}`);
+        continue;
+      }
     } else {
       const errorMsg = "Invalid contract method used";
       logger.error(errorMsg);
@@ -47,9 +53,9 @@ async function changeRoleWithMethod(acc: Account, contract: Contract, address: s
   logger.address("Target addresses", address.join(', '));
 
   for (const addr of address) {
-    if(skipIfMethod) {
+    if (skipIfMethod) {
       const hasRole = await contract.call(skipIfMethod[0], [addr]);
-      if(skipIfMethod[1] == hasRole) {
+      if (skipIfMethod[1] == hasRole) {
         logger.info(`Skipping ${method} for address ${addr} ${skipIfMethod[0]} returns ${hasRole}`);
         continue;
       }
@@ -84,15 +90,15 @@ async function registerOperator(acc_l2: Account, appchainContract: TypedContract
 
 
 export async function transferTokenBridgeL2Roles(acc_l2: Account, finalRoles: FinalRoles) {
-  let tokenBridgeL2 = getContract(tokenBridgeL2Contract);
-  if (!tokenBridgeL2.address) {
+  getContract(tokenBridgeL2Contract);
+  if (!tokenBridgeL2Contract.address) {
     const error = "L2 Bridge contract address not found";
     logger.error(error);
     throw new Error(error);
   }
-  logger.address("L2 Bridge contract", tokenBridgeL2.address);
+  logger.address("L2 Bridge contract", tokenBridgeL2Contract.address);
 
-  let tokenBridgeContract_l2 = new Contract(TokenBridgeL2Abi, tokenBridgeL2.address, acc_l2).typedv2(TokenBridgeL2Abi);
+  let tokenBridgeContract_l2 = new Contract(TokenBridgeL2Abi, tokenBridgeL2Contract.address, acc_l2).typedv2(TokenBridgeL2Abi);
 
   const l2Roles_TokenBridge = finalRoles.l2.TokenBridge;
 
@@ -142,7 +148,7 @@ export async function transferAppchainL2Roles(acc_l2: Account, finalRoles: Final
   // Transfer ownership
   {
     logger.info("SUB-STEP 1: Transferring Appchain ownership to new owner");
-    const tx = appchainContract_l2.transfer_ownership(l2Roles_Appchain.owner);
+    const tx = await appchainContract_l2.transfer_ownership(l2Roles_Appchain.owner);
     logger.txHash(tx.transaction_hash);
     let receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
     assert(receipt.isSuccess(), `Failed to inititate transfer ownerhip to ${l2Roles_Appchain.owner} from ${acc_l2.address}`);
@@ -167,38 +173,17 @@ export async function transferTokenBridgeL3Roles(acc_l3: Account, finalRoles: Fi
 
   const l3Roles_TokenBridge = finalRoles.l3.TokenBridge;
 
-  // Check each role
-  for (const address of l3Roles_TokenBridge.GovernanceAdmin) {
-    assert(await l3_tokenBridgeContract_l3.is_governance_admin(address), `${address} is not a governance admin`);
-  }
-  
-  for (const address of l3Roles_TokenBridge.AppRoleAdmin) {
-    assert(await l3_tokenBridgeContract_l3.is_app_role_admin(address), `${address} is not an app role admin`);
-  }
-  
-  for (const address of l3Roles_TokenBridge.AppGovernor) {
-    assert(await l3_tokenBridgeContract_l3.is_app_governor(address), `${address} is not an app governor`);
-  }
-  
-  for (const address of l3Roles_TokenBridge.Operator) {
-    assert(await l3_tokenBridgeContract_l3.is_operator(address), `${address} is not an operator`);
-  }
-  
-  for (const address of l3Roles_TokenBridge.TokenAdmin) {
-    assert(await l3_tokenBridgeContract_l3.is_token_admin(address), `${address} is not a token admin`);
-  }
-  
-  for (const address of l3Roles_TokenBridge.UpgradeGovernor) {
-    assert(await l3_tokenBridgeContract_l3.is_upgrade_governor(address), `${address} is not an upgrade governor`);
-  }
-  
-  for (const address of l3Roles_TokenBridge.SecurityAdmin) {
-    assert(await l3_tokenBridgeContract_l3.is_security_admin(address), `${address} is not a security admin`);
-  }
-  
-  for (const address of l3Roles_TokenBridge.SecurityAgent) {
-    assert(await l3_tokenBridgeContract_l3.is_security_agent(address), `${address} is not a security agent`);
-  }
+
+  // Grant roles
+  await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.GovernanceAdmin, "register_governance_admin", ["is_governance_admin", true]);
+  await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.AppRoleAdmin, "register_app_role_admin", ["is_app_role_admin", true]);
+  await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.AppGovernor, "register_app_governor", ["is_app_governor", true]);
+  await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.Operator, "register_operator", ["is_operator", true]);
+  await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.TokenAdmin, "register_token_admin", ["is_token_admin", true]);
+  await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.UpgradeGovernor, "register_upgrade_governor", ["is_upgrade_governor", true]);
+  await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.SecurityAdmin, "register_security_admin", ["is_security_admin", true]);
+  await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.SecurityAgent, "register_security_agent", ["is_security_agent", true]);
+  await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, l3Roles_TokenBridge.L2TokenGovernance, "set_l2_token_governance");
 }
 
 export async function transferRoles(acc_l2: Account, acc_l3: Account, finalRoles: FinalRoles) {
@@ -277,8 +262,6 @@ export async function renounceAppchainL2Roles(acc_l2: Account) {
 
   let appchainContract_l2 = new Contract(AppchainAbi, appchainContract.address, acc_l2).typedv2(AppchainAbi);
 
-  let currentOwner = standardiseAddress(await appchainContract_l2.owner());
-
   // Unregister current owner as operator if it is registered
   const isRegistered = await appchainContract_l2.is_operator(acc_l2.address);
   if (isRegistered) {
@@ -339,7 +322,7 @@ export async function checkTokenBridgeL2Roles(acc_l2: Account, finalRoles: Final
     { role: L2TokenBridgeRoleIds.GOVERNANCE_ADMIN, addresses: l2Roles_TokenBridge.GOVERNANCE_ADMIN }
   ];
 
-  for (const {role, addresses} of roleChecks) {
+  for (const { role, addresses } of roleChecks) {
     for (const address of addresses) {
       logger.info(`Checking ${role} role for address ${address}`);
       assert(await tokenBridgeContract_l2.has_role(role, address), `${role} role not granted for address ${address}`);
@@ -366,10 +349,10 @@ export async function checkTimelockL2Roles(acc_l2: Account, finalRoles: FinalRol
     { role: TimelockControllerRoleIds.DEFAULT_ADMIN, addresses: [l2Roles_TimelockController[TimelockControllerRoleIds.DEFAULT_ADMIN]] }
   ];
 
-  for (const {role, addresses} of roleChecks) {
+  for (const { role, addresses } of roleChecks) {
     for (const address of addresses) {
       logger.info(`Checking ${role} role for address ${address}`);
-      assert(await timelockContract_l2.has_role(role, address), `${role} role not granted for address ${address}`); 
+      assert(await timelockContract_l2.has_role(role, address), `${role} role not granted for address ${address}`);
     }
   }
 }
@@ -386,9 +369,15 @@ export async function checkAppchainL2Roles(acc_l2: Account, finalRoles: FinalRol
   let appchainContract_l2 = new Contract(AppchainAbi, appchainContract.address, acc_l2).typedv2(AppchainAbi);
 
   const l2Roles_Appchain = finalRoles.l2.appchain;
-  
+
   logger.info(`Checking appchain owner ${l2Roles_Appchain.owner}`);
-  assert(await appchainContract_l2.pending_owner() === l2Roles_Appchain.owner, "Appchain owner not set");
+  const pending_owner = await appchainContract_l2.pending_owner();
+  assert(
+    standardiseAddress(pending_owner) === standardiseAddress(l2Roles_Appchain.owner), 
+    `Appchain pending owner not set, found ${pending_owner}`
+  );
+
+  // checking operators
   for (const operator of l2Roles_Appchain.operators) {
     logger.info(`Checking operator ${operator}`);
     assert(await appchainContract_l2.is_operator(operator), `${operator} is not an operator`);
@@ -412,45 +401,45 @@ export async function checkTokenBridgeL3Roles(acc_l3: Account, finalRoles: Final
   for (const address of l3Roles_TokenBridge.GovernanceAdmin) {
     assert(await tokenBridgeContract_l3.is_governance_admin(address), `${address} is not a governance admin`);
   }
-  
+
   for (const address of l3Roles_TokenBridge.AppRoleAdmin) {
     logger.info(`Checking AppRoleAdmin role for address ${address}`);
     assert(await tokenBridgeContract_l3.is_app_role_admin(address), `${address} is not an app role admin`);
   }
-  
+
   for (const address of l3Roles_TokenBridge.AppGovernor) {
     logger.info(`Checking AppGovernor role for address ${address}`);
     assert(await tokenBridgeContract_l3.is_app_governor(address), `${address} is not an app governor`);
   }
-  
+
   for (const address of l3Roles_TokenBridge.Operator) {
     logger.info(`Checking Operator role for address ${address}`);
     assert(await tokenBridgeContract_l3.is_operator(address), `${address} is not an operator`);
   }
-  
+
   for (const address of l3Roles_TokenBridge.TokenAdmin) {
     logger.info(`Checking TokenAdmin role for address ${address}`);
     assert(await tokenBridgeContract_l3.is_token_admin(address), `${address} is not a token admin`);
   }
-  
+
   for (const address of l3Roles_TokenBridge.UpgradeGovernor) {
     logger.info(`Checking UpgradeGovernor role for address ${address}`);
     assert(await tokenBridgeContract_l3.is_upgrade_governor(address), `${address} is not an upgrade governor`);
   }
-  
+
   for (const address of l3Roles_TokenBridge.SecurityAdmin) {
     logger.info(`Checking SecurityAdmin role for address ${address}`);
     assert(await tokenBridgeContract_l3.is_security_admin(address), `${address} is not a security admin`);
   }
-  
+
   for (const address of l3Roles_TokenBridge.SecurityAgent) {
     logger.info(`Checking SecurityAgent role for address ${address}`);
     assert(await tokenBridgeContract_l3.is_security_agent(address), `${address} is not a security agent`);
   }
 }
-  
 
-export async function checkRolesPassed(acc_l2: Account, acc_l3: Account, finalRoles: FinalRoles) { 
+
+export async function checkRolesPassed(acc_l2: Account, acc_l3: Account, finalRoles: FinalRoles) {
   logger.info('Checking roles passed');
 
   logger.info('Checking L2 Token Bridge roles');
