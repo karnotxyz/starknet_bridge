@@ -52,7 +52,7 @@ import {
   checkAppchainL2Roles,
   checkTokenBridgeL3Roles,
 } from "./finalRoleTransfer.ts";
-import { upgradeAppchain, upgradeTokenBridgeL2 } from "./upgrades.ts";
+import { executeUpgradeTokenBridgeL2, upgradeAppchain, upgradeTokenBridgeL2 } from "./upgrades.ts";
 import { testTokenActions } from "./tokenActions.ts";
 const program = new Command();
 
@@ -342,10 +342,22 @@ program
 program
   .command("upgrade-token-bridge-l2")
   .description("Upgrade the token bridge on L2")
-  .action(async () => {
+  .option("--no-execution", "Dont try to execute just after proposing", false)
+  .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
     await upgradeTokenBridgeL2(acc_l2);
+    if(!options.noExecution) {
+      await executeUpgradeTokenBridgeL2(acc_l2); 
+    }
   });
+
+program
+  .command("execute-bridge-l2-upgrade")
+  .description("Execute token bridge upgrade proposal")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await executeUpgradeTokenBridgeL2(acc_l2);
+  })
 
 program
   .command("token-actions")
