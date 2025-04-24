@@ -46,6 +46,11 @@ import {
   renounceAppchainL2Roles,
   renounceTokenBridgeL2Roles,
   renounceTokenBridgeL3Roles,
+  checkRolesPassed,
+  checkTokenBridgeL2Roles,
+  checkTimelockL2Roles,
+  checkAppchainL2Roles,
+  checkTokenBridgeL3Roles,
 } from "./finalRoleTransfer.ts";
 import { upgradeAppchain, upgradeTokenBridgeL2 } from "./upgrades.ts";
 import { testTokenActions } from "./tokenActions.ts";
@@ -241,6 +246,47 @@ program
   .action(async () => {
     const acc_l3 = getAccount(Layer.L3);
     await transferTokenBridgeL3Roles(acc_l3, finalRoles);
+  });
+
+program
+  .command("check-roles")
+  .description("Check roles for the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    const acc_l3 = getAccount(Layer.L3);
+    await checkRolesPassed(acc_l2, acc_l3, finalRoles);
+  });
+
+program
+  .command("check-roles-token-bridge-l2")
+  .description("Check roles for the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await checkTokenBridgeL2Roles(acc_l2, finalRoles);
+  });
+
+program
+  .command("check-roles-timelock-l2")
+  .description("Check roles for the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await checkTimelockL2Roles(acc_l2, finalRoles);
+  });
+
+program
+  .command("check-roles-appchain-l2")
+  .description("Check roles for the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await checkAppchainL2Roles(acc_l2, finalRoles);
+  });
+
+program
+  .command("check-roles-token-bridge-l3")
+  .description("Check roles for the new addresses")
+  .action(async () => {
+    const acc_l3 = getAccount(Layer.L3);
+    await checkTokenBridgeL3Roles(acc_l3, finalRoles);
   });
 
 program

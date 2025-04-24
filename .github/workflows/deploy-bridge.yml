@@ -151,5 +151,6 @@ jobs:
       - name: Run Role Transfer Script
         run: |
           tsx ./scripts/cli.ts --dump-path=./contracts.json transfer-roles
+
           tsx ./scripts/cli.ts --dump-path=./contracts.json renoucne-roles
 
