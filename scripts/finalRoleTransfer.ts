@@ -4,7 +4,7 @@ import { logger } from "./utils/logger";
 import { appchainContract, timelockContract, tokenBridgeL2Contract, tokenBridgeL3Contract } from "./config/constants";
 import { FinalRoles, L2TokenBridgeRoleIds, TimelockControllerRoleIds } from "./config/types";
 import { ABI as AppchainAbi } from "./abis/starknet_bridge_appchain";
-import * as assert from "assert";
+import assert from "assert";
 import { TypedContractV2 } from "starknet";
 import { ABI as TimelockAbi } from "./abis/starknet_bridge_TimelockController";
 import { ABI as TokenBridgeL2Abi } from "./abis/starknet_bridge_TokenBridge";
