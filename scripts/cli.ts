@@ -294,7 +294,7 @@ program
   .description("Renounce roles from deployer")
   .action(async () => {
     const acc_l2 = getAccount(Layer.L2);
-    const acc_l3 = getAccount(Layer.L2);
+    const acc_l3 = getAccount(Layer.L3);
     await renounceRoles(acc_l2, acc_l3);
   })
 

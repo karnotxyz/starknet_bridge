@@ -290,9 +290,7 @@ export async function renounceTokenBridgeL3Roles(acc_l3: Account) {
   }
   logger.address("L3 Bridge contract", tokenBridgeL3Contract.address);
 
-  let l3_tokenBridgeCls = await acc_l3.getClassAt(tokenBridgeL3Contract.address);
-  let l3_tokenBridgeContract_l3 = new Contract(l3_tokenBridgeCls.abi, tokenBridgeL3Contract.address, acc_l3);
-
+  let l3_tokenBridgeContract_l3 = new Contract(TokenBridgeL3Abi, tokenBridgeL3Contract.address, acc_l3);
 
   // Revoke roles
   await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, acc_l3.address, "remove_token_admin", ["is_token_admin", false]);
