@@ -33,11 +33,20 @@ import {
   initiateTokenL2toL3Withdrawal,
   deployTimelockContract,
 } from "./bridgeDeploy.ts";
-import {
-  Layer
-} from "./config/types.ts"
+import { Layer } from "./config/types.ts";
 import { finalRoles } from "./config/newRoles.ts";
-import { transferRoles, transferAppchainL2Roles, transferTimelockL2Roles, transferTokenBridgeL2Roles, transferTokenBridgeL3Roles } from "./finalRoleTransfer.ts";
+import {
+  transferRoles,
+  transferAppchainL2Roles,
+  transferTimelockL2Roles,
+  transferTokenBridgeL2Roles,
+  transferTokenBridgeL3Roles,
+  renounceRoles,
+  renounceTimelockRolesRoles,
+  renounceAppchainL2Roles,
+  renounceTokenBridgeL2Roles,
+  renounceTokenBridgeL3Roles,
+} from "./finalRoleTransfer.ts";
 import { upgradeAppchain, upgradeTokenBridgeL2 } from "./upgrades.ts";
 import { testTokenActions } from "./tokenActions.ts";
 const program = new Command();
@@ -193,8 +202,8 @@ program
     logger.success("Setup completed!");
   });
 
-
-program.command("transfer-roles")
+program
+  .command("transfer-roles")
   .description("Transfer roles to the new owner")
   .action(async () => {
     const acc_l2 = getAccount(Layer.L2);
@@ -202,49 +211,98 @@ program.command("transfer-roles")
     await transferRoles(acc_l2, acc_l3, finalRoles);
   });
 
-program.command("transfer-roles-token-bridge-l2")
-  .description("Transfer roles to the new owner")
+program
+  .command("transfer-roles-token-bridge-l2")
+  .description("Transfer roles to the new addresses")
   .action(async () => {
     const acc_l2 = getAccount(Layer.L2);
     await transferTokenBridgeL2Roles(acc_l2, finalRoles);
   });
 
-program.command("transfer-roles-timelock-l2")
-  .description("Transfer roles to the new owner")
+program
+  .command("transfer-roles-timelock-l2")
+  .description("Transfer roles to the new addresses")
   .action(async () => {
     const acc_l2 = getAccount(Layer.L2);
     await transferTimelockL2Roles(acc_l2, finalRoles);
   });
 
-program.command("transfer-roles-appchain-l2")
-  .description("Transfer roles to the new owner")
+program
+  .command("transfer-roles-appchain-l2")
+  .description("Transfer roles to the new addresses")
   .action(async () => {
     const acc_l2 = getAccount(Layer.L2);
     await transferAppchainL2Roles(acc_l2, finalRoles);
   });
 
-program.command("transfer-roles-token-bridge-l3")
-  .description("Transfer roles to the new owner")
+program
+  .command("transfer-roles-token-bridge-l3")
+  .description("Transfer roles to the new addresses")
   .action(async () => {
     const acc_l3 = getAccount(Layer.L3);
     await transferTokenBridgeL3Roles(acc_l3, finalRoles);
   });
 
-program.command("upgrade-appchain")
+program
+  .command("renounce-roles")
+  .description("Renounce roles from deployer")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    const acc_l3 = getAccount(Layer.L2);
+    await renounceRoles(acc_l2, acc_l3);
+  })
+
+program
+  .command("renounce-roles-token-bridge-l2")
+  .description("Renounce roles from deployer")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await renounceTokenBridgeL2Roles(acc_l2);
+  })
+
+
+program
+  .command("renounce-roles-timelock-l2")
+  .description("Transfer roles to the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await renounceTimelockRolesRoles(acc_l2);
+  });
+
+program
+  .command("renounce-roles-appchain-l2")
+  .description("Renounce roles from deployer")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await renounceAppchainL2Roles(acc_l2);
+  })
+
+program
+  .command("renounce-roles-token-bridge-l3")
+  .description("Transfer roles to the new addresses")
+  .action(async () => {
+    const acc_l3 = getAccount(Layer.L3);
+    await renounceTokenBridgeL3Roles(acc_l3);
+  });
+
+program
+  .command("upgrade-appchain")
   .description("Upgrade the appchain")
   .action(async () => {
     const acc_l2 = getAccount(Layer.L2);
     await upgradeAppchain(acc_l2);
   });
 
-program.command("upgrade-token-bridge-l2")
+program
+  .command("upgrade-token-bridge-l2")
   .description("Upgrade the token bridge on L2")
   .action(async () => {
     const acc_l2 = getAccount(Layer.L2);
     await upgradeTokenBridgeL2(acc_l2);
   });
 
-program.command("token-actions")
+program
+  .command("token-actions")
   .description("Perform actions on a token")
   .option("-t, --token <token>", "Token name", "ERC20_OZ")
   .action(async (options) => {
@@ -256,7 +314,11 @@ program.command("token-actions")
 program
   .command("full-flow")
   .description("Run the full flow of operations")
-  .option("-e, --with-enroll", "To deploy a token and ernroll post the setup", false)
+  .option(
+    "-e, --with-enroll",
+    "To deploy a token and ernroll post the setup",
+    false
+  )
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
     const acc_l3 = getAccount(Layer.L3);
@@ -282,12 +344,11 @@ program
       await enrollToken(acc_l2, "ERC20_OZ");
 
       // Check the corresponding token and balance
-      logger.info("MAIN STEP 4: Check the corresponding token and balance on l3");
-      await sleep(15000);
-      await getL3Balance(
-        process.env.ACCOUNT_L3_ADDRESS as string,
-        "ERC20_OZ"
+      logger.info(
+        "MAIN STEP 4: Check the corresponding token and balance on l3"
       );
+      await sleep(15000);
+      await getL3Balance(process.env.ACCOUNT_L3_ADDRESS as string, "ERC20_OZ");
     }
 
     logger.success("Full flow completed successfully!");
