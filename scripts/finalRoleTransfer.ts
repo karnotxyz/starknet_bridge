@@ -24,7 +24,7 @@ async function changeRole(acc_l2: Account, contract: TypedContractV2<typeof Time
         logger.info(`Skipping granting role ${role} to ${addr} as 'has_role' function returned ${hasRole}`);
         continue;
       }
-      assert(acc_l2.address == standardiseAddress(addr), "Renouncing can be done for self only");
+      assert(acc_l2.address == addr, "Renouncing can be done for self only");
     } else if (method === "grant_role") {
       if (hasRole) {
         logger.info(`Skipping granting role ${role} to ${addr} as 'has_role' function returned ${hasRole}`);
@@ -39,9 +39,9 @@ async function changeRole(acc_l2: Account, contract: TypedContractV2<typeof Time
     const call = contract.populate(method, [role, addr]);
     let tx = await acc_l2.execute([call]);
     let receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-    assert(receipt.isSuccess(), `Failed to grant role ${role} to address ${addr}`);
+    assert(receipt.isSuccess(), `Failed to ${method} role ${role} to address ${addr}`);
     logger.txHash(tx.transaction_hash);
-    logger.success(`Granted role ${role} to address ${addr}`);
+    logger.success(`${method} for role ${role} to address ${addr} successful !!`);
   }
 }
 

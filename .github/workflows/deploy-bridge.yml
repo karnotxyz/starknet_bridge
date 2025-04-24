@@ -152,5 +152,5 @@ jobs:
         run: |
           tsx ./scripts/cli.ts --dump-path=./contracts.json transfer-roles
           tsx ./scripts/cli.ts --dump-path=./contracts.json check-roles
-          tsx ./scripts/cli.ts --dump-path=./contracts.json renoucne-roles
+          tsx ./scripts/cli.ts --dump-path=./contracts.json renounce-roles
 
