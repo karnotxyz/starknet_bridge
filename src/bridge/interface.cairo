@@ -9,6 +9,8 @@ pub trait ITokenBridgeAdmin<TContractState> {
     fn deactivate_token(ref self: TContractState, token: ContractAddress);
     fn reactivate_token(ref self: TContractState, token: ContractAddress);
 
+    fn configure_permissioned_enrollment(ref self: TContractState, permissioned_enroll: bool);
+
     fn increase_withdrawal_limit(
         ref self: TContractState, token: ContractAddress, daily_withdrawal_limit_pct: u8,
     );
@@ -16,6 +18,8 @@ pub trait ITokenBridgeAdmin<TContractState> {
         ref self: TContractState, token: ContractAddress, daily_withdrawal_limit_pct: u8,
     );
     fn disable_withdrawal_limit(ref self: TContractState, token: ContractAddress);
+
+
     fn set_max_total_balance(
         ref self: TContractState, token: ContractAddress, max_total_balance: u256,
     );
@@ -30,6 +34,8 @@ pub trait ITokenBridge<TContractState> {
     fn get_version(self: @TContractState) -> felt252;
     fn get_status(self: @TContractState, token: ContractAddress) -> TokenStatus;
     fn is_servicing_token(self: @TContractState, token: ContractAddress) -> bool;
+
+    fn is_enrollment_permissionless(self: @TContractState) -> bool;
 
     fn enroll_token(ref self: TContractState, token: ContractAddress);
     fn check_deployment_status(ref self: TContractState, token: ContractAddress);

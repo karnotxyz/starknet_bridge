@@ -9,10 +9,9 @@ const consoleFormat = format.printf(({ level, message, timestamp }) => {
 });
 
 // Custom format for file output
-const fileFormat = format.combine(
-  format.timestamp(),
-  format.json()
-);
+const fileFormat = format.printf(({ level, message, timestamp }) => {
+  return `${timestamp} ${level}: ${message}`;
+});
 
 export class Logger {
   private static instance: Logger;

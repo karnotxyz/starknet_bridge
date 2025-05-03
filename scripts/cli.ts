@@ -14,7 +14,6 @@ import {
   checkEnvVars,
   dumpPath,
   getAccount,
-  getEthereumClient,
   setDumpPath,
   sleep,
 } from "./utils/utils.ts";
@@ -32,6 +31,7 @@ import {
   getL3Balance,
   initiateTokenL2toL3Withdrawal,
   deployTimelockContract,
+  configurePermissionedEnrollment,
 } from "./bridgeDeploy.ts";
 import { Layer } from "./config/types.ts";
 import { finalRoles } from "./config/newRoles.ts";
@@ -195,6 +195,16 @@ program
   .option("-d, --delay <delay>", "Delay in seconds", "86400")
   .action(async (options) => {
     await deployTimelockContract(Number(options.delay));
+  });
+
+// Configure Permissionless Enrollment Command
+program
+  .command("configure-permissionless-enrollment")
+  .argument("<permissioned>", "Configure permissionless enrollment for tokens (true/false)")
+  .description("Configure permissionless enrollment for tokens")
+  .action(async (permissioned) => {
+    const acc_l2 = getAccount(Layer.L2);
+    await configurePermissionedEnrollment(acc_l2, Boolean(permissioned));
   });
 
 // Setup Command (Combined operations)

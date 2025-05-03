@@ -8,6 +8,7 @@ pub mod TokenBridge {
     use core::to_byte_array::FormatAsByteArray;
     use core::traits::TryInto;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
+    use openzeppelin::access::accesscontrol::interface::IAccessControl;
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::introspection::src5::SRC5Component::{
         InternalImpl as SRC5InternalImpl, SRC5Impl,
@@ -33,6 +34,8 @@ pub mod TokenBridge {
         ClassHash, ContractAddress, SyscallResultTrait, get_block_timestamp, get_caller_address,
         get_contract_address,
     };
+
+    use starknet_bridge::access_control::roles::Roles;
     use starknet_bridge::access_control::component::BridgeAccessControlComponent;
     use starknet_bridge::bridge::interface::{ITokenBridge, ITokenBridgeAdmin};
     use starknet_bridge::bridge::types::{TokenSettings, TokenStatus};
@@ -82,6 +85,8 @@ pub mod TokenBridge {
         pub messaging_contract: IMessagingDispatcher,
         // All token related settings and its status
         pub token_settings: Map<ContractAddress, TokenSettings>,
+        // Token Enrollment is permissionless or not
+        permissioned_enroll: bool,
         #[substorage(v0)]
         pub upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
@@ -117,6 +122,7 @@ pub mod TokenBridge {
         pub const TOKENS_NOT_TRANSFERRED: felt252 = 'Tokens not transferred';
         pub const NEW_LIMIT_MUST_BE_GREATER: felt252 = 'New limit must be greater';
         pub const WITHDRAWAL_LIMIT_NOT_APPLIED: felt252 = 'Withdrawal limit not applied';
+        pub const PERMISSIONED_OR_NOT_TOKEN_ADMIN: felt252 = 'Permissioned or not TokenAdmin';
     }
 
 
@@ -140,6 +146,7 @@ pub mod TokenBridge {
         WithdrawalLimitDecreased: WithdrawalLimitDecreased,
         SetMaxTotalBalance: SetMaxTotalBalance,
         SetAppchainBridge: SetAppchainBridge,
+        ConfigurePermissionedEnrollment: ConfigurePermissionedEnrollment,
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
         #[flat]
@@ -303,6 +310,11 @@ pub mod TokenBridge {
     #[derive(Drop, starknet::Event)]
     pub struct SetAppchainBridge {
         pub appchain_bridge: ContractAddress,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct ConfigurePermissionedEnrollment {
+        pub enabled: bool,
     }
 
 
@@ -561,6 +573,15 @@ pub mod TokenBridge {
             self.emit(TokenReactivated { token });
         }
 
+        // @dev This can be used to enable or disable permissioned enrollment
+        // @param permissioned_enroll The boolean value to set the permissioned enrollment to
+        fn configure_permissioned_enrollment(ref self: ContractState, permissioned_enroll: bool) {
+            self.bridge_access_control.assert_only_app_governor();
+            self.permissioned_enroll.write(permissioned_enroll);
+
+            self.emit(ConfigurePermissionedEnrollment { enabled: permissioned_enroll });
+        }
+
 
         // @dev This can be used to enable daily withdrawal limits on a token,
         // @param token The address of the token on which to enable withdrawal limit
@@ -686,6 +707,13 @@ pub mod TokenBridge {
         fn enroll_token(ref self: ContractState, token: ContractAddress) {
             self.pausable.assert_not_paused();
             self.reentrancy_guard.start();
+
+            let caller = get_caller_address();
+            let is_token_admin = self.bridge_access_control.has_role(Roles::TOKEN_ADMIN, caller);
+            assert(
+                !self.permissioned_enroll.read() || is_token_admin,
+                Errors::PERMISSIONED_OR_NOT_TOKEN_ADMIN,
+            );
 
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::ALREADY_ENROLLED);
 
@@ -995,6 +1023,10 @@ pub mod TokenBridge {
 
         fn is_servicing_token(self: @ContractState, token: ContractAddress) -> bool {
             self.token_settings.read(token).token_status == TokenStatus::Active
+        }
+
+        fn is_enrollment_permissionless(self: @ContractState) -> bool {
+            !self.permissioned_enroll.read()
         }
 
         fn get_max_total_balance(self: @ContractState, token: ContractAddress) -> u256 {

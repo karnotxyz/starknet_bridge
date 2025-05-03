@@ -51,6 +51,67 @@ fn enroll_token_ok() {
 }
 
 #[test]
+fn enroll_token_permissioned_ok() {
+    let (token_bridge, mut spy) = deploy_token_bridge();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    snf::start_cheat_caller_address(token_bridge.contract_address, APP_GOVERNOR());
+    token_bridge_admin.configure_permissioned_enrollment(false);
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    let usdc_address = deploy_erc20("USDC", "USDC");
+
+    let old_status = token_bridge.get_status(usdc_address);
+    assert(old_status == TokenStatus::Unknown, 'Should be unknown before');
+
+    // Enroll token as token admin as permissioned enrollment is enabled
+    snf::start_cheat_caller_address(token_bridge.contract_address, TOKEN_ADMIN());
+    token_bridge.enroll_token(usdc_address);
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    let payload = message_payloads::deployment_message_payload(usdc_address);
+    let message_hash = hash::compute_message_hash_sn_to_appc(
+        token_bridge.contract_address,
+        L3_BRIDGE_ADDRESS(),
+        constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
+        payload,
+        0,
+    );
+
+    let expected_event = TokenBridge::TokenEnrollmentInitiated {
+        token: usdc_address, deployment_message_hash: message_hash,
+    };
+
+    let new_status = token_bridge.get_status(usdc_address);
+    assert(new_status == TokenStatus::Pending, 'Should be pending now');
+    spy
+        .assert_emitted(
+            @array![
+                (token_bridge.contract_address, Event::TokenEnrollmentInitiated(expected_event)),
+            ],
+        );
+}
+
+#[test]
+#[should_panic(expected: ('Permissioned or not TokenAdmin',))]
+fn enroll_token_permissioned_not_token_admin() {
+    let (token_bridge, _) = deploy_token_bridge();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    snf::start_cheat_caller_address(token_bridge.contract_address, APP_GOVERNOR());
+    token_bridge_admin.configure_permissioned_enrollment(true);
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    let usdc_address = deploy_erc20("USDC", "USDC");
+    token_bridge.enroll_token(usdc_address);
+}
+
+
+#[test]
 #[should_panic(expected: ('Pausable: paused',))]
 fn enroll_token_paused() {
     let (token_bridge, _) = deploy_token_bridge();

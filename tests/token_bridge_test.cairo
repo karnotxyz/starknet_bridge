@@ -179,3 +179,45 @@ fn set_max_total_balance_paused() {
             @array![(token_bridge.contract_address, Event::SetMaxTotalBalance(expected_event))],
         );
 }
+
+#[test]
+fn configure_permissioned_enrollment_ok() {
+    let (token_bridge, mut spy) = deploy_token_bridge();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    snf::start_cheat_caller_address(token_bridge.contract_address, APP_GOVERNOR());
+    token_bridge_admin.configure_permissioned_enrollment(true);
+    snf::stop_cheat_caller_address(token_bridge.contract_address);
+
+    let expected_event = TokenBridge::ConfigurePermissionedEnrollment {
+        enabled: true,
+    };
+
+    spy
+        .assert_emitted(
+            @array![(token_bridge.contract_address, Event::ConfigurePermissionedEnrollment(expected_event))],
+        );
+
+    assert(token_bridge.is_enrollment_permissionless() == false, 'Enrollment not permissioned');
+}
+
+#[test]
+#[should_panic(expected: ('Caller is missing role',))]
+fn configure_permissioned_enrollment_not_app_governor() {
+    let (token_bridge, _) = deploy_token_bridge();
+    let token_bridge_admin = ITokenBridgeAdminDispatcher {
+        contract_address: token_bridge.contract_address,
+    };
+
+    token_bridge_admin.configure_permissioned_enrollment(true);
+}
+
+
+
+#[test]
+fn is_enrollment_permissionless_ok() {
+    let (token_bridge, _) = deploy_token_bridge();
+    assert(token_bridge.is_enrollment_permissionless() == true, 'Enroll permissionless default');
+}

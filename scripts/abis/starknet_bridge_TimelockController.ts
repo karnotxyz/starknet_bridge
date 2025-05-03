@@ -1,8 +1,8 @@
 export const ABI = [
   {
     "type": "impl",
-    "name": "TimelockComponentImpl",
-    "interface_name": "openzeppelin_governance::timelock::interface::ITimelock"
+    "name": "AccessControlImpl",
+    "interface_name": "openzeppelin_access::accesscontrol::interface::IAccessControl"
   },
   {
     "type": "enum",
@@ -17,6 +17,101 @@ export const ABI = [
         "type": "()"
       }
     ]
+  },
+  {
+    "type": "interface",
+    "name": "openzeppelin_access::accesscontrol::interface::IAccessControl",
+    "items": [
+      {
+        "type": "function",
+        "name": "has_role",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "core::felt252"
+          },
+          {
+            "name": "account",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::bool"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "get_role_admin",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "core::felt252"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::felt252"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "grant_role",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "core::felt252"
+          },
+          {
+            "name": "account",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "revoke_role",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "core::felt252"
+          },
+          {
+            "name": "account",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "renounce_role",
+        "inputs": [
+          {
+            "name": "role",
+            "type": "core::felt252"
+          },
+          {
+            "name": "account",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "TimelockComponentImpl",
+    "interface_name": "openzeppelin_governance::timelock::interface::ITimelock"
   },
   {
     "type": "enum",
@@ -344,101 +439,6 @@ export const ABI = [
           {
             "name": "new_delay",
             "type": "core::integer::u64"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      }
-    ]
-  },
-  {
-    "type": "impl",
-    "name": "AccessControlComponentImpl",
-    "interface_name": "openzeppelin_access::accesscontrol::interface::IAccessControl"
-  },
-  {
-    "type": "interface",
-    "name": "openzeppelin_access::accesscontrol::interface::IAccessControl",
-    "items": [
-      {
-        "type": "function",
-        "name": "has_role",
-        "inputs": [
-          {
-            "name": "role",
-            "type": "core::felt252"
-          },
-          {
-            "name": "account",
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "core::bool"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "get_role_admin",
-        "inputs": [
-          {
-            "name": "role",
-            "type": "core::felt252"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "core::felt252"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "grant_role",
-        "inputs": [
-          {
-            "name": "role",
-            "type": "core::felt252"
-          },
-          {
-            "name": "account",
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "revoke_role",
-        "inputs": [
-          {
-            "name": "role",
-            "type": "core::felt252"
-          },
-          {
-            "name": "account",
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "renounce_role",
-        "inputs": [
-          {
-            "name": "role",
-            "type": "core::felt252"
-          },
-          {
-            "name": "account",
-            "type": "core::starknet::contract_address::ContractAddress"
           }
         ],
         "outputs": [],
