@@ -191,13 +191,16 @@ fn configure_permissioned_enrollment_ok() {
     token_bridge_admin.configure_permissioned_enrollment(true);
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
-    let expected_event = TokenBridge::ConfigurePermissionedEnrollment {
-        enabled: true,
-    };
+    let expected_event = TokenBridge::ConfigurePermissionedEnrollment { enabled: true };
 
     spy
         .assert_emitted(
-            @array![(token_bridge.contract_address, Event::ConfigurePermissionedEnrollment(expected_event))],
+            @array![
+                (
+                    token_bridge.contract_address,
+                    Event::ConfigurePermissionedEnrollment(expected_event),
+                ),
+            ],
         );
 
     assert(token_bridge.is_enrollment_permissionless() == false, 'Enrollment not permissioned');
@@ -213,7 +216,6 @@ fn configure_permissioned_enrollment_not_app_governor() {
 
     token_bridge_admin.configure_permissioned_enrollment(true);
 }
-
 
 
 #[test]
