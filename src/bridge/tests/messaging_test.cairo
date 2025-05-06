@@ -5,7 +5,8 @@ use snforge_std::{ContractClassTrait, DeclareResultTrait};
 use starknet::storage::StoragePointerWriteAccess;
 use starknet_bridge::bridge::TokenBridge;
 use starknet_bridge::bridge::tests::constants::{
-    DELAY_TIME, L3_BRIDGE_ADDRESS, TIMELOCK_ADDRESS, USDC_MOCK_ADDRESS,
+    APP_GOVERNOR, DELAY_TIME, GOVERNANCE_ADMIN, L3_BRIDGE_ADDRESS, SECURITY_ADMIN, SECURITY_AGENT,
+    TIMELOCK_ADDRESS, TOKEN_ADMIN, USDC_MOCK_ADDRESS,
 };
 use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, mock_state_testing};
@@ -70,11 +71,11 @@ fn send_deploy_message_ok() {
         ref mock,
         L3_BRIDGE_ADDRESS(),
         messaging_contract_address,
-        array![].span(),
-        array![].span(),
-        array![].span(),
-        array![].span(),
-        array![].span(),
+        array![GOVERNANCE_ADMIN()].span(),
+        array![APP_GOVERNOR()].span(),
+        array![SECURITY_ADMIN()].span(),
+        array![SECURITY_AGENT()].span(),
+        array![TOKEN_ADMIN()].span(),
         TIMELOCK_ADDRESS(),
     );
 
@@ -117,11 +118,11 @@ fn send_deposit_message_ok() {
         ref mock,
         L3_BRIDGE_ADDRESS(),
         messaging_contract_address,
-        array![].span(),
-        array![].span(),
-        array![].span(),
-        array![].span(),
-        array![].span(),
+        array![GOVERNANCE_ADMIN()].span(),
+        array![APP_GOVERNOR()].span(),
+        array![SECURITY_ADMIN()].span(),
+        array![SECURITY_AGENT()].span(),
+        array![TOKEN_ADMIN()].span(),
         TIMELOCK_ADDRESS(),
     );
 
@@ -185,11 +186,11 @@ fn consume_message_ok() {
         ref mock,
         L3_BRIDGE_ADDRESS(),
         messaging_contract_address,
-        array![].span(),
-        array![].span(),
-        array![].span(),
-        array![].span(),
-        array![].span(),
+        array![GOVERNANCE_ADMIN()].span(),
+        array![APP_GOVERNOR()].span(),
+        array![SECURITY_ADMIN()].span(),
+        array![SECURITY_AGENT()].span(),
+        array![TOKEN_ADMIN()].span(),
         TIMELOCK_ADDRESS(),
     );
 
@@ -224,11 +225,11 @@ fn consume_message_no_message() {
         ref mock,
         L3_BRIDGE_ADDRESS(),
         messaging_contract_address,
-        array![].span(),
-        array![].span(),
-        array![].span(),
-        array![].span(),
-        array![].span(),
+        array![GOVERNANCE_ADMIN()].span(),
+        array![APP_GOVERNOR()].span(),
+        array![SECURITY_ADMIN()].span(),
+        array![SECURITY_AGENT()].span(),
+        array![TOKEN_ADMIN()].span(),
         TIMELOCK_ADDRESS(),
     );
 

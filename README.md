@@ -40,7 +40,7 @@ The Timelock contract maintains its own access control with a DEFAULT_ADMIN role
 
 The UPGRADE_GOVERNOR role is exclusively assigned to the Timelock contract, ensuring all upgrades go through a predefined delay period for enhanced security.
 
-![Access Control Roles](./docs/access_control.png)
+![Access Control Roles](./docs/access_control.svg)
 
 ## Functions by Role
 The TokenBridge contract implements role-based access control for various functions. Below is a comprehensive list of functions that each role can call:
@@ -84,6 +84,20 @@ The following functions are publicly accessible without requiring any specific r
 - `appchain_bridge` - Gets the appchain bridge address
 - `get_identity` - Gets the contract identity
 - `get_version` - Gets the contract version
+
+## Token Status Flow
+The token bridge implements a state machine for token status management. The following diagram illustrates how token status can change:
+
+![Token Status Flow](./docs/TokenStatusFlow.svg)
+
+Token status transitions:
+- **Unknown → Pending**: When a token enrollment is initiated
+- **Pending → Active**: When a token is successfully enrolled and activated in the bridge
+- **Active → Deactivated**: When a token is deactivated by the TOKEN_ADMIN
+- **Deactivated → Active**: When a token is reactivated by the TOKEN_ADMIN
+- **Unknown → Blocked**: When a token is blocked by the TOKEN_ADMIN
+- **Blocked → Unknown**: When a token is unblocked by the TOKEN_ADMIN
+
 
 ## Build
 To build the project, run: 

@@ -57,8 +57,8 @@ pub mod TokenBridge {
 
     // AccessControl
     #[abi(embed_v0)]
-    impl AccessControlComponentImpl =
-        AccessControlComponent::AccessControlImpl<ContractState>;
+    impl BridgeAccessControlImpl =
+        BridgeAccessControlComponent::BridgeAccessControlImpl<ContractState>;
     impl BridgeAccessControlInternalImpl =
         BridgeAccessControlComponent::InternalImpl<ContractState>;
 
@@ -73,7 +73,6 @@ pub mod TokenBridge {
     #[abi(embed_v0)]
     impl WithdrawalLimitImpl =
         WithdrawalLimitComponent::WithdrawalLimitImpl<ContractState>;
-    // impl WithdrawalLimitInternal = WithdrawalLimitComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
@@ -105,7 +104,7 @@ pub mod TokenBridge {
     pub mod Errors {
         pub const APPCHAIN_BRIDGE_NOT_SET: felt252 = 'L3 bridge not set';
         pub const ZERO_DEPOSIT: felt252 = 'Zero amount';
-        pub const ALREADY_ENROLLED: felt252 = 'Incorrect token status';
+        pub const ALREADY_ENROLLED: felt252 = 'Token not unknown';
         pub const NOT_ACTIVE: felt252 = 'Token not active';
         pub const DEPLOY_MESSAGE_NOT_PENDING: felt252 = 'Deploy message not Pending';
         pub const DEPOSIT_MESSAGE_NOT_PENDING: felt252 = 'Deposit message not Pending';

@@ -122,7 +122,7 @@ checksum = "sha256:44f32d242af1e43982decc49c563e613a9b67ade552f5c3d5cde504e92f74
 [[package]]
 name = "piltover"
 version = "0.1.0"
-source = "git+https://github.com/keep-starknet-strange/piltover#161cb3f66d256e4d1211c6b50e5d353afb713a3e"
+source = "git+https://github.com/keep-starknet-strange/piltover#d118e53c9952c8a436b083260a8a28d4955321fd"
 dependencies = [
  "openzeppelin",
 ]

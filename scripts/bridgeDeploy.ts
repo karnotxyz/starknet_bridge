@@ -6,10 +6,10 @@ import {
   getAccount,
   getContract,
   setDumpPath
-} from "./utils";
-import { Layer, Contract, Package } from "./types";
+} from "./utils/utils";
+import { Layer, Contract, Package } from "./config/types";
 import { Account, byteArray, Contract as StarknetContract, num } from "starknet";
-import { Logger } from "./logger";
+import { logger } from "./utils/logger";
 import {
   appchainContract,
   tokenBridgeL2Contract,
@@ -18,7 +18,8 @@ import {
   erc20Contract,
   erc20L3Contract,
   starknetBridgePackage,
-} from "./constants";
+} from "./config/constants";
+import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge";
 
 
 /**
@@ -26,7 +27,7 @@ import {
  */
 export async function deployCoreContract(acc: Account) {
   await declareContract(appchainContract);
-  Logger.success("Appchain core contract declared successfully!");
+  logger.success("Appchain core contract declared successfully!");
 
   await deployContract(
     appchainContract,
@@ -39,7 +40,7 @@ export async function deployCoreContract(acc: Account) {
   );
 
   if (appchainContract.address) {
-    Logger.address(
+    logger.address(
       "Appchain core contract deployed at",
       appchainContract.address
     );
@@ -51,7 +52,7 @@ export async function deployCoreContract(acc: Account) {
  */
 export async function deployAppchainBridge() {
   await declareContract(tokenBridgeL3Contract);
-  Logger.success("TokenBridge declared!");
+  logger.success("TokenBridge declared!");
 
   await deployContract(
     tokenBridgeL3Contract,
@@ -59,18 +60,18 @@ export async function deployAppchainBridge() {
   );
 
   if (tokenBridgeL3Contract.address) {
-    Logger.address("AppchainBridge deployed at", tokenBridgeL3Contract.address);
+    logger.address("AppchainBridge deployed at", tokenBridgeL3Contract.address);
   }
 }
 
-export async function deployTimelockContract() {
+export async function deployTimelockContract(minDelay: number = 86400) {
   await declareContract(timelockContract);
-  Logger.success("Timelock declared!");
+  logger.success("Timelock declared!");
 
   await deployContract(
     timelockContract,
     [
-      86400, // delay (24 hours in seconds)
+      minDelay, // delay (24 hours in seconds)
       [process.env.ACCOUNT_L2_ADDRESS as string], // proposers
       [process.env.ACCOUNT_L2_ADDRESS as string], // executors
       process.env.ACCOUNT_L2_ADDRESS as string, // admin
@@ -78,7 +79,7 @@ export async function deployTimelockContract() {
   )
 
   if (timelockContract.address) {
-    Logger.address("Timelock deployed at", timelockContract.address);
+    logger.address("Timelock deployed at", timelockContract.address);
   }
 }
 
@@ -87,7 +88,7 @@ export async function deployTimelockContract() {
  */
 export async function deployL2Bridge() {
   await declareContract(tokenBridgeL2Contract);
-  Logger.success("TokenBridge declared!");
+  logger.success("TokenBridge declared!");
 
   // Get the saved contract addresses
   getContract(tokenBridgeL3Contract);
@@ -96,15 +97,21 @@ export async function deployL2Bridge() {
 
   // Verify we have the required addresses
   if (!tokenBridgeL3Contract.address) {
-    throw new Error("L3 Bridge contract address not found, deploy L3 bridge first");
+    const errorMsg = "L3 Bridge contract address not found, deploy L3 bridge first";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   if (!appchainContract.address) {
-    throw new Error("Appchain core contract address not found, deploy core contract first");
+    const errorMsg = "Appchain core contract address not found, deploy core contract first";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   if (!timelockContract.address) {
-    throw new Error("Timelock contract address not found, deploy timelock contract first");
+    const errorMsg = "Timelock contract address not found, deploy timelock contract first";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   await deployContract(
@@ -122,7 +129,7 @@ export async function deployL2Bridge() {
   );
 
   if (tokenBridgeL2Contract.address) {
-    Logger.address("TokenBridge L2 deployed at", tokenBridgeL2Contract.address);
+    logger.address("TokenBridge L2 deployed at", tokenBridgeL2Contract.address);
   }
 }
 
@@ -133,7 +140,9 @@ export async function configureAppchainBridge(acc_l3: Account) {
   getContract(tokenBridgeL3Contract);
 
   if (!tokenBridgeL3Contract.address) {
-    throw new Error("L3 Bridge contract address not found");
+    const errorMsg = "L3 Bridge contract address not found";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   const appchainBridge = tokenBridgeL3Contract.address;
@@ -161,8 +170,8 @@ export async function configureAppchainBridge(acc_l3: Account) {
 
     await acc_l3.waitForTransaction(res.transaction_hash);
 
-    Logger.success("App role admin set successfully !!");
-    Logger.txHash(res.transaction_hash);
+    logger.success("App role admin set successfully !!");
+    logger.txHash(res.transaction_hash);
   }
 
   {
@@ -185,8 +194,8 @@ export async function configureAppchainBridge(acc_l3: Account) {
 
     await acc_l3.waitForTransaction(res.transaction_hash);
 
-    Logger.success("App governor set successfully !!");
-    Logger.txHash(res.transaction_hash);
+    logger.success("App governor set successfully !!");
+    logger.txHash(res.transaction_hash);
   }
 
   {
@@ -207,8 +216,8 @@ export async function configureAppchainBridge(acc_l3: Account) {
       },
     });
     await acc_l3.waitForTransaction(res.transaction_hash);
-    Logger.success("L2 Governance set successfully !!");
-    Logger.txHash(res.transaction_hash);
+    logger.success("L2 Governance set successfully !!");
+    logger.txHash(res.transaction_hash);
   }
 }
 
@@ -220,11 +229,15 @@ export async function setL2Bridge(acc_l3: Account) {
   getContract(tokenBridgeL3Contract);
 
   if (!tokenBridgeL2Contract.address) {
-    throw new Error("L2 Bridge contract address not found");
+    const errorMsg = "L2 Bridge contract address not found";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   if (!tokenBridgeL3Contract.address) {
-    throw new Error("L3 Bridge contract address not found");
+    const errorMsg = "L3 Bridge contract address not found";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   const tokenBridge = tokenBridgeL2Contract.address;
@@ -251,27 +264,31 @@ export async function setL2Bridge(acc_l3: Account) {
     });
 
     await acc_l3.waitForTransaction(res.transaction_hash);
-    Logger.success("L2 bridge set successfully !!");
-    Logger.txHash(res.transaction_hash);
+    logger.success("L2 bridge set successfully !!");
+    logger.txHash(res.transaction_hash);
   }
 }
 
 /**
  * Deploy an ERC20 token on L2
  */
-export async function deployERC20() {
+export async function deployERC20(
+  name: string = "My token name",
+  symbol: string = "MTK",
+  decimals: number = 18
+) {
   await declareContract(erc20Contract);
-  Logger.success("ERC20 declared!");
+  logger.success("ERC20 declared!");
 
   await deployContract(
     erc20Contract,
     [
-      byteArray.byteArrayFromString("My token name"), // name
-      byteArray.byteArrayFromString("MTK"), // symbol
-      18, // decimals
+      byteArray.byteArrayFromString(name), // name
+      byteArray.byteArrayFromString(symbol), // symbol
+      decimals, // decimals
       10000n * 10n ** 18n, // initial_supply
       0,
-      process.env.ACCOUNT_L2_ADDRESS as string, // initia_recepient
+      process.env.ACCOUNT_L2_ADDRESS as string, // initial_recepient
       process.env.ACCOUNT_L2_ADDRESS as string, // l2_token_governance
       process.env.ACCOUNT_L2_ADDRESS as string, // permitted_minter
       0, // upgrade delay
@@ -284,12 +301,14 @@ export async function deployERC20() {
  */
 export async function declareAndSetERC20L3(acc_l3: Account) {
   await declareContract(erc20L3Contract);
-  Logger.success("ERC20 declared!");
+  logger.success("ERC20 declared!");
 
   getContract(tokenBridgeL3Contract);
 
   if (!tokenBridgeL3Contract.address) {
-    throw new Error("L3 Bridge contract address not found");
+    const errorMsg = "L3 Bridge contract address not found";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   const l3Bridge = tokenBridgeL3Contract.address;
@@ -301,7 +320,9 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
   {
     const class_hash = erc20L3Contract.classHash;
     if (!class_hash) {
-      throw new Error("ERC20Lockable class hash not found");
+      const errorMsg = "ERC20Lockable class hash not found";
+      logger.error(errorMsg);
+      throw new Error(errorMsg);
     }
 
     const call = l3BridgeContract.populate("set_erc20_class_hash", {
@@ -322,8 +343,8 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
       },
     });
     await acc.waitForTransaction(result.transaction_hash);
-    Logger.success("ERC20 class_hash set successfully!");
-    Logger.txHash(result.transaction_hash);
+    logger.success("ERC20 class_hash set successfully!");
+    logger.txHash(result.transaction_hash);
   }
 }
 
@@ -342,11 +363,15 @@ export async function enrollToken(
   getContract(tokenBridgeL2Contract);
 
   if (!tokenContract.address) {
-    throw new Error(`Token contract ${token} address not found`);
+    const errorMsg = `Token contract ${token} address not found`;
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   if (!tokenBridgeL2Contract.address) {
-    throw new Error("L2 Bridge contract address not found");
+    const errorMsg = "L2 Bridge contract address not found";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   const tokenAddress = tokenContract.address;
@@ -360,8 +385,8 @@ export async function enrollToken(
   });
   let result = await acc_l2.execute([call]);
   await acc_l2.waitForTransaction(result.transaction_hash);
-  Logger.success("Token enrolled successfully!");
-  Logger.txHash(result.transaction_hash);
+  logger.success("Token enrolled successfully!");
+  logger.txHash(result.transaction_hash);
 }
 
 /**
@@ -369,20 +394,31 @@ export async function enrollToken(
  */
 export async function deposit(
   acc_l2: Account,
+  token: string = "ERC20_OZ",
   amount: bigint = 10n * 10n ** 18n
 ) {
-  getContract(erc20Contract);
+  // Create a contract object for the token and get its existing data
+  const tokenContract: Contract = {
+    name: token,
+    layer: Layer.L2,
+    package: starknetBridgePackage
+  };
+  getContract(tokenContract);
   getContract(tokenBridgeL2Contract);
 
-  if (!erc20Contract.address) {
-    throw new Error("ERC20 contract address not found");
+  if (!tokenContract.address) {
+    const errorMsg = "ERC20 contract address not found";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   if (!tokenBridgeL2Contract.address) {
-    throw new Error("L2 Bridge contract address not found");
+    const errorMsg = "L2 Bridge contract address not found";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
-  const tokenAddress = erc20Contract.address;
+  const tokenAddress = tokenContract.address;
   const tokenBridge = tokenBridgeL2Contract.address;
 
   // Approval
@@ -396,30 +432,28 @@ export async function deposit(
     });
     let result = await acc_l2.execute([call]);
     await acc_l2.waitForTransaction(result.transaction_hash);
-    Logger.success("Approval success!");
-    Logger.txHash(result.transaction_hash);
+    logger.success("Approval success!");
+    logger.txHash(result.transaction_hash);
   }
 
   // Deposit
   {
-    const Bridgecls = await acc_l2.getClassAt(tokenBridge);
     const tokenBridgeContract = new StarknetContract(
-      Bridgecls.abi,
+      TokenBridgeL2ABI,
       tokenBridge,
       acc_l2
-    );
+    ).typedv2(TokenBridgeL2ABI);
 
-    const call = tokenBridgeContract.populate("deposit", {
+    const result = await tokenBridgeContract.deposit({
       token: tokenAddress,
       amount,
       appchain_recipient: process.env.ACCOUNT_L3_ADDRESS as string,
       message: 0,
     });
-    let result = await acc_l2.execute([call]);
 
     await acc_l2.waitForTransaction(result.transaction_hash);
-    Logger.success("Deposit success!");
-    Logger.txHash(result.transaction_hash);
+    logger.success("Deposit success!");
+    logger.txHash(result.transaction_hash);
   }
 }
 
@@ -438,11 +472,15 @@ export async function getL3Balance(
   getContract(tokenBridgeL3Contract);
 
   if (!tokenContract.address) {
-    throw new Error(`Token contract ${token} address not found`);
+    const errorMsg = `Token contract ${token} address not found`;
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   if (!tokenBridgeL3Contract.address) {
-    throw new Error("L3 Bridge contract address not found");
+    const errorMsg = "L3 Bridge contract address not found";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   const enrolledTokenAddress = tokenContract.address;
@@ -459,15 +497,16 @@ export async function getL3Balance(
   const correspondingToken = await appchainBridgeContract.call("get_l2_token", [
     enrolledTokenAddress,
   ]);
-  Logger.info(`Finding corresponding appchain token`);
+  logger.info(`Finding corresponding appchain token`);
 
   if (correspondingToken === 0n) {
-    Logger.error("No corresponding token found on l3");
-    throw new Error("No corresponding token found on l3 ");
+    const errorMsg = "No corresponding token found on l3";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   const correspondingTokenAddress = num.toHex(correspondingToken as any);
-  Logger.address(
+  logger.address(
     "Corresponding appchain token address",
     correspondingTokenAddress
   );
@@ -480,7 +519,7 @@ export async function getL3Balance(
     providerL3
   );
   const balance = await appchainToken.call("balanceOf", [address]);
-  Logger.info(`Balance: ${balance}`);
+  logger.info(`Balance: ${balance}`);
 }
 
 /**
@@ -503,11 +542,15 @@ export async function initiateTokenL2toL3Withdrawal(
   getContract(tokenContract);
 
   if (!tokenBridgeL3Contract.address) {
-    throw new Error("L3 Bridge contract address not found");
+    const errorMsg = "L3 Bridge contract address not found";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   if (!tokenContract.address) {
-    throw new Error(`Token contract ${l2_token} address not found`);
+    const errorMsg = `Token contract ${l2_token} address not found`;
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   const tokenBridge_l3 = tokenBridgeL3Contract.address;
@@ -530,8 +573,8 @@ export async function initiateTokenL2toL3Withdrawal(
 
   let tx = await acc_l3.execute([initiateWithdrawalCall]);
   await acc_l3.waitForTransaction(tx.transaction_hash);
-  Logger.success("Withdrawal initiated successfully!");
-  Logger.txHash(tx.transaction_hash);
+  logger.success("Withdrawal initiated successfully!");
+  logger.txHash(tx.transaction_hash);
 }
 
 /**
@@ -549,7 +592,7 @@ export async function setup() {
   await setL2Bridge(acc_l3);
   await declareAndSetERC20L3(acc_l3);
 
-  Logger.success("Setup completed!");
+  logger.success("Setup completed!");
 }
 
 /**

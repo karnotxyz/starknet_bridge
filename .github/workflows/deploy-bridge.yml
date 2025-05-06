@@ -86,8 +86,8 @@ jobs:
         run: |
           cd starkgate-contracts 
           git checkout dev-2.9.2
-          ./scripts/setup.sh && \
-          ./scripts/build-cairo.sh 
+          cd .. 
+          bash ./scripts/shell/build.sh
 
       - name: Build bridge contracts
         run: scarb build
@@ -139,4 +139,24 @@ jobs:
           echo "Server is ready!"
 
       - name: Run Bridge Deployment Script
-        run: tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
+        run: |
+           tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
+           tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-erc20
+
+
+      - name: Run Token Actions
+        run: |
+          tsx ./scripts/cli.ts --dump-path=./contracts.json token-actions --token=ERC20_OZ
+
+      - name: Run Role Transfer Script
+        run: |
+          tsx ./scripts/cli.ts --dump-path=./contracts.json transfer-roles
+
+      - name: Check if all roles granted
+        run: 
+          tsx ./scripts/cli.ts --dump-path=./contracts.json check-roles
+
+      - name: Renounce roles
+        run: 
+          tsx ./scripts/cli.ts --dump-path=./contracts.json renounce-roles
+

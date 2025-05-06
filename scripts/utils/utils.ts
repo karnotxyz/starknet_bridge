@@ -1,11 +1,11 @@
 import assert from 'assert'
-import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContractHashes, hash, json, provider } from 'starknet'
+import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContractHashes, hash, json, num, provider } from 'starknet'
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
-import { Logger } from "./logger.ts";
+import { logger } from "./logger.ts";
 import { sepolia } from 'viem/chains'
-import { Layer, Contract } from './types'
+import { Layer, Contract } from '../config/types.ts'
 
 export async function checkEnvVars() {
   console.log('===============================')
@@ -38,9 +38,9 @@ export function getContract(contract: Contract): Contract {
   const contracts = JSON.parse(readFileSync(PATH, { encoding: 'utf-8' }));
 
   // Try to get class hash if it exists in stored contracts
-  if (contracts.class_hashes && 
-      contracts.class_hashes[contract.layer] && 
-      contracts.class_hashes[contract.layer][`${contract.name}_${contract.package.name}`]) {
+  if (contracts.class_hashes &&
+    contracts.class_hashes[contract.layer] &&
+    contracts.class_hashes[contract.layer][`${contract.name}_${contract.package.name}`]) {
     contract.classHash = contracts.class_hashes[contract.layer][`${contract.name}_${contract.package.name}`];
   }
 
@@ -52,7 +52,6 @@ export function getContract(contract: Contract): Contract {
   return contract;
 }
 
-// Legacy function for backward compatibility
 export function getContracts() {
   const PATH = dumpPath;
   if (existsSync(PATH)) {
@@ -61,8 +60,6 @@ export function getContracts() {
   return {}
 }
 
-// TODO: Incorporate the layer also
-// TODO: Add layer as a param
 function saveContracts(contracts: any) {
   const PATH = dumpPath;
   writeFileSync(PATH, JSON.stringify(contracts));
@@ -95,14 +92,24 @@ export function getAccount(layer: Layer): Account {
   if (layer == Layer.L2) {
     const privateKey = process.env.ACCOUNT_L2_PRIVATE_KEY as string;
     const accountAddress: string = process.env.ACCOUNT_L2_ADDRESS as string;
-    return new Account(provider, accountAddress, privateKey, undefined, "0x3");
+    return new Account(provider, accountAddress, privateKey, '1', "0x3");
   } else if (layer == Layer.L3) {
     const privateKey = process.env.ACCOUNT_L3_PRIVATE_KEY as string;
     const accountAddress: string = process.env.ACCOUNT_L3_ADDRESS as string;
-    return new Account(provider, accountAddress, privateKey, undefined, "0x3");
+    return new Account(provider, accountAddress, privateKey, '1', "0x3");
   } else {
     throw new Error('Invalid layer');
   }
+}
+
+
+export function standardiseAddress(address: string | bigint) {
+  let _a = address;
+  if (!address) {
+    _a = "0";
+  }
+  const a = num.getHexString(num.getDecimalString(_a.toString()));
+  return a;
 }
 
 /**
@@ -112,13 +119,13 @@ export function getAccount(layer: Layer): Account {
  */
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export async function declareContract(contract: Contract) {
+export async function declareContract(contract: Contract, skipIfPresentInDump: boolean = true) {
   // First, check if we already have the contract declared and get existing information
   getContract(contract);
 
   // If contract already has a class hash, it's already declared
-  if (contract.classHash) {
-    console.log(`Contract ${contract.name} already declared with class hash ${contract.classHash}`);
+  if (contract.classHash && skipIfPresentInDump) {
+    logger.info(`Contract ${contract.name} already present in dump with class hash ${contract.classHash}`);
     return { transaction_hash: '', class_hash: contract.classHash };
   }
 
@@ -137,19 +144,12 @@ export async function declareContract(contract: Contract) {
     contract: compiledSierra,
     casm: compiledCasm
   };
-  //
-  const fee = await acc.estimateDeclareFee({
-    contract: compiledSierra,
-    casm: compiledCasm,
-  })
-  console.log('declare fee', Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
-  const result = extractContractHashes(payload);
-  console.log("classhash:", result.classHash);
 
+  logger.info(`Declaring: ${contract.name}_${contract.package.name}`);
   try {
     let tx: { transaction_hash: string; class_hash: string; };
     if (layer === Layer.L3) {
-      Logger.info('Declaring on L3')
+      logger.info('Declaring on L3');
       tx = await acc.declareIfNot(payload, {
         maxFee: 0,
         resourceBounds: {
@@ -164,14 +164,18 @@ export async function declareContract(contract: Contract) {
         }
       });
     } else {
-      Logger.info('Declaring on L2')
+      logger.info('Declaring on L2');
       tx = await acc.declareIfNot(payload);
     }
-    await provider.waitForTransaction(tx.transaction_hash, {
-      successStates: [TransactionFinalityStatus.ACCEPTED_ON_L2]
-    })
 
-    console.log(`Declaring: ${contract.name}_${contract.package.name}, tx: `, tx.transaction_hash);
+    if (tx.transaction_hash !== '') {
+      await provider.waitForTransaction(tx.transaction_hash, {
+        successStates: [TransactionFinalityStatus.ACCEPTED_ON_L2]
+      })
+    } else {
+      logger.info(`Contract ${contract.name} already declared with class hash ${tx.class_hash}`);
+    }
+
     if (!contracts.class_hashes) {
       contracts['class_hashes'] = {};
     }
@@ -181,15 +185,16 @@ export async function declareContract(contract: Contract) {
     // Todo attach cairo and scarb version. and commit ID
     contracts.class_hashes[layer][`${contract.name}_${contract.package.name}`] = tx.class_hash;
     saveContracts(contracts);
-    console.log(`Contract declared: ${contract.name}_${contract.package.name}`);
-    console.log(`Class hash: ${tx.class_hash}`)
+    logger.info(`Contract declared: ${contract.name}_${contract.package.name}`);
+    logger.info(`Class hash: ${tx.class_hash}`)
 
     // Update contract with class hash
     contract.classHash = tx.class_hash;
 
     return tx;
   } catch (e) {
-    console.log(e);
+    logger.error(e);
+    throw e;
   }
 }
 

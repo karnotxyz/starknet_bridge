@@ -2,7 +2,8 @@ use snforge_std as snf;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use starknet_bridge::access_control::roles::Roles;
 use starknet_bridge::bridge::tests::constants::{
-    L3_BRIDGE_ADDRESS, TIMELOCK_ADDRESS, TOKEN_ADMIN, USDC_MOCK_ADDRESS,
+    APP_GOVERNOR, GOVERNANCE_ADMIN, L3_BRIDGE_ADDRESS, SECURITY_ADMIN, SECURITY_AGENT,
+    TIMELOCK_ADDRESS, TOKEN_ADMIN, USDC_MOCK_ADDRESS,
 };
 use starknet_bridge::bridge::tests::utils::setup::mock_state_testing;
 use starknet_bridge::bridge::types::{TokenSettings, TokenStatus};
@@ -17,10 +18,10 @@ fn deactivate_token_ok() {
         ref mock,
         L3_BRIDGE_ADDRESS(),
         'messaging_mock'.try_into().unwrap(),
-        array![].span(),
-        array![].span(),
-        array![].span(),
-        array![].span(),
+        array![GOVERNANCE_ADMIN()].span(),
+        array![APP_GOVERNOR()].span(),
+        array![SECURITY_ADMIN()].span(),
+        array![SECURITY_AGENT()].span(),
         array![TOKEN_ADMIN()].span(),
         TIMELOCK_ADDRESS(),
     );
@@ -222,7 +223,7 @@ fn reactivate_token_not_deactivated() {
 }
 
 #[test]
-#[should_panic(expected: ('Incorrect token status',))]
+#[should_panic(expected: ('Token not unknown',))]
 fn enroll_token_blocked() {
     let mut mock = mock_state_testing();
 

@@ -41,6 +41,18 @@ pub fn USDC_MOCK_ADDRESS() -> ContractAddress {
     'Usdc address'.try_into().unwrap()
 }
 
+pub fn PROPOSER_ROLE() -> ContractAddress {
+    'PROPOSER_ROLE'.try_into().unwrap()
+}
+
+pub fn EXECUTOR_ROLE() -> ContractAddress {
+    'EXECUTOR_ROLE'.try_into().unwrap()
+}
+
+pub fn DEFAULT_ADMIN() -> ContractAddress {
+    'DEFAULT_ADMIN'.try_into().unwrap()
+}
+
 // 5 days as the delay time (5 * 86400 = 432000)
 pub const DELAY_TIME: felt252 = 432000;
 

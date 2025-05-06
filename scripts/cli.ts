@@ -1,9 +1,6 @@
 #!/usr/bin/env tsx
 import * as dotenv from "dotenv";
 // Load environment variables
-console.log(
-  process.env.CI || process.env.CI == "true" || process.env.GITHUB_ACTIONS
-);
 dotenv.config({
   path:
     process.env.CI || process.env.CI == "true" || process.env.GITHUB_ACTIONS
@@ -20,8 +17,8 @@ import {
   getEthereumClient,
   setDumpPath,
   sleep,
-} from "./utils.ts";
-import { Logger } from "./logger.ts";
+} from "./utils/utils.ts";
+import { logger } from "./utils/logger.ts";
 import {
   deployCoreContract,
   deployAppchainBridge,
@@ -36,10 +33,27 @@ import {
   initiateTokenL2toL3Withdrawal,
   deployTimelockContract,
 } from "./bridgeDeploy.ts";
+import { Layer } from "./config/types.ts";
+import { finalRoles } from "./config/newRoles.ts";
 import {
-  Layer
-} from "./types.ts"
-
+  transferRoles,
+  transferAppchainL2Roles,
+  transferTimelockL2Roles,
+  transferTokenBridgeL2Roles,
+  transferTokenBridgeL3Roles,
+  renounceRoles,
+  renounceTimelockRolesRoles,
+  renounceAppchainL2Roles,
+  renounceTokenBridgeL2Roles,
+  renounceTokenBridgeL3Roles,
+  checkRolesPassed,
+  checkTokenBridgeL2Roles,
+  checkTimelockL2Roles,
+  checkAppchainL2Roles,
+  checkTokenBridgeL3Roles,
+} from "./finalRoleTransfer.ts";
+import { executeUpgradeTokenBridgeL2, upgradeAppchain, upgradeTokenBridgeL2 } from "./upgrades.ts";
+import { testTokenActions } from "./tokenActions.ts";
 const program = new Command();
 
 program
@@ -51,7 +65,7 @@ program
 program.hook("preAction", (thisCommand, actionCommand) => {
   const options = program.opts();
   setDumpPath(options.dumpPath);
-  Logger.info(`Using dump path: ${dumpPath}`);
+  logger.info(`Using dump path: ${dumpPath}`);
 });
 
 await checkEnvVars();
@@ -103,8 +117,15 @@ program
 program
   .command("deploy-erc20")
   .description("Deploy an ERC20 token to L2")
-  .action(async () => {
-    await deployERC20();
+  .option("-n, --name <name>", "Token name", "Token name")
+  .option("-s, --symbol <symbol>", "Token symbol", "TST")
+  .option("-d, --decimals <decimals>", "Number of decimals", "18")
+  .action(async (options) => {
+    await deployERC20(
+      options.name,
+      options.symbol,
+      parseInt(options.decimals, 10)
+    );
   });
 
 // Declare And Set ERC20 L3 Command
@@ -136,14 +157,14 @@ program
   .description("Deposit tokens from L2 to L3")
   .option("-t, --token <token>", "Token name", "ERC20_starknet_bridge")
   .option(
-    "-a, --amount amount",
+    "-a, --amount <amount>",
     "Amount of tokens to deposit",
     "10n * 10n ** 18n"
   )
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
-    await deposit(acc_l2, BigInt(options.amount));
-  }); // Get L3 Balance Command program .command('get-l3-balance') .description('Get the L3 balance for an address') .argument('<address>', 'Address to check') .option('-t, --token <token>', 'Token name', 'MyL2GameToken') .action(async (address, options) => { await getL3Balance(address, options.token); });
+    await deposit(acc_l2, options.token, BigInt(options.amount));
+  });
 
 // Get L3 Balance Command
 program
@@ -171,8 +192,9 @@ program
 program
   .command("deploy-timelock")
   .description("Deploy the timelock contract to L2")
-  .action(async () => {
-    await deployTimelockContract();
+  .option("-d, --delay <delay>", "Delay in seconds", "86400")
+  .action(async (options) => {
+    await deployTimelockContract(Number(options.delay));
   });
 
 // Setup Command (Combined operations)
@@ -182,44 +204,212 @@ program
   .action(async () => {
     const acc_l3 = getAccount(Layer.L3);
     await declareAndSetERC20L3(acc_l3);
-    Logger.success("Setup completed!");
+    logger.success("Setup completed!");
+  });
+
+program
+  .command("transfer-roles")
+  .description("Transfer roles to the new owner")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    const acc_l3 = getAccount(Layer.L3);
+    await transferRoles(acc_l2, acc_l3, finalRoles);
+  });
+
+program
+  .command("transfer-roles-token-bridge-l2")
+  .description("Transfer roles to the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await transferTokenBridgeL2Roles(acc_l2, finalRoles);
+  });
+
+program
+  .command("transfer-roles-timelock-l2")
+  .description("Transfer roles to the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await transferTimelockL2Roles(acc_l2, finalRoles);
+  });
+
+program
+  .command("transfer-roles-appchain-l2")
+  .description("Transfer roles to the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await transferAppchainL2Roles(acc_l2, finalRoles);
+  });
+
+program
+  .command("transfer-roles-token-bridge-l3")
+  .description("Transfer roles to the new addresses")
+  .action(async () => {
+    const acc_l3 = getAccount(Layer.L3);
+    await transferTokenBridgeL3Roles(acc_l3, finalRoles);
+  });
+
+program
+  .command("check-roles")
+  .description("Check roles for the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    const acc_l3 = getAccount(Layer.L3);
+    await checkRolesPassed(acc_l2, acc_l3, finalRoles);
+  });
+
+program
+  .command("check-roles-token-bridge-l2")
+  .description("Check roles for the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await checkTokenBridgeL2Roles(acc_l2, finalRoles);
+  });
+
+program
+  .command("check-roles-timelock-l2")
+  .description("Check roles for the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await checkTimelockL2Roles(acc_l2, finalRoles);
+  });
+
+program
+  .command("check-roles-appchain-l2")
+  .description("Check roles for the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await checkAppchainL2Roles(acc_l2, finalRoles);
+  });
+
+program
+  .command("check-roles-token-bridge-l3")
+  .description("Check roles for the new addresses")
+  .action(async () => {
+    const acc_l3 = getAccount(Layer.L3);
+    await checkTokenBridgeL3Roles(acc_l3, finalRoles);
+  });
+
+program
+  .command("renounce-roles")
+  .description("Renounce roles from deployer")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    const acc_l3 = getAccount(Layer.L3);
+    await renounceRoles(acc_l2, acc_l3);
+  })
+
+program
+  .command("renounce-roles-token-bridge-l2")
+  .description("Renounce roles from deployer")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await renounceTokenBridgeL2Roles(acc_l2);
+  })
+
+
+program
+  .command("renounce-roles-timelock-l2")
+  .description("Transfer roles to the new addresses")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await renounceTimelockRolesRoles(acc_l2);
+  });
+
+program
+  .command("renounce-roles-appchain-l2")
+  .description("Renounce roles from deployer")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await renounceAppchainL2Roles(acc_l2);
+  })
+
+program
+  .command("renounce-roles-token-bridge-l3")
+  .description("Transfer roles to the new addresses")
+  .action(async () => {
+    const acc_l3 = getAccount(Layer.L3);
+    await renounceTokenBridgeL3Roles(acc_l3);
+  });
+
+program
+  .command("upgrade-appchain")
+  .description("Upgrade the appchain")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await upgradeAppchain(acc_l2);
+  });
+
+program
+  .command("upgrade-token-bridge-l2")
+  .description("Upgrade the token bridge on L2")
+  .option("--no-execution", "Dont try to execute just after proposing", false)
+  .action(async (options) => {
+    const acc_l2 = getAccount(Layer.L2);
+    await upgradeTokenBridgeL2(acc_l2);
+    if(!options.noExecution) {
+      await executeUpgradeTokenBridgeL2(acc_l2); 
+    }
+  });
+
+program
+  .command("execute-bridge-l2-upgrade")
+  .description("Execute token bridge upgrade proposal")
+  .action(async () => {
+    const acc_l2 = getAccount(Layer.L2);
+    await executeUpgradeTokenBridgeL2(acc_l2);
+  })
+
+program
+  .command("token-actions")
+  .description("Perform actions on a token")
+  .option("-t, --token <token>", "Token name", "ERC20_OZ")
+  .action(async (options) => {
+    const acc_l2 = getAccount(Layer.L2);
+    await testTokenActions(acc_l2, options.token);
   });
 
 // Full flow command
 program
   .command("full-flow")
   .description("Run the full flow of operations")
-  .action(async () => {
+  .option(
+    "-e, --with-enroll",
+    "To deploy a token and ernroll post the setup",
+    false
+  )
+  .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
     const acc_l3 = getAccount(Layer.L3);
 
-    Logger.success("Starting full flow setup...");
+    logger.success("Starting full flow setup...");
 
     // Setup
-    Logger.step(1, "Setting up bridges...");
+    logger.info("MAIN STEP 1: Setting up bridges...");
     await deployAppchainBridge();
-    await deployTimelockContract();
+    // Deploy timelock contract with 0 `min_delay` initially
+    await deployTimelockContract(0);
     await deployL2Bridge();
 
-    Logger.step(2, "Configuring the bridges...");
+    logger.info("MAIN STEP 2: Configuring the bridges...");
     await configureAppchainBridge(acc_l3);
     await setL2Bridge(acc_l3);
     await declareAndSetERC20L3(acc_l3);
 
-    // Deploy and enroll token
-    Logger.step(3, "Deploying and enrolling token...");
-    await deployERC20();
-    await enrollToken(acc_l2, "ERC20_OZ");
+    if (options.withEnroll) {
+      // Deploy and enroll token
+      logger.info("MAIN STEP 3: Deploying and enrolling token...");
+      await deployERC20();
+      await enrollToken(acc_l2, "ERC20_OZ");
 
-    // Check the corresponding token and balance
-    Logger.step(4, "Check the corresponding token and balance on l3");
-    await sleep(20000);
-    await getL3Balance(
-      process.env.ACCOUNT_L3_ADDRESS as string,
-      "ERC20_OZ"
-    );
+      // Check the corresponding token and balance
+      logger.info(
+        "MAIN STEP 4: Check the corresponding token and balance on l3"
+      );
+      await sleep(15000);
+      await getL3Balance(process.env.ACCOUNT_L3_ADDRESS as string, "ERC20_OZ");
+    }
 
-    Logger.success("Full flow completed successfully!");
+    logger.success("Full flow completed successfully!");
   });
 
 program.parse(process.argv);

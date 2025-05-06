@@ -3,4 +3,6 @@ target
 .snfoundry_cache/
 node_modules/
 .env
-contracts.json
+contracts*.json
+
+logs/

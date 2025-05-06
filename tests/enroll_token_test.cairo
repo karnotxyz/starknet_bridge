@@ -68,7 +68,7 @@ fn enroll_token_paused() {
 }
 
 #[test]
-#[should_panic(expected: ('Incorrect token status',))]
+#[should_panic(expected: ('Token not unknown',))]
 fn enroll_token_already_enrolled() {
     let (token_bridge, _) = deploy_token_bridge();
 
