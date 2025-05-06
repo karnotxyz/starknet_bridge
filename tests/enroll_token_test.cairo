@@ -58,7 +58,7 @@ fn enroll_token_permissioned_ok() {
     };
 
     snf::start_cheat_caller_address(token_bridge.contract_address, APP_GOVERNOR());
-    token_bridge_admin.configure_permissioned_enrollment(false);
+    token_bridge_admin.configure_permissioned_enrollment(true);
     snf::stop_cheat_caller_address(token_bridge.contract_address);
 
     let usdc_address = deploy_erc20("USDC", "USDC");
