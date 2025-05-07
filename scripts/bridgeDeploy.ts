@@ -22,32 +22,6 @@ import {
 import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge";
 import assert from "assert";
 
-
-/**
- * Deploy the core contract on Starknet L2
- */
-export async function deployCoreContract(acc: Account) {
-  await declareContract(appchainContract);
-  logger.success("Appchain core contract declared successfully!");
-
-  await deployContract(
-    appchainContract,
-    [
-      acc.address, // owner
-      0, // state_root,
-      0, // block_number,
-      0, // block_hash
-    ]
-  );
-
-  if (appchainContract.address) {
-    logger.address(
-      "Appchain core contract deployed at",
-      appchainContract.address
-    );
-  }
-}
-
 /**
  * Deploy the appchain bridge on L3
  */
@@ -169,7 +143,8 @@ export async function configureAppchainBridge(acc_l3: Account) {
       },
     });
 
-    await acc_l3.waitForTransaction(res.transaction_hash);
+    const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
+    assert(tx_receipt.isSuccess(), `Register App role admin failed`);
 
     logger.success("App role admin set successfully !!");
     logger.txHash(res.transaction_hash);
@@ -193,7 +168,8 @@ export async function configureAppchainBridge(acc_l3: Account) {
       },
     });
 
-    await acc_l3.waitForTransaction(res.transaction_hash);
+    const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
+    assert(tx_receipt.isSuccess(), `Register App governor failed`);
 
     logger.success("App governor set successfully !!");
     logger.txHash(res.transaction_hash);
@@ -216,7 +192,9 @@ export async function configureAppchainBridge(acc_l3: Account) {
         },
       },
     });
-    await acc_l3.waitForTransaction(res.transaction_hash);
+    const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
+    assert(tx_receipt.isSuccess(), `Set L2 Governance failed`);
+
     logger.success("L2 Governance set successfully !!");
     logger.txHash(res.transaction_hash);
   }
@@ -264,7 +242,9 @@ export async function setL2Bridge(acc_l3: Account) {
       },
     });
 
-    await acc_l3.waitForTransaction(res.transaction_hash);
+    const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
+    assert(tx_receipt.isSuccess(), `Set L1 Bridge failed`);
+
     logger.success("L2 bridge set successfully !!");
     logger.txHash(res.transaction_hash);
   }
@@ -343,7 +323,9 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
         },
       },
     });
-    await acc.waitForTransaction(result.transaction_hash);
+    const tx_receipt = await acc.waitForTransaction(result.transaction_hash);
+    assert(tx_receipt.isSuccess(), `Set ERC20 class hash failed`);
+
     logger.success("ERC20 class_hash set successfully!");
     logger.txHash(result.transaction_hash);
   }
@@ -410,7 +392,9 @@ export async function enrollToken(
     token: tokenAddress,
   });
   let result = await acc_l2.execute([call]);
-  await acc_l2.waitForTransaction(result.transaction_hash);
+  const tx_receipt = await acc_l2.waitForTransaction(result.transaction_hash);
+  assert(tx_receipt.isSuccess(), `Enroll token failed`);
+
   logger.success("Token enrolled successfully!");
   logger.txHash(result.transaction_hash);
 }
@@ -457,7 +441,9 @@ export async function deposit(
       amount,
     });
     let result = await acc_l2.execute([call]);
-    await acc_l2.waitForTransaction(result.transaction_hash);
+    const tx_receipt = await acc_l2.waitForTransaction(result.transaction_hash);
+    assert(tx_receipt.isSuccess(), `Approval failed`);
+
     logger.success("Approval success!");
     logger.txHash(result.transaction_hash);
   }
@@ -477,7 +463,9 @@ export async function deposit(
       message: 0,
     });
 
-    await acc_l2.waitForTransaction(result.transaction_hash);
+    const tx_receipt = await acc_l2.waitForTransaction(result.transaction_hash);
+    assert(tx_receipt.isSuccess(), `Deposit failed`);
+
     logger.success("Deposit success!");
     logger.txHash(result.transaction_hash);
   }
@@ -598,7 +586,9 @@ export async function initiateTokenL2toL3Withdrawal(
   );
 
   let tx = await acc_l3.execute([initiateWithdrawalCall]);
-  await acc_l3.waitForTransaction(tx.transaction_hash);
+  const tx_receipt = await acc_l3.waitForTransaction(tx.transaction_hash);
+  assert(tx_receipt.isSuccess(), `Withdrawal initiation failed`);
+
   logger.success("Withdrawal initiated successfully!");
   logger.txHash(tx.transaction_hash);
 }

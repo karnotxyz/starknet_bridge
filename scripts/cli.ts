@@ -19,7 +19,6 @@ import {
 } from "./utils/utils.ts";
 import { logger } from "./utils/logger.ts";
 import {
-  deployCoreContract,
   deployAppchainBridge,
   deployL2Bridge,
   configureAppchainBridge,
@@ -33,7 +32,7 @@ import {
   deployTimelockContract,
   configurePermissionedEnrollment,
 } from "./bridgeDeploy.ts";
-import { Layer } from "./config/types.ts";
+import { Layer, ProgramInfo, FactRegistryOptions, FactRegistryChain, VerificationType } from "./config/types";
 import { finalRoles } from "./config/newRoles.ts";
 import {
   transferRoles,
@@ -54,6 +53,8 @@ import {
 } from "./finalRoleTransfer.ts";
 import { executeUpgradeTokenBridgeL2, upgradeAppchain, upgradeTokenBridgeL2 } from "./upgrades.ts";
 import { testTokenActions } from "./tokenActions.ts";
+import { deployCoreContract, setFactRegistry, setProgramInfo } from "./coreContractSetup.ts";
+import { appchainConfig } from "./config/constants";
 const program = new Command();
 
 program
@@ -77,6 +78,38 @@ program
   .action(async () => {
     const acc = getAccount(Layer.L2);
     await deployCoreContract(acc);
+  });
+
+program
+  .command("set-program-info")
+  .description("Set the program info for the core contract")
+  .option("--bootloader-hash <hash>", "Bootloader program hash")
+  .option("--snos-config-hash <hash>", "SNOS config hash")
+  .option("--snos-program-hash <hash>", "SNOS program hash")
+  .option("--layout-bridge-hash <hash>", "Layout bridge program hash")
+  .action(async (options) => {
+    const acc_l2 = getAccount(Layer.L2);
+    const programInfo: ProgramInfo = {
+      bootloader_program_hash: options.bootloaderHash || appchainConfig.programInfo.bootloader_program_hash,
+      snos_config_hash: options.snosConfigHash || appchainConfig.programInfo.snos_config_hash,
+      snos_program_hash: options.snosProgramHash || appchainConfig.programInfo.snos_program_hash,
+      layout_bridge_program_hash: options.layoutBridgeHash || appchainConfig.programInfo.layout_bridge_program_hash
+    };
+    await setProgramInfo(acc_l2, programInfo);
+  });
+
+program
+  .command("set-fact-registry")
+  .description("Set the fact registry for the core contract")
+  .option("-c, --chain <chain>", "Chain to set the fact registry for, can be SN_MAIN or SN_SEPOLIA", "SN_MAIN")
+  .option("-v, --verification-type <verification-type>", "Verification type to set the fact registry for, can be mocked or with_verification", "mocked")
+  .action(async (options) => {
+    const acc_l2 = getAccount(Layer.L2);
+    const factRegistryOptions: FactRegistryOptions = {
+      chain: options.chain as FactRegistryChain,
+      verificationType: options.verificationType as VerificationType
+    };
+    await setFactRegistry(acc_l2, factRegistryOptions);
   });
 
 // Deploy Appchain Bridge Command
@@ -356,8 +389,8 @@ program
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
     await upgradeTokenBridgeL2(acc_l2);
-    if(!options.noExecution) {
-      await executeUpgradeTokenBridgeL2(acc_l2); 
+    if (!options.noExecution) {
+      await executeUpgradeTokenBridgeL2(acc_l2);
     }
   });
 
