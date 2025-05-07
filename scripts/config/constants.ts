@@ -60,7 +60,7 @@ export const appchainConfig: AppchainConfig = {
     SN_MAIN: "0xcc63a1e8e7824642b89fa6baf996b8ed21fa4707be90ef7605570ca8e4f00b",
     SN_SEPOLIA: {
       mocked: "0x02fd1f617a9caeeeadd0cd7da2d99391ee9dd9ad6c5cd1960e3034ffdfad3ae1",
-      with_verification: "0x02fd1f617a9caeeeadd0cd7da2d99391ee9dd9ad6c5cd1960e3034ffdfad3ae1"
+      with_verification: "0x4ce7851f00b6c3289674841fd7a1b96b6fd41ed1edc248faccd672c26371b8c"
     }
   }
 };
