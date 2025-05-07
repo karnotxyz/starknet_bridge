@@ -20,6 +20,7 @@ import {
   starknetBridgePackage,
 } from "./config/constants";
 import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge";
+import assert from "assert";
 
 
 /**
@@ -347,6 +348,31 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
     logger.txHash(result.transaction_hash);
   }
 }
+
+/**
+ * Configure permissionless enrollment for tokens
+ */
+export async function configurePermissionedEnrollment(
+  acc_l2: Account,
+  permissioned_enroll: boolean = true
+) {
+  getContract(tokenBridgeL2Contract);
+
+  if (!tokenBridgeL2Contract.address) {
+    const errorMsg = "L2 Bridge contract address not found";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  const tokenBridge = tokenBridgeL2Contract.address;
+  const tokenBridgeContract = new StarknetContract(TokenBridgeL2ABI, tokenBridge, acc_l2).typedv2(TokenBridgeL2ABI);
+  const tx = await tokenBridgeContract.configure_permissionless_enrollment(permissioned_enroll);
+  const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
+  assert(receipt.isSuccess(), "Failed to configure permissionless enrollment");
+  logger.success("Permissionless enrollment configured successfully!");
+  logger.txHash(receipt.transaction_hash);
+}
+
 
 export async function enrollToken(
   acc_l2: Account,

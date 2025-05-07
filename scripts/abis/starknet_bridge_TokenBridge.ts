@@ -5,6 +5,20 @@ export const ABI = [
     "interface_name": "starknet_bridge::bridge::interface::ITokenBridgeAdmin"
   },
   {
+    "type": "enum",
+    "name": "core::bool",
+    "variants": [
+      {
+        "name": "False",
+        "type": "()"
+      },
+      {
+        "name": "True",
+        "type": "()"
+      }
+    ]
+  },
+  {
     "type": "struct",
     "name": "core::integer::u256",
     "members": [
@@ -77,6 +91,18 @@ export const ABI = [
           {
             "name": "token",
             "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "configure_permissionless_enrollment",
+        "inputs": [
+          {
+            "name": "permissioned_enroll",
+            "type": "core::bool"
           }
         ],
         "outputs": [],
@@ -190,20 +216,6 @@ export const ABI = [
     ]
   },
   {
-    "type": "enum",
-    "name": "core::bool",
-    "variants": [
-      {
-        "name": "False",
-        "type": "()"
-      },
-      {
-        "name": "True",
-        "type": "()"
-      }
-    ]
-  },
-  {
     "type": "struct",
     "name": "core::array::Span::<core::felt252>",
     "members": [
@@ -275,6 +287,17 @@ export const ABI = [
             "type": "core::starknet::contract_address::ContractAddress"
           }
         ],
+        "outputs": [
+          {
+            "type": "core::bool"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "is_enrollment_permissionless",
+        "inputs": [],
         "outputs": [
           {
             "type": "core::bool"
@@ -528,7 +551,7 @@ export const ABI = [
   },
   {
     "type": "impl",
-    "name": "AccessControlComponentImpl",
+    "name": "BridgeAccessControlImpl",
     "interface_name": "openzeppelin_access::accesscontrol::interface::IAccessControl"
   },
   {

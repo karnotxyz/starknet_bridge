@@ -3,6 +3,18 @@
 
 This repository contains the code for the L2<>L3 bridges that can be used to bridge funds between an appchain and Starknet. This is similar to [starkgate](https://github.com/starknet-io/starkgate-contracts) which contains the bridge contracts between Ethereum and Starknet.
 
+## Build
+To build the project, run: 
+```shell
+scarb build
+```
+
+## Test
+To run the test cases of the project, run: 
+```shell
+scarb test
+```
+
 ## Architecture
 - `token_bridge.cairo`: The bridge that will be deployed on Starknet. Users can use this bridge to add tokens and deposit and withdraw funds.
 - `withdrawal_limit/component.cairo`: A component used to manage the withdrawal limits for tokens that have this feature enabled.
@@ -51,6 +63,7 @@ The TokenBridge contract implements role-based access control for various functi
 ### APP_GOVERNOR
 - `set_appchain_token_bridge` - Can set the appchain bridge address
 - `set_max_total_balance` - Can set the maximum total balance for a token
+- `configure_permissionless_enrollment` - Can configure whether token enrollment is permissionless or requires TOKEN_ADMIN role
 
 ### SECURITY_ADMIN
 - `increase_withdrawal_limit` - Can increase the daily withdrawal limit percentage for a token
@@ -69,7 +82,7 @@ The TokenBridge contract implements role-based access control for various functi
 
 ### Public Functions (No Role Required)
 The following functions are publicly accessible without requiring any specific role:
-- `enroll_token` - Initiates token enrollment
+- `enroll_token` - Initiates token enrollment (Note: This function's accessibility depends on the bridge's configuration. By default, token enrollment is permissionless (anyone can call it). If `permissioned_enroll` is set to true, only TOKEN_ADMIN can call this function. The APP_GOVERNOR can configure this setting using `configure_permissionless_enrollment` function)
 - `deposit` - Deposits tokens
 - `deposit_with_message` - Deposits tokens with a message
 - `withdraw` - Withdraws tokens
@@ -97,16 +110,3 @@ Token status transitions:
 - **Deactivated → Active**: When a token is reactivated by the TOKEN_ADMIN
 - **Unknown → Blocked**: When a token is blocked by the TOKEN_ADMIN
 - **Blocked → Unknown**: When a token is unblocked by the TOKEN_ADMIN
-
-
-## Build
-To build the project, run: 
-```shell
-scarb build
-```
-
-## Test
-To run the test cases of the project, run: 
-```shell
-scarb test
-```
