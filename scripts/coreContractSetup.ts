@@ -29,7 +29,7 @@ export async function deployCoreContract(acc: Account) {
       [
         acc.address, // owner
         0, // state_root,
-        0, // block_number,
+        "0x800000000000011000000000000000000000000000000000000000000000000", // block_number,
         0, // block_hash
       ]
     );
