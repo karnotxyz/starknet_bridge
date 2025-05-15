@@ -50,7 +50,7 @@ jobs:
 
       - name: Run l2
         run: |
-          docker run -d --name l2-node --network bridge-network -p 9944:9944 \
+          docker run --name l2-node --network bridge-network -p 9944:9944 \
             -v ./madara-cli/deps/madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l2-db \
             --rpc-external --rpc-admin --rpc-cors "*" \
