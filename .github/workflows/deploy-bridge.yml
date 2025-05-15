@@ -35,9 +35,6 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
       # this builds `madara` at the branch `l3-support`
       - name: Clone Madara repository
         run: |
@@ -50,7 +47,7 @@ jobs:
 
       - name: Run l2
         run: |
-          docker run --name l2-node --network bridge-network -p 9944:9944 \
+          docker run -d --name l2-node --network bridge-network -p 9944:9944 \
             -v ./madara-cli/deps/madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l2-db \
             --rpc-external --rpc-admin --rpc-cors "*" \
