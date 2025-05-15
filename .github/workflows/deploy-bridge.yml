@@ -41,14 +41,14 @@ jobs:
       # this builds `madara` at the branch `l3-support`
       - name: Clone Madara repository
         run: |
-          git clone --branch devlopment https://github.com/byteZorvin/madara-cli.git
-          cd madara-cli
-          git checkout devlopment
+          git clone --branch fix/block-0-handling https://github.com/madara-alliance/madara.git
+          cd madara
+          git checkout fix/block-0-handling
 
       - name: Build and cache Madara Docker image
         uses: docker/build-push-action@v4
         with:
-          context: ./madara-cli/deps/madara
+          context: ./madara
           push: false
           load: true
           tags: madara:latest
