@@ -385,12 +385,12 @@ program
 program
   .command("upgrade-token-bridge-l2")
   .description("Upgrade the token bridge on L2")
-  .option("--no-execution", "Dont try to execute just after proposing", false)
+  .option("--only-schedule", "Only schedule the upgrade without executing", false)
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
     await upgradeTokenBridgeL2(acc_l2);
-    if (!options.noExecution) {
-      await executeUpgradeTokenBridgeL2(acc_l2);
+    if(!options.onlySchedule) {
+      await executeUpgradeTokenBridgeL2(acc_l2); 
     }
   });
 

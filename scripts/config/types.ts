@@ -1,3 +1,5 @@
+import {  selector} from 'starknet';
+
 export enum Layer {
   L2 = 'l2',
   L3 = 'l3'
@@ -87,17 +89,17 @@ export interface L2Roles {
 }
 
 export enum TimelockControllerRoleIds {
-    PROPOSER_ROLE = 'PROPOSER_ROLE',
-    EXECUTOR_ROLE = 'EXECUTOR_ROLE',
-    CANCELLER_ROLE = 'CANCELLER_ROLE',
-    DEFAULT_ADMIN = 0 
+    PROPOSER_ROLE = selector.getSelectorFromName('PROPOSER_ROLE') as unknown as number,
+    EXECUTOR_ROLE = selector.getSelectorFromName('EXECUTOR_ROLE') as unknown as number,
+    CANCELLER_ROLE = selector.getSelectorFromName('CANCELLER_ROLE') as unknown as number,
+    DEFAULT_ADMIN = "0" 
 }
 
 export interface TimelockControllerRoles {
-    [TimelockControllerRoleIds.PROPOSER_ROLE]: string[];
-    [TimelockControllerRoleIds.EXECUTOR_ROLE]: string[];
-    [TimelockControllerRoleIds.CANCELLER_ROLE]: string[];
-    [TimelockControllerRoleIds.DEFAULT_ADMIN]: string;
+    PROPOSER_ROLE: string[];
+    EXECUTOR_ROLE: string[];
+    CANCELLER_ROLE: string[];
+    DEFAULT_ADMIN: string;
 }
 
 /// =========================== L2 Appchain(Piltover core contract) Roles ===========================
