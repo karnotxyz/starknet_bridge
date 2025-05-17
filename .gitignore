@@ -6,3 +6,5 @@ node_modules/
 contracts*.json
 
 logs/
+dist/
+config/

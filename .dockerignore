@@ -1,0 +1,59 @@
+contracts*.json
+# Starkgate solidity contracts
+starkgate-contracts/.downloads
+**/.vscode/
+**/.downloads/
+**/venv/
+**/.spr.yml
+**/starkware/
+**/__pycache__
+**/artifacts/
+**/cairo_contracts/
+**/third_party/
+starkgate-contracts/src/solidity
+
+
+
+# Version control
+.git
+.gitignore
+.github
+
+# Build artifacts
+target/
+**/target/
+node_modules/
+**/node_modules/
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# Environment and IDE files
+.env
+.env.*
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+**/tests/
+**/test/
+**/*.test.*
+**/*.spec.*
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Temporary files
+*.tmp
+*.temp
+.cache/ 
