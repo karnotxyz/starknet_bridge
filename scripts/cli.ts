@@ -32,7 +32,7 @@ import {
   deployTimelockContract,
   configurePermissionedEnrollment,
 } from "./bridgeDeploy.ts";
-import { Layer, ProgramInfo, FactRegistryOptions, FactRegistryChain, VerificationType } from "./config/types";
+import { Layer, ProgramInfo, FactRegistryOptions, FactRegistryChain, VerificationType } from "./config/types.ts";
 import { finalRoles } from "./config/newRoles.ts";
 import {
   transferRoles,
@@ -54,7 +54,7 @@ import {
 import { executeUpgradeTokenBridgeL2, upgradeAppchain, upgradeTokenBridgeL2 } from "./upgrades.ts";
 import { testTokenActions } from "./tokenActions.ts";
 import { deployCoreContract, setFactRegistry, setProgramInfo } from "./coreContractSetup.ts";
-import { appchainConfig } from "./config/constants";
+import { appchainConfig } from "./config/constants.ts";
 const program = new Command();
 
 program

@@ -1,14 +1,14 @@
 import { Account, Contract, num } from "starknet";
-import { getContract, standardiseAddress } from "./utils/utils";
-import { logger } from "./utils/logger";
-import { appchainContract, timelockContract, tokenBridgeL2Contract, tokenBridgeL3Contract } from "./config/constants";
-import { FinalRoles, L2TokenBridgeRoleIds, TimelockControllerRoleIds } from "./config/types";
-import { ABI as AppchainAbi } from "./abis/starknet_bridge_appchain";
+import { getContract, standardiseAddress } from "./utils/utils.ts";
+import { logger } from "./utils/logger.ts";
+import { appchainContract, timelockContract, tokenBridgeL2Contract, tokenBridgeL3Contract } from "./config/constants.ts";
+import { FinalRoles, L2TokenBridgeRoleIds, TimelockControllerRoleIds } from "./config/types.ts";
+import { ABI as AppchainAbi } from "./abis/starknet_bridge_appchain.ts";
 import assert from "assert";
 import { TypedContractV2 } from "starknet";
-import { ABI as TimelockAbi } from "./abis/starknet_bridge_TimelockController";
-import { ABI as TokenBridgeL2Abi } from "./abis/starknet_bridge_TokenBridge";
-import { ABI as TokenBridgeL3Abi } from "./abis/starkgate_contracts_TokenBridge";
+import { ABI as TimelockAbi } from "./abis/starknet_bridge_TimelockController.ts";
+import { ABI as TokenBridgeL2Abi } from "./abis/starknet_bridge_TokenBridge.ts";
+import { ABI as TokenBridgeL3Abi } from "./abis/starkgate_contracts_TokenBridge.ts";
 
 async function changeRole(acc_l2: Account, contract: TypedContractV2<typeof TimelockAbi> | TypedContractV2<typeof TokenBridgeL2Abi>, role: L2TokenBridgeRoleIds | TimelockControllerRoleIds, address: string[] | string, method: "grant_role" | "renounce_role") {
   if (!Array.isArray(address)) {

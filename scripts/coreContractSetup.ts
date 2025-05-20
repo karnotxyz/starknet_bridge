@@ -1,4 +1,3 @@
-import { parseAbi, parseEther, WalletClient } from "viem";
 import {
   deployContract,
   declareContract,
@@ -6,15 +5,15 @@ import {
   getAccount,
   getContract,
   setDumpPath
-} from "./utils/utils";
-import { Layer, Contract, Package, ProgramInfo, FactRegistryOptions } from "./config/types";
-import { Account, byteArray, Contract as StarknetContract, num } from "starknet";
-import { logger } from "./utils/logger";
+} from "./utils/utils.ts";
+import { Layer, ProgramInfo, FactRegistryOptions } from "./config/types.ts";
+import { Account, Contract as StarknetContract } from "starknet";
+import { logger } from "./utils/logger.ts";
 import {
     appchainConfig,
   appchainContract,
-} from "./config/constants";
-import { ABI as AppchainABI } from "./abis/starknet_bridge_appchain";
+} from "./config/constants.ts";
+import { ABI as AppchainABI } from "./abis/starknet_bridge_appchain.ts";
 import assert from "assert";
 
 /**

@@ -1,4 +1,4 @@
-import { Package, Contract, Layer, AppchainConfig } from "./types";
+import { Package, Contract, Layer, AppchainConfig } from "./types.ts";
 
 // Define our packages
 export const starknetBridgePackage: Package = {
