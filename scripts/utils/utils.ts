@@ -62,7 +62,7 @@ export function getContracts() {
 
 function saveContracts(contracts: any) {
   const PATH = dumpPath;
-  writeFileSync(PATH, JSON.stringify(contracts));
+  writeFileSync(PATH, JSON.stringify(contracts, null, 4));
 }
 
 export function getProvider(layer: Layer): RpcProvider {
