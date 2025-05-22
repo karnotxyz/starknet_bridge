@@ -14,7 +14,7 @@ async function changeRole(acc_l2: Account, contract: TypedContractV2<typeof Time
   if (!Array.isArray(address)) {
     address = [address]
   }
-  logger.info(`SUB-STEP 1: Executing method ${method} for ${role} to multiple addresses`);
+  logger.info(`Executing method ${method} for ${role} to multiple addresses`);
   logger.address("Target addresses", address.join(', '));
 
   for (const addr of address) {

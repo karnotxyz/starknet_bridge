@@ -99,7 +99,7 @@ export interface TimelockControllerRoles {
     PROPOSER_ROLE: string[];
     EXECUTOR_ROLE: string[];
     CANCELLER_ROLE: string[];
-    DEFAULT_ADMIN: string;
+    [TimelockControllerRoleIds.DEFAULT_ADMIN]: string;
 }
 
 /// =========================== L2 Appchain(Piltover core contract) Roles ===========================
