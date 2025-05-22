@@ -38,9 +38,7 @@ jobs:
       # this builds `madara` at the branch `l3-support`
       - name: Clone Madara repository
         run: |
-          git clone --branch devlopment https://github.com/byteZorvin/madara-cli.git
-          cd madara-cli
-          git checkout devlopment
+          git clone https://github.com/madara-alliance/madara.git
 
       - name: Create Docker network
         run: docker network create bridge-network
@@ -48,7 +46,7 @@ jobs:
       - name: Run l2
         run: |
           docker run --name l2-node --network bridge-network -p 9944:9944 \
-            -v ./madara-cli/deps/madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
+            -v ./madara/configs/presets/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l2-db \
             --rpc-external --rpc-admin --rpc-cors "*" \
             --rpc-port 9944 --rpc-admin-port 9943 \
@@ -101,15 +99,15 @@ jobs:
           fi
 
           # Update the YAML file with the contract address
-          yq -i ".eth_core_contract_address = \"$CORE_CONTRACT\"" ./madara-cli/deps/madara/configs/presets/devnet.yaml
+          yq -i ".eth_core_contract_address = \"$CORE_CONTRACT\"" ./madara/configs/presets/devnet.yaml
 
           # Print the updated value for verification
-          echo "Updated core contract address to: $(yq '.eth_core_contract_address' ./madara-cli/deps/madara/configs/presets/devnet.yaml)"
+          echo "Updated core contract address to: $(yq '.eth_core_contract_address' ./madara/configs/presets/devnet.yaml)"
 
       - name: Run l3
         run: |
-          docker run --network bridge-network \
-            -p 9955:9955 -v ./madara-cli/deps/madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
+          docker run -d --network bridge-network \
+            -p 9955:9955 -v ./madara-configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l3-db \
             --rpc-cors "*" --rpc-external --rpc-admin \
             --rpc-port 9955 --rpc-admin-port 9953 \
