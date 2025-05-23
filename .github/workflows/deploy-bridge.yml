@@ -38,7 +38,7 @@ jobs:
       # this builds `madara` at the branch `l3-support`
       - name: Clone Madara repository
         run: |
-          git clone https://github.com/madara-alliance/madara.git
+          git clone --depth=1 https://github.com/madara-alliance/madara.git
 
       - name: Create Docker network
         run: docker network create bridge-network
