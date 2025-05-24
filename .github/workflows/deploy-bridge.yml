@@ -35,25 +35,10 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
       # this builds `madara` at the branch `l3-support`
       - name: Clone Madara repository
         run: |
-          git clone --branch devlopment https://github.com/byteZorvin/madara-cli.git
-          cd madara-cli
-          git checkout devlopment
-
-      - name: Build and cache Madara Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: ./madara-cli/deps/madara
-          push: false
-          load: true
-          tags: madara:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          git clone --depth=1 https://github.com/madara-alliance/madara.git
 
       - name: Create Docker network
         run: docker network create bridge-network
@@ -61,7 +46,7 @@ jobs:
       - name: Run l2
         run: |
           docker run -d --name l2-node --network bridge-network -p 9944:9944 \
-            -v ./madara-cli/deps/madara/configs/:/apps/configs/ madara:latest \
+            -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l2-db \
             --rpc-external --rpc-admin --rpc-cors "*" \
             --rpc-port 9944 --rpc-admin-port 9943 \
@@ -96,7 +81,10 @@ jobs:
         run: pnpm i -g tsx
 
       - name: Run Core Contract Deployment Script
-        run: tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-core
+        run: |
+          tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-core
+          tsx ./scripts/cli.ts --dump-path=./contracts.json set-program-info
+          tsx ./scripts/cli.ts --dump-path=./contracts.json set-fact-registry
 
       - name: Update Core Contract Address
         run: |
@@ -111,15 +99,15 @@ jobs:
           fi
 
           # Update the YAML file with the contract address
-          yq -i ".eth_core_contract_address = \"$CORE_CONTRACT\"" ./madara-cli/deps/madara/configs/presets/devnet.yaml
+          yq -i ".eth_core_contract_address = \"$CORE_CONTRACT\"" ./madara/configs/presets/devnet.yaml
 
           # Print the updated value for verification
-          echo "Updated core contract address to: $(yq '.eth_core_contract_address' ./madara-cli/deps/madara/configs/presets/devnet.yaml)"
+          echo "Updated core contract address to: $(yq '.eth_core_contract_address' ./madara/configs/presets/devnet.yaml)"
 
       - name: Run l3
         run: |
           docker run -d --network bridge-network \
-            -p 9955:9955 -v ./madara-cli/deps/madara/configs/:/apps/configs/  madara:latest \
+            -p 9955:9955 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l3-db \
             --rpc-cors "*" --rpc-external --rpc-admin \
             --rpc-port 9955 --rpc-admin-port 9953 \

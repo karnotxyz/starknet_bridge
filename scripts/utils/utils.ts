@@ -62,7 +62,7 @@ export function getContracts() {
 
 function saveContracts(contracts: any) {
   const PATH = dumpPath;
-  writeFileSync(PATH, JSON.stringify(contracts));
+  writeFileSync(PATH, JSON.stringify(contracts, null, 4));
 }
 
 export function getProvider(layer: Layer): RpcProvider {
@@ -169,9 +169,10 @@ export async function declareContract(contract: Contract, skipIfPresentInDump: b
     }
 
     if (tx.transaction_hash !== '') {
-      await provider.waitForTransaction(tx.transaction_hash, {
+      const tx_receipt = await provider.waitForTransaction(tx.transaction_hash, {
         successStates: [TransactionFinalityStatus.ACCEPTED_ON_L2]
       })
+      assert(tx_receipt.isSuccess(), `Contract ${contract.name} declaration failed`);
     } else {
       logger.info(`Contract ${contract.name} already declared with class hash ${tx.class_hash}`);
     }
@@ -246,10 +247,12 @@ export async function deployContract(contract: Contract, constructorData: RawArg
   }
   console.log('Deploy tx: ', tx.transaction_hash);
 
-  await provider.waitForTransaction(tx.transaction_hash, {
+  let tx_receipt = await provider.waitForTransaction(tx.transaction_hash, {
     // successStates: [TransactionFinalityStatus.ACCEPTED_ON_L2],
     retryInterval: 100,
   })
+
+  assert(tx_receipt.isSuccess(), `Contract ${contract.name} deployment failed`);
 
   const contracts = getContracts();
   if (!contracts.contracts) {

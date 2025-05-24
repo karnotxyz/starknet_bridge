@@ -1,4 +1,4 @@
-import { FinalRoles, TimelockControllerRoleIds } from './types';
+import { FinalRoles, TimelockControllerRoleIds } from './types.ts';
 
 export const finalRoles: FinalRoles = {
     l2: {

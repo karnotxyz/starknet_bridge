@@ -1,11 +1,11 @@
 import { Account, logger, CairoEnum, Contract as StarknetContract, TypedContractV2 } from "starknet";
-import { Layer, Contract, TokenStatus } from "./config/types";
-import { starknetBridgePackage, tokenBridgeL2Contract } from "./config/constants";
-import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge";
-import { ABI as ERC20ABI } from "./abis/starknet_bridge_ERC20";
-import { getAccount, getContract, sleep } from "./utils/utils";
+import { Layer, Contract, TokenStatus } from "./config/types.ts";
+import { starknetBridgePackage, tokenBridgeL2Contract } from "./config/constants.ts";
+import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge.ts";
+import { ABI as ERC20ABI } from "./abis/starknet_bridge_ERC20.ts";
+import { getAccount, getContract, sleep } from "./utils/utils.ts";
 import assert from "assert";
-import { enrollToken, getL3Balance } from "./bridgeDeploy";
+import { enrollToken, getL3Balance } from "./bridgeDeploy.ts";
 
 /**
  * Utility function to execute a transaction and assert its expected outcome

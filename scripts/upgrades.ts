@@ -1,10 +1,9 @@
 import { Account, Contract, hash } from "starknet";
-import { logger } from "./utils/logger";
-import { appchainContract, timelockContract, tokenBridgeL2Contract } from "./config/constants";
-import { ABI as AppchainABI } from "./abis/starknet_bridge_appchain";
-import { declareContract, getContract } from "./utils/utils";
-import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge";
-import { ABI as TimelockABI } from "./abis/starknet_bridge_TimelockController";
+import { logger } from "./utils/logger.ts";
+import { appchainContract, timelockContract, tokenBridgeL2Contract } from "./config/constants.ts";
+import { ABI as AppchainABI } from "./abis/starknet_bridge_appchain.ts";
+import { declareContract, getContract } from "./utils/utils.ts";
+import { ABI as TimelockABI } from "./abis/starknet_bridge_TimelockController.ts";
 import assert from "assert";
 
 export async function upgradeAppchain(acc_l2: Account) {

@@ -1,3 +1,5 @@
+import {  selector} from 'starknet';
+
 export enum Layer {
   L2 = 'l2',
   L3 = 'l3'
@@ -22,6 +24,34 @@ export enum TokenStatus {
   Active = "Active",
   Blocked = "Blocked",
   Deactivated = "Deactivated"
+}
+
+/// =========================== Appchain Config ===========================
+
+export type FactRegistryChain = 'SN_MAIN' | 'SN_SEPOLIA';
+export type VerificationType = 'mocked' | 'with_verification';
+
+export interface FactRegistryOptions {
+  chain: FactRegistryChain;
+  verificationType: VerificationType;
+}
+
+export interface AppchainConfig {
+  programInfo: ProgramInfo;
+  factRegistry: {
+    SN_MAIN: string;
+    SN_SEPOLIA: {
+      mocked: string;
+      with_verification: string;
+    };
+  };
+}
+
+export interface ProgramInfo {
+  bootloader_program_hash: string;
+  snos_config_hash: string;
+  snos_program_hash: string;
+  layout_bridge_program_hash: string;
 }
 
 /// ======================== All Roles =========================
@@ -50,7 +80,6 @@ export interface L2TokenBridgeRoles {
     [L2TokenBridgeRoleIds.GOVERNANCE_ADMIN]: string[];
 }
 
-
 /// =========================== L2 Timelock Controller Roles ===========================
 
 export interface L2Roles {
@@ -60,20 +89,18 @@ export interface L2Roles {
 }
 
 export enum TimelockControllerRoleIds {
-    PROPOSER_ROLE = 'PROPOSER_ROLE',
-    EXECUTOR_ROLE = 'EXECUTOR_ROLE',
-    CANCELLER_ROLE = 'CANCELLER_ROLE',
-    DEFAULT_ADMIN = 0 
+    PROPOSER_ROLE = selector.getSelectorFromName('PROPOSER_ROLE') as unknown as number,
+    EXECUTOR_ROLE = selector.getSelectorFromName('EXECUTOR_ROLE') as unknown as number,
+    CANCELLER_ROLE = selector.getSelectorFromName('CANCELLER_ROLE') as unknown as number,
+    DEFAULT_ADMIN = "0" 
 }
 
 export interface TimelockControllerRoles {
-    [TimelockControllerRoleIds.PROPOSER_ROLE]: string[];
-    [TimelockControllerRoleIds.EXECUTOR_ROLE]: string[];
-    [TimelockControllerRoleIds.CANCELLER_ROLE]: string[];
+    PROPOSER_ROLE: string[];
+    EXECUTOR_ROLE: string[];
+    CANCELLER_ROLE: string[];
     [TimelockControllerRoleIds.DEFAULT_ADMIN]: string;
 }
-
-
 
 /// =========================== L2 Appchain(Piltover core contract) Roles ===========================
 
@@ -81,8 +108,6 @@ export interface AppchainRoles {
     owner: string;
     operators: string[];
 }
-
-
 
 /// =========================== L3 Token Bridge ===========================
 
