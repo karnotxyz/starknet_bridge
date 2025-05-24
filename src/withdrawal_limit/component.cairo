@@ -136,7 +136,7 @@ pub mod WithdrawalLimitComponent {
 
         // Returns the full quota of the daily withdrawal limit for a given token.
         // The calculation is based on the limit percentage and current token total supply.
-        // Note - while techincally, we're exposed to overflow error here, we consider that
+        // Note - while technically, we're exposed to overflow error here, we consider that
         // risk non-existant for any token of even the smallest value.
         fn get_daily_withdrawal_limit(
             self: @ComponentState<TContractState>, token: ContractAddress,
