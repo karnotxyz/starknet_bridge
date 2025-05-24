@@ -151,7 +151,7 @@ export async function transferAppchainL2Roles(acc_l2: Account, finalRoles: Final
     const tx = await appchainContract_l2.transfer_ownership(l2Roles_Appchain.owner);
     logger.txHash(tx.transaction_hash);
     let receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
-    assert(receipt.isSuccess(), `Failed to inititate transfer ownerhip to ${l2Roles_Appchain.owner} from ${acc_l2.address}`);
+    assert(receipt.isSuccess(), `Failed to initiate transfer ownerhip to ${l2Roles_Appchain.owner} from ${acc_l2.address}`);
     logger.success("Ownership transferred to new owner");
   }
 
