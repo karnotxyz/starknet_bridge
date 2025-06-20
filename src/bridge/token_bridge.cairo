@@ -849,7 +849,13 @@ pub mod TokenBridge {
                         settings.deployment_message_nonce,
                     );
             } else if (message_status == MessageToAppchainStatus::Cancelled) {
-                let new_settings = TokenSettings { token_status: TokenStatus::Unknown, ..settings };
+                let new_settings = TokenSettings {
+                    token_status: TokenStatus::Unknown,
+                    deployment_message_hash: 0,
+                    deployment_message_nonce: 0,
+                    pending_deployment_expiration: 0,
+                    max_total_balance: settings.max_total_balance,
+                };
                 self.token_settings.write(token, new_settings);
 
                 self.emit(TokenUnknown { token });
