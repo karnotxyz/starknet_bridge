@@ -121,6 +121,7 @@ pub mod TokenBridge {
         pub const MAX_BALANCE_EXCEEDED: felt252 = 'Max Balance Exceeded';
         pub const TOKENS_NOT_TRANSFERRED: felt252 = 'Tokens not transferred';
         pub const NEW_LIMIT_MUST_BE_GREATER: felt252 = 'New limit must be greater';
+        pub const NEW_LIMIT_MUST_BE_SMALLER: felt252 = 'New limit must be smaller';
         pub const WITHDRAWAL_LIMIT_NOT_APPLIED: felt252 = 'Withdrawal limit not applied';
         pub const PERMISSIONED_OR_NOT_TOKEN_ADMIN: felt252 = 'Permissioned or not TokenAdmin';
     }
@@ -619,7 +620,7 @@ pub mod TokenBridge {
             self.bridge_access_control.assert_only_security_agent();
 
             let current_pct = self.withdrawal.get_daily_withdrawal_limit_pct(token);
-            assert(daily_withdrawal_limit_pct < current_pct, Errors::NEW_LIMIT_MUST_BE_GREATER);
+            assert(daily_withdrawal_limit_pct < current_pct, Errors::NEW_LIMIT_MUST_BE_SMALLER);
             self.withdrawal.write_daily_withdrawal_limit_pct(token, daily_withdrawal_limit_pct);
 
             self
