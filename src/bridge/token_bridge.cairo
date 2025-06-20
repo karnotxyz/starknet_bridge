@@ -877,7 +877,16 @@ pub mod TokenBridge {
             self.withdrawal.consume_withdrawal_quota(token, amount);
 
             let tokenDispatcher = IERC20Dispatcher { contract_address: token };
+
+            let this_address = get_contract_address();
+            let initial_balance = tokenDispatcher.balance_of(this_address);
+
             tokenDispatcher.transfer(recipient, amount);
+
+            assert(
+                tokenDispatcher.balance_of(this_address) == initial_balance - amount,
+                Errors::TOKENS_NOT_TRANSFERRED,
+            );
             self.reentrancy_guard.end();
 
             self.emit(Withdrawal { recipient, token, amount });
@@ -986,7 +995,14 @@ pub mod TokenBridge {
                 );
 
             let dispatcher = IERC20Dispatcher { contract_address: token };
+            let initial_balance = dispatcher.balance_of(get_contract_address());
+
             dispatcher.transfer(get_caller_address(), amount);
+
+            assert(
+                dispatcher.balance_of(get_contract_address()) == initial_balance - amount,
+                Errors::TOKENS_NOT_TRANSFERRED,
+            );
 
             self.reentrancy_guard.end();
 
@@ -1026,7 +1042,14 @@ pub mod TokenBridge {
                 );
 
             let dispatcher = IERC20Dispatcher { contract_address: token };
+
+            let initial_balance = dispatcher.balance_of(get_contract_address());
+
             dispatcher.transfer(get_caller_address(), amount);
+            assert(
+                dispatcher.balance_of(get_contract_address()) == initial_balance - amount,
+                Errors::TOKENS_NOT_TRANSFERRED,
+            );
 
             self.reentrancy_guard.end();
 
