@@ -105,7 +105,7 @@ fn deposit_reclaim_delay_not_reached() {
 
 
 #[test]
-#[should_panic(expected: ('CANCELLATION_NOT_REQUESTED',))]
+#[should_panic(expected: ('NO_MESSAGE_TO_CANCEL',))]
 fn deposit_reclaim_not_cancelled() {
     let (token_bridge, _, usdc_address, _) = setup();
     let usdc = IERC20Dispatcher { contract_address: usdc_address };
@@ -245,7 +245,7 @@ fn deposit_with_message_reclaim_delay_not_reached() {
 
 
 #[test]
-#[should_panic(expected: ('CANCELLATION_NOT_REQUESTED',))]
+#[should_panic(expected: ('NO_MESSAGE_TO_CANCEL',))]
 fn deposit_wtih_message_reclaim_not_cancelled() {
     let (token_bridge, _, usdc_address, _) = setup();
     let usdc = IERC20Dispatcher { contract_address: usdc_address };

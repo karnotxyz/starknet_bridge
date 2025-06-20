@@ -538,7 +538,7 @@ export async function getL3Balance(
 /**
  * Initiate a token withdrawal from L3 to L2
  */
-export async function initiateTokenL2toL3Withdrawal(
+export async function initiateTokenL3toL2Withdrawal(
   acc_l3: Account,
   amount: BigInt,
   l2_token: string
@@ -584,7 +584,19 @@ export async function initiateTokenL2toL3Withdrawal(
     }
   );
 
-  let tx = await acc_l3.execute([initiateWithdrawalCall]);
+  let tx = await acc_l3.execute([initiateWithdrawalCall], {
+    maxFee: 0,
+    resourceBounds: {
+      l1_gas: {
+        max_amount: "0x0",
+        max_price_per_unit: "0x0",
+      },
+      l2_gas: {
+        max_amount: "0x0",
+        max_price_per_unit: "0x0",
+      },
+    }
+  });
   const tx_receipt = await acc_l3.waitForTransaction(tx.transaction_hash);
   assert(tx_receipt.isSuccess(), `Withdrawal initiation failed`);
 

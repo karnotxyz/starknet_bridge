@@ -28,7 +28,7 @@ import {
   enrollToken,
   deposit,
   getL3Balance,
-  initiateTokenL2toL3Withdrawal,
+  initiateTokenL3toL2Withdrawal,
   deployTimelockContract,
   configurePermissionedEnrollment,
 } from "./bridgeDeploy.ts";
@@ -218,7 +218,7 @@ program
   .action(async (options) => {
     const acc_l3 = getAccount(Layer.L3);
     const amount = BigInt(options.amount) * 10n ** 18n;
-    await initiateTokenL2toL3Withdrawal(acc_l3, amount, options.token);
+    await initiateTokenL3toL2Withdrawal(acc_l3, amount, options.token);
   });
 
 // Deploy Timelock Contract Command
@@ -389,8 +389,8 @@ program
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
     await upgradeTokenBridgeL2(acc_l2);
-    if(!options.onlySchedule) {
-      await executeUpgradeTokenBridgeL2(acc_l2); 
+    if (!options.onlySchedule) {
+      await executeUpgradeTokenBridgeL2(acc_l2);
     }
   });
 
