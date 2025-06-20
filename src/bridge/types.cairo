@@ -1,4 +1,4 @@
-use piltover::messaging::types::MessageHash;
+use piltover::messaging::types::{MessageHash, Nonce};
 
 #[derive(Serde, Drop, starknet::Store, PartialEq, Debug)]
 pub enum TokenStatus {
@@ -14,6 +14,7 @@ pub enum TokenStatus {
 pub struct TokenSettings {
     pub token_status: TokenStatus,
     pub deployment_message_hash: MessageHash,
+    pub deployment_message_nonce: Nonce,
     pub pending_deployment_expiration: u64,
     pub max_total_balance: u256,
 }

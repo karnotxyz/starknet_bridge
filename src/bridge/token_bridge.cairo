@@ -135,6 +135,7 @@ pub mod TokenBridge {
         TokenBlocked: TokenBlocked,
         TokenReactivated: TokenReactivated,
         TokenUnblocked: TokenUnblocked,
+        TokenUnknown: TokenUnknown,
         Deposit: Deposit,
         DepositWithMessage: DepositWithMessage,
         DepostiCancelRequest: DepositCancelRequest,
@@ -189,6 +190,12 @@ pub mod TokenBridge {
     pub struct TokenReactivated {
         pub token: ContractAddress,
     }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct TokenUnknown {
+        pub token: ContractAddress,
+    }
+
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenEnrollmentInitiated {
@@ -349,7 +356,7 @@ pub mod TokenBridge {
 
     #[generate_trait]
     pub impl TokenBridgeInternalImpl of TokenBridgeInternal {
-        fn send_deploy_message(self: @ContractState, token: ContractAddress) -> felt252 {
+        fn send_deploy_message(self: @ContractState, token: ContractAddress) -> (felt252, felt252) {
             assert(self.appchain_bridge().is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
 
             let (hash, nonce) = self
@@ -368,7 +375,7 @@ pub mod TokenBridge {
                     .sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(nonce),
                 Errors::DEPLOY_MESSAGE_NOT_PENDING,
             );
-            return hash;
+            return (hash, nonce);
         }
 
         fn send_deposit_message(
@@ -718,13 +725,15 @@ pub mod TokenBridge {
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::ALREADY_ENROLLED);
 
             // Send message to appchain
-            let deployment_message_hash = self.send_deploy_message(token);
+            let (deployment_message_hash, deployment_message_nonce) = self
+                .send_deploy_message(token);
             // Reading existing settings as withdrawal_limit_applied and max_total_balance
             // can be set before the token is enrolled.
             let old_settings = self.token_settings.read(token);
             let new_settings = TokenSettings {
                 token_status: TokenStatus::Pending,
                 deployment_message_hash: deployment_message_hash,
+                deployment_message_nonce: deployment_message_nonce,
                 pending_deployment_expiration: get_block_timestamp()
                     + constants::MAX_PENDING_DURATION.try_into().unwrap(),
                 ..old_settings,
@@ -827,9 +836,22 @@ pub mod TokenBridge {
                 let new_settings = TokenSettings { token_status: TokenStatus::Active, ..settings };
                 self.token_settings.write(token, new_settings);
                 self.emit(TokenActivated { token });
-            } else if (get_block_timestamp() > settings.pending_deployment_expiration) {
+            } else if (message_status != MessageToAppchainStatus::Cancelling
+                && get_block_timestamp() > settings.pending_deployment_expiration) {
+                self
+                    .messaging_contract
+                    .read()
+                    .start_message_cancellation(
+                        self.appchain_bridge(),
+                        constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
+                        deployment_message_payload(token),
+                        settings.deployment_message_nonce,
+                    );
+            } else if (message_status == MessageToAppchainStatus::Cancelled) {
                 let new_settings = TokenSettings { token_status: TokenStatus::Unknown, ..settings };
                 self.token_settings.write(token, new_settings);
+
+                self.emit(TokenUnknown { token });
             }
         }
 
