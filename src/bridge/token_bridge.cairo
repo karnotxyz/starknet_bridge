@@ -6,7 +6,6 @@ pub mod TokenBridge {
     use core::option::OptionTrait;
     use core::serde::Serde;
     use core::to_byte_array::FormatAsByteArray;
-    use core::traits::TryInto;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::access::accesscontrol::interface::IAccessControl;
     use openzeppelin::introspection::src5::SRC5Component;
@@ -86,7 +85,9 @@ pub mod TokenBridge {
         // All token related settings and its status
         pub token_settings: Map<ContractAddress, TokenSettings>,
         // Token Enrollment is permissionless or not
-        permissioned_enroll: bool,
+        pub permissioned_enroll: bool,
+        // 24 hour time, post which cancellation is initiated
+        pub max_pending_duration: u64,
         #[substorage(v0)]
         pub upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
@@ -124,6 +125,7 @@ pub mod TokenBridge {
         pub const NEW_LIMIT_MUST_BE_SMALLER: felt252 = 'New limit must be smaller';
         pub const WITHDRAWAL_LIMIT_NOT_APPLIED: felt252 = 'Withdrawal limit not applied';
         pub const PERMISSIONED_OR_NOT_TOKEN_ADMIN: felt252 = 'Permissioned or not TokenAdmin';
+        pub const PENDING_DURATION_LESS_THAN_HOUR: felt252 = 'Duration at least 1 hour';
     }
 
 
@@ -147,6 +149,7 @@ pub mod TokenBridge {
         WithdrawalLimitIncreased: WithdrawalLimitIncreased,
         WithdrawalLimitDecreased: WithdrawalLimitDecreased,
         SetMaxTotalBalance: SetMaxTotalBalance,
+        SetPendingDuration: SetPendingDuration,
         SetAppchainBridge: SetAppchainBridge,
         ConfigurePermissionedEnrollment: ConfigurePermissionedEnrollment,
         #[flat]
@@ -314,6 +317,11 @@ pub mod TokenBridge {
         pub value: u256,
     }
 
+    #[derive(Drop, starknet::Event)]
+    pub struct SetPendingDuration {
+        pub duration: u64,
+    }
+
 
     #[derive(Drop, starknet::Event)]
     pub struct SetAppchainBridge {
@@ -342,6 +350,7 @@ pub mod TokenBridge {
         self
             .messaging_contract
             .write(IMessagingDispatcher { contract_address: messaging_contract });
+        self.max_pending_duration.write(24 * 60 * 60);
         self
             .bridge_access_control
             .initializer(
@@ -661,6 +670,13 @@ pub mod TokenBridge {
             self.emit(SetMaxTotalBalance { token, value: max_total_balance });
         }
 
+        fn set_max_pending_duration(ref self: ContractState, duration: u64) {
+            self.bridge_access_control.assert_only_app_governor();
+            assert(duration >= 3600, Errors::PENDING_DURATION_LESS_THAN_HOUR);
+            self.max_pending_duration.write(duration);
+            self.emit(SetPendingDuration { duration });
+        }
+
         // This function is used to pause the contract.
         // It can only be called by the security agent.
         // The function checks if the contract is not already paused
@@ -736,7 +752,7 @@ pub mod TokenBridge {
                 deployment_message_hash: deployment_message_hash,
                 deployment_message_nonce: deployment_message_nonce,
                 pending_deployment_expiration: get_block_timestamp()
-                    + constants::MAX_PENDING_DURATION.try_into().unwrap(),
+                    + self.max_pending_duration.read(),
                 ..old_settings,
             };
 

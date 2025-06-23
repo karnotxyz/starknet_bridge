@@ -23,6 +23,7 @@ pub trait ITokenBridgeAdmin<TContractState> {
     fn set_max_total_balance(
         ref self: TContractState, token: ContractAddress, max_total_balance: u256,
     );
+    fn set_max_pending_duration(ref self: TContractState, duration: u64);
     fn pause(ref self: TContractState);
     fn unpause(ref self: TContractState);
 }
