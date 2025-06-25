@@ -313,7 +313,7 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
       maxFee: 0,
       resourceBounds: {
         l1_gas: {
-          max_price_per_unit: "0x1",
+          max_price_per_unit: "0x0",
           max_amount: "0x0",
         },
         l2_gas: {

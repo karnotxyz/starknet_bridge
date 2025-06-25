@@ -114,9 +114,9 @@ jobs:
             --devnet --chain-config-path /apps/configs/presets/devnet.yaml \
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8080 \
             --settlement-layer STARKNET \
-            --l1-endpoint http://l2-node:9944 \
+            --l1-endpoint http://l1-node:9944 \
             --strk-gas-price 0 --strk-blob-gas-price 0 --gas-price 0 \
-            --blob-gas-price 0 2>&1 | tee -a ./madara_output_l3.log
+            --blob-gas-price 0 2>&1 | tee -a ./madara_output_l2.log
 
       - name: Wait for server to be ready
         run: |
