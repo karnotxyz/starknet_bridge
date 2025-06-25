@@ -128,19 +128,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
       account: acc_l3.address,
     });
 
-    const res = await acc_l3.execute([call], {
-      maxFee: 0,
-      resourceBounds: {
-        l1_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-        l2_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-      },
-    });
+    const res = await acc_l3.execute([call]);
 
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
     assert(tx_receipt.isSuccess(), `Register App role admin failed`);
@@ -153,19 +141,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
     const call = appchainBridgeContract.populate("register_app_governor", {
       account: acc_l3.address,
     });
-    const res = await acc_l3.execute([call], {
-      maxFee: 0,
-      resourceBounds: {
-        l1_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-        l2_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-      },
-    });
+    const res = await acc_l3.execute([call]);
 
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
     assert(tx_receipt.isSuccess(), `Register App governor failed`);
@@ -178,19 +154,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
     const call = appchainBridgeContract.populate("set_l2_token_governance", {
       l2_token_governance: acc_l3.address,
     });
-    const res = await acc_l3.execute([call], {
-      maxFee: 0,
-      resourceBounds: {
-        l1_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-        l2_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-      },
-    });
+    const res = await acc_l3.execute([call]);
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
     assert(tx_receipt.isSuccess(), `Set L2 Governance failed`);
 
@@ -227,19 +191,7 @@ export async function setL2Bridge(acc_l3: Account) {
     const call = appchainBridgeContract.populate("set_l1_bridge", {
       l1_bridge_address: tokenBridge,
     });
-    const res = await acc_l3.execute([call], {
-      maxFee: 0,
-      resourceBounds: {
-        l1_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-        l2_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-      },
-    });
+    const res = await acc_l3.execute([call]);
 
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
     assert(tx_receipt.isSuccess(), `Set L1 Bridge failed`);
@@ -309,19 +261,7 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
       erc20_class_hash: class_hash,
     });
 
-    let result = await acc.execute([call], {
-      maxFee: 0,
-      resourceBounds: {
-        l1_gas: {
-          max_price_per_unit: "0x0",
-          max_amount: "0x0",
-        },
-        l2_gas: {
-          max_price_per_unit: "0x0",
-          max_amount: "0x0",
-        },
-      },
-    });
+    let result = await acc.execute([call]);
     const tx_receipt = await acc.waitForTransaction(result.transaction_hash);
     assert(tx_receipt.isSuccess(), `Set ERC20 class hash failed`);
 
@@ -584,19 +524,7 @@ export async function initiateTokenL3toL2Withdrawal(
     }
   );
 
-  let tx = await acc_l3.execute([initiateWithdrawalCall], {
-    maxFee: 0,
-    resourceBounds: {
-      l1_gas: {
-        max_amount: "0x0",
-        max_price_per_unit: "0x0",
-      },
-      l2_gas: {
-        max_amount: "0x0",
-        max_price_per_unit: "0x0",
-      },
-    }
-  });
+  let tx = await acc_l3.execute([initiateWithdrawalCall]);
   const tx_receipt = await acc_l3.waitForTransaction(tx.transaction_hash);
   assert(tx_receipt.isSuccess(), `Withdrawal initiation failed`);
 
