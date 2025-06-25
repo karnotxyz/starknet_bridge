@@ -126,6 +126,7 @@ pub mod TokenBridge {
         pub const WITHDRAWAL_LIMIT_NOT_APPLIED: felt252 = 'Withdrawal limit not applied';
         pub const PERMISSIONED_OR_NOT_TOKEN_ADMIN: felt252 = 'Permissioned or not TokenAdmin';
         pub const PENDING_DURATION_LESS_THAN_HOUR: felt252 = 'Duration at least 1 hour';
+        pub const MESSAGE_NOT_CANCELLED: felt252 = 'Message status not cancelled';
     }
 
 
@@ -853,8 +854,11 @@ pub mod TokenBridge {
                 let new_settings = TokenSettings { token_status: TokenStatus::Active, ..settings };
                 self.token_settings.write(token, new_settings);
                 self.emit(TokenActivated { token });
-            } else if (message_status != MessageToAppchainStatus::Cancelling
-                && get_block_timestamp() > settings.pending_deployment_expiration) {
+            } else if (message_status == MessageToAppchainStatus::Pending(
+                settings.deployment_message_nonce,
+            )
+                && settings.pending_deployment_expiration < get_block_timestamp()) {
+                // Start message cancellation after `pending_deployment_expiration` passed
                 self
                     .messaging_contract
                     .read()
@@ -864,7 +868,30 @@ pub mod TokenBridge {
                         deployment_message_payload(token),
                         settings.deployment_message_nonce,
                     );
-            } else if (message_status == MessageToAppchainStatus::Cancelled) {
+            } else if (message_status == MessageToAppchainStatus::Cancelling) {
+                // Attempt to cancel the message
+                self
+                    .messaging_contract
+                    .read()
+                    .cancel_message(
+                        self.appchain_bridge(),
+                        constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
+                        deployment_message_payload(token),
+                        settings.deployment_message_nonce,
+                    );
+
+                let message_status = self
+                    .messaging_contract
+                    .read()
+                    .sn_to_appchain_messages(settings.deployment_message_hash);
+
+                // The updated message status should be Cancelled
+                assert(
+                    message_status == MessageToAppchainStatus::Cancelled,
+                    Errors::MESSAGE_NOT_CANCELLED,
+                );
+
+                // If call succeeds then update the token status
                 let new_settings = TokenSettings {
                     token_status: TokenStatus::Unknown,
                     deployment_message_hash: 0,
