@@ -16,7 +16,7 @@ const fileFormat = format.printf((info) => {
 
 export class Logger {
   private static instance: Logger;
-  private winstonLogger: WinstonLogger;
+  private winstonLogger!: WinstonLogger;
   private initialized: boolean = false;
 
   private constructor() {
@@ -31,7 +31,7 @@ export class Logger {
     return Logger.instance;
   }
 
-  public initialize(options: { 
+  public initialize(options: {
     logsDir?: string;
     maxSize?: number;
     maxFiles?: number;

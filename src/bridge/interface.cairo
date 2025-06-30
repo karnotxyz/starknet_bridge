@@ -1,5 +1,6 @@
 use starknet::ContractAddress;
 use starknet_bridge::bridge::types::TokenStatus;
+use starknet_bridge::bridge::types::TokenSettings;
 
 #[starknet::interface]
 pub trait ITokenBridgeAdmin<TContractState> {
@@ -23,6 +24,7 @@ pub trait ITokenBridgeAdmin<TContractState> {
     fn set_max_total_balance(
         ref self: TContractState, token: ContractAddress, max_total_balance: u256,
     );
+    fn set_max_pending_duration(ref self: TContractState, duration: u64);
     fn pause(ref self: TContractState);
     fn unpause(ref self: TContractState);
 }
@@ -90,5 +92,7 @@ pub trait ITokenBridge<TContractState> {
         nonce: felt252,
     );
     fn get_max_total_balance(self: @TContractState, token: ContractAddress) -> u256;
+    fn get_token_settings(self: @TContractState, token: ContractAddress) -> TokenSettings;
+    fn get_max_pending_duration(self: @TContractState) -> u64;
     fn get_appchain_token_bridge(self: @TContractState) -> ContractAddress;
 }

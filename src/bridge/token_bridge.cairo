@@ -6,7 +6,6 @@ pub mod TokenBridge {
     use core::option::OptionTrait;
     use core::serde::Serde;
     use core::to_byte_array::FormatAsByteArray;
-    use core::traits::TryInto;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::access::accesscontrol::interface::IAccessControl;
     use openzeppelin::introspection::src5::SRC5Component;
@@ -86,7 +85,9 @@ pub mod TokenBridge {
         // All token related settings and its status
         pub token_settings: Map<ContractAddress, TokenSettings>,
         // Token Enrollment is permissionless or not
-        permissioned_enroll: bool,
+        pub permissioned_enroll: bool,
+        // 24 hour time, post which cancellation is initiated
+        pub max_pending_duration: u64,
         #[substorage(v0)]
         pub upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
@@ -121,8 +122,11 @@ pub mod TokenBridge {
         pub const MAX_BALANCE_EXCEEDED: felt252 = 'Max Balance Exceeded';
         pub const TOKENS_NOT_TRANSFERRED: felt252 = 'Tokens not transferred';
         pub const NEW_LIMIT_MUST_BE_GREATER: felt252 = 'New limit must be greater';
+        pub const NEW_LIMIT_MUST_BE_SMALLER: felt252 = 'New limit must be smaller';
         pub const WITHDRAWAL_LIMIT_NOT_APPLIED: felt252 = 'Withdrawal limit not applied';
         pub const PERMISSIONED_OR_NOT_TOKEN_ADMIN: felt252 = 'Permissioned or not TokenAdmin';
+        pub const PENDING_DURATION_LESS_THAN_HOUR: felt252 = 'Duration at least 1 hour';
+        pub const MESSAGE_NOT_CANCELLED: felt252 = 'Message status not cancelled';
     }
 
 
@@ -135,6 +139,7 @@ pub mod TokenBridge {
         TokenBlocked: TokenBlocked,
         TokenReactivated: TokenReactivated,
         TokenUnblocked: TokenUnblocked,
+        TokenUnknown: TokenUnknown,
         Deposit: Deposit,
         DepositWithMessage: DepositWithMessage,
         DepostiCancelRequest: DepositCancelRequest,
@@ -145,6 +150,7 @@ pub mod TokenBridge {
         WithdrawalLimitIncreased: WithdrawalLimitIncreased,
         WithdrawalLimitDecreased: WithdrawalLimitDecreased,
         SetMaxTotalBalance: SetMaxTotalBalance,
+        SetPendingDuration: SetPendingDuration,
         SetAppchainBridge: SetAppchainBridge,
         ConfigurePermissionedEnrollment: ConfigurePermissionedEnrollment,
         #[flat]
@@ -189,6 +195,12 @@ pub mod TokenBridge {
     pub struct TokenReactivated {
         pub token: ContractAddress,
     }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct TokenUnknown {
+        pub token: ContractAddress,
+    }
+
 
     #[derive(Drop, starknet::Event)]
     pub struct TokenEnrollmentInitiated {
@@ -306,6 +318,11 @@ pub mod TokenBridge {
         pub value: u256,
     }
 
+    #[derive(Drop, starknet::Event)]
+    pub struct SetPendingDuration {
+        pub duration: u64,
+    }
+
 
     #[derive(Drop, starknet::Event)]
     pub struct SetAppchainBridge {
@@ -334,6 +351,7 @@ pub mod TokenBridge {
         self
             .messaging_contract
             .write(IMessagingDispatcher { contract_address: messaging_contract });
+        self.max_pending_duration.write(24 * 60 * 60);
         self
             .bridge_access_control
             .initializer(
@@ -349,7 +367,7 @@ pub mod TokenBridge {
 
     #[generate_trait]
     pub impl TokenBridgeInternalImpl of TokenBridgeInternal {
-        fn send_deploy_message(self: @ContractState, token: ContractAddress) -> felt252 {
+        fn send_deploy_message(self: @ContractState, token: ContractAddress) -> (felt252, felt252) {
             assert(self.appchain_bridge().is_non_zero(), Errors::APPCHAIN_BRIDGE_NOT_SET);
 
             let (hash, nonce) = self
@@ -368,7 +386,7 @@ pub mod TokenBridge {
                     .sn_to_appchain_messages(hash) == MessageToAppchainStatus::Pending(nonce),
                 Errors::DEPLOY_MESSAGE_NOT_PENDING,
             );
-            return hash;
+            return (hash, nonce);
         }
 
         fn send_deposit_message(
@@ -429,7 +447,7 @@ pub mod TokenBridge {
 
             let current_balance: u256 = dispatcher.balance_of(get_contract_address());
             let max_total_balance = self.get_max_total_balance(token);
-            assert(current_balance + amount < max_total_balance, Errors::MAX_BALANCE_EXCEEDED);
+            assert(current_balance + amount <= max_total_balance, Errors::MAX_BALANCE_EXCEEDED);
 
             let this_address = get_contract_address();
             let initial_balance = dispatcher.balance_of(this_address);
@@ -612,7 +630,7 @@ pub mod TokenBridge {
             self.bridge_access_control.assert_only_security_agent();
 
             let current_pct = self.withdrawal.get_daily_withdrawal_limit_pct(token);
-            assert(daily_withdrawal_limit_pct < current_pct, Errors::NEW_LIMIT_MUST_BE_GREATER);
+            assert(daily_withdrawal_limit_pct < current_pct, Errors::NEW_LIMIT_MUST_BE_SMALLER);
             self.withdrawal.write_daily_withdrawal_limit_pct(token, daily_withdrawal_limit_pct);
 
             self
@@ -651,6 +669,13 @@ pub mod TokenBridge {
             };
             self.token_settings.write(token, new_settings);
             self.emit(SetMaxTotalBalance { token, value: max_total_balance });
+        }
+
+        fn set_max_pending_duration(ref self: ContractState, duration: u64) {
+            self.bridge_access_control.assert_only_app_governor();
+            assert(duration >= 3600, Errors::PENDING_DURATION_LESS_THAN_HOUR);
+            self.max_pending_duration.write(duration);
+            self.emit(SetPendingDuration { duration });
         }
 
         // This function is used to pause the contract.
@@ -718,15 +743,17 @@ pub mod TokenBridge {
             assert(self.get_status(token) == TokenStatus::Unknown, Errors::ALREADY_ENROLLED);
 
             // Send message to appchain
-            let deployment_message_hash = self.send_deploy_message(token);
+            let (deployment_message_hash, deployment_message_nonce) = self
+                .send_deploy_message(token);
             // Reading existing settings as withdrawal_limit_applied and max_total_balance
             // can be set before the token is enrolled.
             let old_settings = self.token_settings.read(token);
             let new_settings = TokenSettings {
                 token_status: TokenStatus::Pending,
                 deployment_message_hash: deployment_message_hash,
+                deployment_message_nonce: deployment_message_nonce,
                 pending_deployment_expiration: get_block_timestamp()
-                    + constants::MAX_PENDING_DURATION.try_into().unwrap(),
+                    + self.max_pending_duration.read(),
                 ..old_settings,
             };
 
@@ -807,9 +834,9 @@ pub mod TokenBridge {
             self.reentrancy_guard.end();
         }
 
-        //     checks token deployment status.
-        //     relies on l3 clearing l2-l3 message upon successful completion of deployment.
-        //     processing: check the l2-l3 deployment message. set status to `Active` if consumed.
+        // checks token deployment status.
+        // relies on l3 clearing l2-l3 message upon successful completion of deployment.
+        // processing: check the l2-l3 deployment message. set status to `Active` if consumed.
         //     if not consumed after the expected duration, it returns the status to `Unknown`.
         fn check_deployment_status(ref self: ContractState, token: ContractAddress) {
             self.pausable.assert_not_paused();
@@ -827,9 +854,54 @@ pub mod TokenBridge {
                 let new_settings = TokenSettings { token_status: TokenStatus::Active, ..settings };
                 self.token_settings.write(token, new_settings);
                 self.emit(TokenActivated { token });
-            } else if (get_block_timestamp() > settings.pending_deployment_expiration) {
-                let new_settings = TokenSettings { token_status: TokenStatus::Unknown, ..settings };
+            } else if (message_status == MessageToAppchainStatus::Pending(
+                settings.deployment_message_nonce,
+            )
+                && settings.pending_deployment_expiration < get_block_timestamp()) {
+                // Start message cancellation after `pending_deployment_expiration` passed
+                self
+                    .messaging_contract
+                    .read()
+                    .start_message_cancellation(
+                        self.appchain_bridge(),
+                        constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
+                        deployment_message_payload(token),
+                        settings.deployment_message_nonce,
+                    );
+            } else if (message_status == MessageToAppchainStatus::Cancelling) {
+                // Attempt to cancel the message
+                self
+                    .messaging_contract
+                    .read()
+                    .cancel_message(
+                        self.appchain_bridge(),
+                        constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
+                        deployment_message_payload(token),
+                        settings.deployment_message_nonce,
+                    );
+
+                let message_status = self
+                    .messaging_contract
+                    .read()
+                    .sn_to_appchain_messages(settings.deployment_message_hash);
+
+                // The updated message status should be Cancelled
+                assert(
+                    message_status == MessageToAppchainStatus::Cancelled,
+                    Errors::MESSAGE_NOT_CANCELLED,
+                );
+
+                // If call succeeds then update the token status
+                let new_settings = TokenSettings {
+                    token_status: TokenStatus::Unknown,
+                    deployment_message_hash: 0,
+                    deployment_message_nonce: 0,
+                    pending_deployment_expiration: 0,
+                    max_total_balance: settings.max_total_balance,
+                };
                 self.token_settings.write(token, new_settings);
+
+                self.emit(TokenUnknown { token });
             }
         }
 
@@ -855,7 +927,16 @@ pub mod TokenBridge {
             self.withdrawal.consume_withdrawal_quota(token, amount);
 
             let tokenDispatcher = IERC20Dispatcher { contract_address: token };
+
+            let this_address = get_contract_address();
+            let initial_balance = tokenDispatcher.balance_of(this_address);
+
             tokenDispatcher.transfer(recipient, amount);
+
+            assert(
+                tokenDispatcher.balance_of(this_address) == initial_balance - amount,
+                Errors::TOKENS_NOT_TRANSFERRED,
+            );
             self.reentrancy_guard.end();
 
             self.emit(Withdrawal { recipient, token, amount });
@@ -964,7 +1045,14 @@ pub mod TokenBridge {
                 );
 
             let dispatcher = IERC20Dispatcher { contract_address: token };
+            let initial_balance = dispatcher.balance_of(get_contract_address());
+
             dispatcher.transfer(get_caller_address(), amount);
+
+            assert(
+                dispatcher.balance_of(get_contract_address()) == initial_balance - amount,
+                Errors::TOKENS_NOT_TRANSFERRED,
+            );
 
             self.reentrancy_guard.end();
 
@@ -1004,7 +1092,14 @@ pub mod TokenBridge {
                 );
 
             let dispatcher = IERC20Dispatcher { contract_address: token };
+
+            let initial_balance = dispatcher.balance_of(get_contract_address());
+
             dispatcher.transfer(get_caller_address(), amount);
+            assert(
+                dispatcher.balance_of(get_contract_address()) == initial_balance - amount,
+                Errors::TOKENS_NOT_TRANSFERRED,
+            );
 
             self.reentrancy_guard.end();
 
@@ -1035,6 +1130,14 @@ pub mod TokenBridge {
                 return Bounded::MAX;
             }
             return max_total_balance;
+        }
+
+        fn get_token_settings(self: @ContractState, token: ContractAddress) -> TokenSettings {
+            self.token_settings.read(token)
+        }
+
+        fn get_max_pending_duration(self: @ContractState) -> u64 {
+            self.max_pending_duration.read()
         }
 
         fn get_appchain_token_bridge(self: @ContractState) -> ContractAddress {

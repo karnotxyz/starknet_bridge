@@ -64,6 +64,7 @@ The TokenBridge contract implements role-based access control for various functi
 - `set_appchain_token_bridge` - Can set the appchain bridge address
 - `set_max_total_balance` - Can set the maximum total balance for a token
 - `configure_permissionless_enrollment` - Can configure whether token enrollment is permissionless or requires TOKEN_ADMIN role
+- `set_max_pending_duration` - Allows to configure the max duration for which token remains in pending before cancellation can be initiated.
 
 ### SECURITY_ADMIN
 - `increase_withdrawal_limit` - Can increase the daily withdrawal limit percentage for a token
