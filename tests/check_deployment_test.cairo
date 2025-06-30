@@ -56,8 +56,6 @@ fn check_deployment_status_cancelling_completes_cancellation() {
     let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
     let token = deploy_erc20("TEST", "TST");
 
-    snf::start_cheat_caller_address(token_bridge.contract_address, TOKEN_ADMIN());
-
     // Enroll the token
     enroll_token(token_bridge, messaging_mock, token);
     assert(token_bridge.get_status(token) == TokenStatus::Pending, 'Should be Pending');
@@ -87,7 +85,51 @@ fn check_deployment_status_cancelling_completes_cancellation() {
         );
 
     snf::stop_cheat_block_timestamp_global();
-    snf::stop_cheat_caller_address(token_bridge.contract_address);
+}
+
+#[test]
+fn check_deployment_starts_cancelling_to_token_active() {
+    // Test that cancelling message completes cancellation and resets to Unknown
+    let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
+    let token = deploy_erc20("TEST", "TST");
+
+    // Enroll the token
+    enroll_token(token_bridge, messaging_mock, token);
+    assert(token_bridge.get_status(token) == TokenStatus::Pending, 'Should be Pending');
+
+    // Fast forward time to expire the deployment
+    let future_timestamp = get_block_timestamp() + token_bridge.get_max_pending_duration() + 1;
+    snf::start_cheat_block_timestamp_global(future_timestamp);
+
+    // First call starts cancellation
+    token_bridge.check_deployment_status(token);
+
+    messaging_mock
+        .process_last_message_to_appchain(
+            token_bridge.contract_address,
+            L3_BRIDGE_ADDRESS(),
+            constants::HANDLE_TOKEN_DEPLOYMENT_SELECTOR,
+            message_payloads::deployment_message_payload(token),
+        );
+
+    // Fast forward time for cancellation delay to pass
+    let cancellation_timestamp = future_timestamp + 432000 + 1; // 5 days + 1 second
+    snf::start_cheat_block_timestamp_global(cancellation_timestamp);
+
+    // Second call should make the token Active since message is processed
+    token_bridge.check_deployment_status(token);
+
+    // Status should be back to Unknown
+    assert(token_bridge.get_status(token) == TokenStatus::Active, 'Should be Unknown');
+
+    // Should emit TokenUnknown event
+    let expected_event = TokenBridge::TokenActivated { token };
+    spy
+        .assert_emitted(
+            @array![(token_bridge.contract_address, Event::TokenActivated(expected_event))],
+        );
+
+    snf::stop_cheat_block_timestamp_global();
 }
 
 #[test]
@@ -114,8 +156,6 @@ fn check_deployment_status_multiple_calls_idempotent() {
     let (token_bridge, _, messaging_mock) = deploy_token_bridge_with_messaging();
     let token = deploy_erc20("TEST", "TST");
 
-    snf::start_cheat_caller_address(token_bridge.contract_address, TOKEN_ADMIN());
-
     // Enroll and seal the message
     enroll_token(token_bridge, messaging_mock, token);
     messaging_mock
@@ -137,6 +177,4 @@ fn check_deployment_status_multiple_calls_idempotent() {
     // Third call should also do nothing
     token_bridge.check_deployment_status(token);
     assert(token_bridge.get_status(token) == TokenStatus::Active, 'Should still be Active');
-
-    snf::stop_cheat_caller_address(token_bridge.contract_address);
 }
