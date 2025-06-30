@@ -837,7 +837,7 @@ pub mod TokenBridge {
         // checks token deployment status.
         // relies on l3 clearing l2-l3 message upon successful completion of deployment.
         // processing: check the l2-l3 deployment message. set status to `Active` if consumed.
-        // if not consumed after the expected duration, it returns the status to `Unknown`.
+        //     if not consumed after the expected duration, it returns the status to `Unknown`.
         fn check_deployment_status(ref self: ContractState, token: ContractAddress) {
             self.pausable.assert_not_paused();
             let settings = self.token_settings.read(token);
@@ -1130,6 +1130,10 @@ pub mod TokenBridge {
                 return Bounded::MAX;
             }
             return max_total_balance;
+        }
+
+        fn get_token_settings(self: @ContractState, token: ContractAddress) -> TokenSettings {
+            self.token_settings.read(token)
         }
 
         fn get_max_pending_duration(self: @ContractState) -> u64 {

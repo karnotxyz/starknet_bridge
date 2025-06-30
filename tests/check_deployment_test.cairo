@@ -1,7 +1,7 @@
 use snforge_std as snf;
 use snforge_std::EventSpyAssertionsTrait;
 use starknet::get_block_timestamp;
-use starknet_bridge::bridge::tests::constants::{L3_BRIDGE_ADDRESS, TOKEN_ADMIN, SECURITY_AGENT};
+use starknet_bridge::bridge::tests::constants::{L3_BRIDGE_ADDRESS, SECURITY_AGENT};
 use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet_bridge::bridge::tests::utils::setup::{
     deploy_token_bridge_with_messaging, deploy_erc20, enroll_token,
@@ -13,7 +13,9 @@ use starknet_bridge::bridge::{
 };
 use starknet_bridge::bridge::TokenBridge::Event;
 use starknet_bridge::constants;
+use piltover::messaging::interface::{IMessagingDispatcher, IMessagingDispatcherTrait};
 use starknet_bridge::mocks::messaging::{IMockMessagingDispatcherTrait};
+use piltover::messaging::types::MessageToAppchainStatus;
 
 #[test]
 fn check_deployment_status_non_pending_token() {
@@ -55,10 +57,22 @@ fn check_deployment_status_cancelling_completes_cancellation() {
     // Test that cancelling message completes cancellation and resets to Unknown
     let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
     let token = deploy_erc20("TEST", "TST");
+    let messaging_dispatcher = IMessagingDispatcher {
+        contract_address: messaging_mock.contract_address,
+    };
 
     // Enroll the token
     enroll_token(token_bridge, messaging_mock, token);
     assert(token_bridge.get_status(token) == TokenStatus::Pending, 'Should be Pending');
+
+    let token_settings = token_bridge.get_token_settings(token);
+    assert(
+        messaging_dispatcher
+            .sn_to_appchain_messages(
+                token_settings.deployment_message_hash,
+            ) == MessageToAppchainStatus::Pending(token_settings.deployment_message_nonce),
+        'Status should be pending',
+    );
 
     // Fast forward time to expire the deployment
     let future_timestamp = get_block_timestamp() + token_bridge.get_max_pending_duration() + 1;
@@ -67,12 +81,28 @@ fn check_deployment_status_cancelling_completes_cancellation() {
     // First call starts cancellation
     token_bridge.check_deployment_status(token);
 
+    assert(
+        messaging_dispatcher
+            .sn_to_appchain_messages(
+                token_settings.deployment_message_hash,
+            ) == MessageToAppchainStatus::Cancelling,
+        'Status should be Cancelling',
+    );
+
     // Fast forward time for cancellation delay to pass
     let cancellation_timestamp = future_timestamp + 432000 + 1; // 5 days + 1 second
     snf::start_cheat_block_timestamp_global(cancellation_timestamp);
 
     // Second call should complete cancellation
     token_bridge.check_deployment_status(token);
+
+    assert(
+        messaging_dispatcher
+            .sn_to_appchain_messages(
+                token_settings.deployment_message_hash,
+            ) == MessageToAppchainStatus::Cancelled,
+        'Status should be Cancelling',
+    );
 
     // Status should be back to Unknown
     assert(token_bridge.get_status(token) == TokenStatus::Unknown, 'Should be Unknown');
@@ -93,9 +123,22 @@ fn check_deployment_starts_cancelling_to_token_active() {
     let (token_bridge, mut spy, messaging_mock) = deploy_token_bridge_with_messaging();
     let token = deploy_erc20("TEST", "TST");
 
+    let messaging_dispatcher = IMessagingDispatcher {
+        contract_address: messaging_mock.contract_address,
+    };
+
     // Enroll the token
     enroll_token(token_bridge, messaging_mock, token);
     assert(token_bridge.get_status(token) == TokenStatus::Pending, 'Should be Pending');
+
+    let token_settings = token_bridge.get_token_settings(token);
+    assert(
+        messaging_dispatcher
+            .sn_to_appchain_messages(
+                token_settings.deployment_message_hash,
+            ) == MessageToAppchainStatus::Pending(token_settings.deployment_message_nonce),
+        'Status should be pending',
+    );
 
     // Fast forward time to expire the deployment
     let future_timestamp = get_block_timestamp() + token_bridge.get_max_pending_duration() + 1;
@@ -103,6 +146,14 @@ fn check_deployment_starts_cancelling_to_token_active() {
 
     // First call starts cancellation
     token_bridge.check_deployment_status(token);
+
+    assert(
+        messaging_dispatcher
+            .sn_to_appchain_messages(
+                token_settings.deployment_message_hash,
+            ) == MessageToAppchainStatus::Cancelling,
+        'Status should be Cancelling',
+    );
 
     messaging_mock
         .process_last_message_to_appchain(
@@ -112,6 +163,14 @@ fn check_deployment_starts_cancelling_to_token_active() {
             message_payloads::deployment_message_payload(token),
         );
 
+    assert(
+        messaging_dispatcher
+            .sn_to_appchain_messages(
+                token_settings.deployment_message_hash,
+            ) == MessageToAppchainStatus::Sealed,
+        'Status should be Sealed',
+    );
+
     // Fast forward time for cancellation delay to pass
     let cancellation_timestamp = future_timestamp + 432000 + 1; // 5 days + 1 second
     snf::start_cheat_block_timestamp_global(cancellation_timestamp);
@@ -119,10 +178,10 @@ fn check_deployment_starts_cancelling_to_token_active() {
     // Second call should make the token Active since message is processed
     token_bridge.check_deployment_status(token);
 
-    // Status should be back to Unknown
-    assert(token_bridge.get_status(token) == TokenStatus::Active, 'Should be Unknown');
+    // Status should be now Active
+    assert(token_bridge.get_status(token) == TokenStatus::Active, 'Should be Active');
 
-    // Should emit TokenUnknown event
+    // Should emit TokenActivated event
     let expected_event = TokenBridge::TokenActivated { token };
     spy
         .assert_emitted(
