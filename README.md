@@ -111,3 +111,6 @@ Token status transitions:
 - **Deactivated → Active**: When a token is reactivated by the TOKEN_ADMIN
 - **Unknown → Blocked**: When a token is blocked by the TOKEN_ADMIN
 - **Blocked → Unknown**: When a token is unblocked by the TOKEN_ADMIN
+
+## Audits
+- [Audit by Nethermind](https://github.com/NethermindEth/PublicAuditReports/blob/main/NM0544B-FINAL_TOKEN_BRIDGE.pdf)
