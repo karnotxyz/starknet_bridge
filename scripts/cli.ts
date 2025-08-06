@@ -174,14 +174,15 @@ program
 program
   .command("enroll-token")
   .description("Enroll a token in the bridge")
-  .option("-t, --token <token>", "Token name", "L2TestToken")
+  .option("-t, --tokenName <tokenName>", "Token name", "L2TestToken")
+  .option("-s, --symbol <symbol>", "Token symbol", "TST")
   .option("-d, --deploy", "Deploy the token first", false)
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
     if (options.deploy) {
-      await deployERC20();
+      await deployERC20(options.tokenName, options.symbol, 18);
     }
-    await enrollToken(acc_l2, options.token);
+    await enrollToken(acc_l2, options.tokenName);
   });
 
 // Deposit Command

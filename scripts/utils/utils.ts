@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContractHashes, hash, json, num, provider } from 'starknet'
+import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, config, extractContractHashes, hash, json, num, provider } from 'starknet'
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
@@ -69,7 +69,8 @@ export function getProvider(layer: Layer): RpcProvider {
   if (layer === Layer.L2) {
     return new RpcProvider({ nodeUrl: process.env.RPC_L2_URL as string, retries: 5 });
   } else if (layer === Layer.L3) {
-    return new RpcProvider({ nodeUrl: process.env.RPC_L3_URL as string, retries: 5 });
+    config.set('legacyMode', true);
+    return new RpcProvider({ nodeUrl: process.env.RPC_L3_URL as string, retries: 5, specVersion: '0.7.1' });
   } else {
     throw new Error('Invalid layer');
   }
@@ -150,7 +151,18 @@ export async function declareContract(contract: Contract, skipIfPresentInDump: b
     let tx: { transaction_hash: string; class_hash: string; };
     if (layer === Layer.L3) {
       logger.info('Declaring on L3');
-      tx = await acc.declareIfNot(payload);
+      tx = await acc.declareIfNot(payload, {
+        resourceBounds: {
+          l1_gas: {
+            max_amount: "0x0",
+            max_price_per_unit: "0x0"
+          },
+          l2_gas: {
+            max_amount: "0x0",
+            max_price_per_unit: "0x0"
+          }
+        }
+      });
     } else {
       logger.info('Declaring on L2');
       tx = await acc.declareIfNot(payload);
@@ -181,7 +193,7 @@ export async function declareContract(contract: Contract, skipIfPresentInDump: b
     contract.classHash = tx.class_hash;
 
     return tx;
-  } catch (e) {
+  } catch (e: any) {
     logger.error(e);
     throw e;
   }
@@ -202,17 +214,28 @@ export async function deployContract(contract: Contract, constructorData: RawArg
     throw new Error(`Contract ${contract.name} has no class hash. Declare it first.`);
   }
 
-  const fee = await acc.estimateDeployFee({
-    classHash: contract.classHash,
-    constructorCalldata: constructorData,
-  })
-  console.log("Deploy fee", contract.name, Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
+  // const fee = await acc.estimateDeployFee({
+  //   classHash: contract.classHash,
+  //   constructorCalldata: constructorData,
+  // })
+  // console.log("Deploy fee", contract.name, Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
 
   let tx: { transaction_hash: any; contract_address: any; address?: string; deployer?: string; unique?: string; classHash?: string; calldata_len?: string; calldata?: string[]; salt?: string; };
   if (layer === Layer.L3) {
     tx = await acc.deployContract({
       classHash: contract.classHash,
       constructorCalldata: constructorData,
+    }, {
+      resourceBounds: {
+        l1_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0"
+        },
+        l2_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0"
+        }
+      }
     });
   } else {
     tx = await acc.deployContract({
