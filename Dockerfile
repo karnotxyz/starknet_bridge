@@ -58,7 +58,7 @@ FROM node:22.10-slim AS runner
 WORKDIR /app
 
 RUN npm i -g pnpm 
-RUN apt-get update && apt-get install -y jq
+RUN apt-get update && apt-get install -y jq curl
 
 COPY --from=builder /app/starkgate-contracts/cairo_contracts ./starkgate-contracts/cairo_contracts
 COPY --from=builder /app/target ./target

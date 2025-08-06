@@ -20,6 +20,9 @@ importers:
       starknet:
         specifier: ^7.6.4
         version: 7.6.4
+      tsx:
+        specifier: ^4.19.4
+        version: 4.19.4
       viem:
         specifier: ^2.23.9
         version: 2.23.9(typescript@5.8.2)
@@ -417,6 +420,9 @@ packages:
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
+
+  resolve-pkg-maps@1.0.0:
+    resolution: {integrity: sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==}
 
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
@@ -837,6 +843,8 @@ snapshots:
       esprima: 4.0.1
 
   require-directory@2.1.1: {}
+
+  resolve-pkg-maps@1.0.0: {}
 
   safe-buffer@5.2.1: {}
 
