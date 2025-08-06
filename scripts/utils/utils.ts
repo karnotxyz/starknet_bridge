@@ -214,11 +214,11 @@ export async function deployContract(contract: Contract, constructorData: RawArg
     throw new Error(`Contract ${contract.name} has no class hash. Declare it first.`);
   }
 
-  // const fee = await acc.estimateDeployFee({
-  //   classHash: contract.classHash,
-  //   constructorCalldata: constructorData,
-  // })
-  // console.log("Deploy fee", contract.name, Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
+  const fee = await acc.estimateDeployFee({
+    classHash: contract.classHash,
+    constructorCalldata: constructorData,
+  })
+  console.log("Deploy fee", contract.name, Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
 
   let tx: { transaction_hash: any; contract_address: any; address?: string; deployer?: string; unique?: string; classHash?: string; calldata_len?: string; calldata?: string[]; salt?: string; };
   if (layer === Layer.L3) {
