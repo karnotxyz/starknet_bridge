@@ -121,14 +121,20 @@ jobs:
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8080 \
             --settlement-layer STARKNET \
             --l1-endpoint http://l2-node:9944 \
-            --strk-gas-price 0 --strk-blob-gas-price 0 --gas-price 0 \
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_l3.log
 
       - name: Wait for server to be ready
         run: |
-          until [ "$(curl -s http://localhost:9955)" = "Used HTTP Method is not allowed. POST or OPTIONS is required" ]; do
+          timeout=180  # 3 minutes in seconds
+          elapsed=0
+          until [ "$(curl -fsSL http://localhost:9955/health)" = "OK" ] && echo "Health check passed"; do
             echo "Waiting for server to be ready..."
-            sleep 2
+              sleep 2
+              elapsed=$((elapsed + 2))
+              if [ $elapsed -ge $timeout ]; then
+                echo "Timeout: Server did not become ready within 3 minutes"
+                exit 1
+              fi
           done
           echo "Server is ready!"
 
