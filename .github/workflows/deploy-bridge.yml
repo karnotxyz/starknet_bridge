@@ -140,10 +140,20 @@ jobs:
       
       - name: Run Bootstrapper on L3
         run: |
-          docker run -d --network bridge-network \
+          docker run -d --name bootstrapper-udc --network bridge-network \
             -v ./madara/bootstrapper/config/:/apps/config/ ghcr.io/madara-alliance/bootstrapper:nightly \
             --config /apps/config/devnet.json \
             --mode udc
+
+          # Wait for container to finish
+          EXIT_CODE=$(docker wait bootstrapper-udc)
+          
+          # Check exit status
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "Bootstrapper container failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+          echo "Bootstrapper container completed successfully" 
 
       - name: Run Bridge Deployment Script
         run: |
