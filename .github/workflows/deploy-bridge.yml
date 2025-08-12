@@ -55,11 +55,18 @@ jobs:
             --no-l1-sync \
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_l2.log
 
-      - name: Wait for server to be ready is now
+      - name: Wait for server to be ready
         run: |
-          until [ "$(curl -s http://localhost:9944)" = "Used HTTP Method is not allowed. POST or OPTIONS is required" ]; do
+          timeout=180  # 3 minutes in seconds
+          elapsed=0
+          until [ "$(curl -fsSL http://localhost:9944/health)" = "OK" ] && echo "Health check passed"; do
             echo "Waiting for server to be ready..."
             sleep 2
+            elapsed=$((elapsed + 2))
+            if [ $elapsed -ge $timeout ]; then
+              echo "Timeout: Server did not become ready within 3 minutes"
+              exit 1
+            fi
           done
           echo "Server is ready!"
 
