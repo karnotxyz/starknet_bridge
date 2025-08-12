@@ -30,7 +30,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install Dependencies
         run: pnpm install
@@ -53,10 +53,9 @@ jobs:
             --devnet --chain-config-path /apps/configs/presets/devnet.yaml \
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8844 \
             --no-l1-sync \
-            --strk-gas-price 0 --strk-blob-gas-price 0 --gas-price 0 \
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_l2.log
 
-      - name: Wait for server to be ready
+      - name: Wait for server to be ready is now
         run: |
           until [ "$(curl -s http://localhost:9944)" = "Used HTTP Method is not allowed. POST or OPTIONS is required" ]; do
             echo "Waiting for server to be ready..."
@@ -69,9 +68,9 @@ jobs:
 
       - name: Build Starkgate Contracts
         run: |
-          cd starkgate-contracts 
+          cd starkgate-contracts
           git checkout dev-2.9.2
-          cd .. 
+          cd ..
           bash ./scripts/shell/build.sh
 
       - name: Build bridge contracts
@@ -128,9 +127,8 @@ jobs:
 
       - name: Run Bridge Deployment Script
         run: |
-           tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
-           tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-erc20
-
+          tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
+          tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-erc20
 
       - name: Run Token Actions
         run: |
@@ -141,10 +139,7 @@ jobs:
           tsx ./scripts/cli.ts --dump-path=./contracts.json transfer-roles
 
       - name: Check if all roles granted
-        run: 
-          tsx ./scripts/cli.ts --dump-path=./contracts.json check-roles
+        run: tsx ./scripts/cli.ts --dump-path=./contracts.json check-roles
 
       - name: Renounce roles
-        run: 
-          tsx ./scripts/cli.ts --dump-path=./contracts.json renounce-roles
-
+        run: tsx ./scripts/cli.ts --dump-path=./contracts.json renounce-roles
