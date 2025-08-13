@@ -112,7 +112,7 @@ jobs:
 
       - name: Run l3
         run: |
-          docker run -d --network bridge-network \
+          docker run -d --name l3-node --network bridge-network \
             -p 9944:9944 -p 9943:9943 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l3-db \
             --rpc-cors "*" --rpc-external --rpc-admin \
@@ -142,11 +142,11 @@ jobs:
         run: |
           docker run -d --name bootstrapper-udc --network bridge-network \
             -v ./madara/bootstrapper/src/configs/:/apps/configs/ \
-            -e ETH_RPC=http://l2-node:9955 \          # This value does not matter for the udc mode
-            -e ETH_PRIVATE_KEY=0x7ffe1c9883084a94b2e8e4d68b880a07a80179d9ebfb75e874219bf2083f400a \ # Random value, does not matter for the udc mode
+            -e ETH_RPC=http://l2-node:9955 \
+            -e ETH_PRIVATE_KEY=0x7ffe1c9883084a94b2e8e4d68b880a07a80179d9ebfb75e874219bf2083f400a \
             -e CONFIG_HASH_VERSION=StarknetOsConfig2 \
             -e ROLLUP_SEQ_URL=http://l3-node:9944 \
-            -e ROLLUP_DECLARE_V0_SEQ_URL=http://l3-node:9955 \
+            -e ROLLUP_DECLARE_V0_SEQ_URL=http://l3-node:9943 \
             ghcr.io/madara-alliance/bootstrapper:nightly \
             --config /apps/configs/devnet.json --mode udc
 
