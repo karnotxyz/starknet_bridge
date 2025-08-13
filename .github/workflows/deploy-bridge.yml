@@ -121,7 +121,7 @@ jobs:
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8080 \
             --settlement-layer STARKNET \
             --l1-endpoint http://l2-node:9955 \
-            --strk-per-eth 10000 \
+            --strk-per-eth 10000 --no-charge-fee \
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_l3.log
 
       - name: Wait for server to be ready
@@ -144,7 +144,7 @@ jobs:
           docker run -d --name bootstrapper-udc --network bridge-network \
             -v ./madara/bootstrapper/src/configs/:/apps/configs/ \
             -e ETH_RPC=http://l2-node:9955 \
-            -e ETH_PRIVATE_KEY=0x7ffe1c9883084a94b2e8e4d68b880a07a80179d9ebfb75e874219bf2083f400a \
+            -e ETH_PRIVATE_KEY=0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07 \
             -e CONFIG_HASH_VERSION=StarknetOsConfig2 \
             -e ROLLUP_SEQ_URL=http://l3-node:9944 \
             -e ROLLUP_DECLARE_V0_SEQ_URL=http://l3-node:9943 \
