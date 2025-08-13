@@ -113,7 +113,7 @@ jobs:
       - name: Run l3
         run: |
           docker run -d --network bridge-network \
-            -p 9944:9944 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
+            -p 9944:9944 -p 9943:9943 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l3-db \
             --rpc-cors "*" --rpc-external --rpc-admin \
             --rpc-port 9944 --rpc-admin-port 9943 \
