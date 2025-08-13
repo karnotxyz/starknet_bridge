@@ -117,7 +117,7 @@ jobs:
             --base-path ./madara-l3-db \
             --rpc-cors "*" --rpc-external --rpc-admin \
             --rpc-port 9944 --rpc-admin-port 9943 \
-            --devnet --chain-config-path /apps/configs/presets/devnet.yaml \
+            --sequencer --chain-config-path /apps/configs/presets/devnet.yaml \
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8080 \
             --settlement-layer STARKNET \
             --l1-endpoint http://l2-node:9955 \
