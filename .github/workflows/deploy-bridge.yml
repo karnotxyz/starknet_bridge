@@ -121,6 +121,7 @@ jobs:
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8080 \
             --settlement-layer STARKNET \
             --l1-endpoint http://l2-node:9955 \
+            --strk-per-eth 10000 \
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_l3.log
 
       - name: Wait for server to be ready
