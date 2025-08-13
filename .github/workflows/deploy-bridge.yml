@@ -45,13 +45,13 @@ jobs:
 
       - name: Run l2
         run: |
-          docker run -d --name l2-node --network bridge-network -p 9955:9955 \
+          docker run -d --name l2-node --network bridge-network -p 9944:9944 \
             -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l2-db \
             --rpc-external --rpc-admin --rpc-cors "*" \
-            --rpc-port 9955 --rpc-admin-port 9953 \
+            --rpc-port 9944 --rpc-admin-port 9943 \
             --devnet --chain-config-path /apps/configs/presets/devnet.yaml \
-            --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8855 \
+            --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8844 \
             --no-l1-sync --no-charge-fee \
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_l2.log
 
@@ -59,7 +59,7 @@ jobs:
         run: |
           timeout=180  # 3 minutes in seconds
           elapsed=0
-          until [ "$(curl -fsSL http://localhost:9955/health)" = "OK" ] && echo "Health check passed"; do
+          until [ "$(curl -fsSL http://localhost:9944/health)" = "OK" ] && echo "Health check passed"; do
             echo "Waiting for server to be ready..."
             sleep 2
             elapsed=$((elapsed + 2))
@@ -113,14 +113,14 @@ jobs:
       - name: Run l3
         run: |
           docker run -d --name l3-node --network bridge-network \
-            -p 9944:9944 -p 9943:9943 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
+            -p 9955:9955 -p 9953:9953 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l3-db \
             --rpc-cors "*" --rpc-external --rpc-admin --rpc-admin-external \
-            --rpc-port 9944 --rpc-admin-port 9943 \
+            --rpc-port 9955 --rpc-admin-port 9953 \
             --sequencer --chain-config-path /apps/configs/presets/devnet.yaml \
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8080 \
             --settlement-layer STARKNET \
-            --l1-endpoint http://l2-node:9955 \
+            --l1-endpoint http://l2-node:9944 \
             --strk-per-eth 10000 --no-charge-fee \
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_l3.log
 
@@ -128,7 +128,7 @@ jobs:
         run: |
           timeout=180  # 3 minutes in seconds
           elapsed=0
-          until [ "$(curl -fsSL http://localhost:9944/health)" = "OK" ] && echo "Health check passed"; do
+          until [ "$(curl -fsSL http://localhost:9955/health)" = "OK" ] && echo "Health check passed"; do
             echo "Waiting for server to be ready..."
               sleep 2
               elapsed=$((elapsed + 2))
@@ -143,11 +143,11 @@ jobs:
         run: |
           docker run -d --name bootstrapper-udc --network bridge-network \
             -v ./madara/bootstrapper/src/configs/:/apps/configs/ \
-            -e ETH_RPC=http://l2-node:9955 \
+            -e ETH_RPC=http://l2-node:9944 \
             -e ETH_PRIVATE_KEY=0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07 \
             -e CONFIG_HASH_VERSION=StarknetOsConfig2 \
-            -e ROLLUP_SEQ_URL=http://l3-node:9944 \
-            -e ROLLUP_DECLARE_V0_SEQ_URL=http://l3-node:9943 \
+            -e ROLLUP_SEQ_URL=http://l3-node:9955 \
+            -e ROLLUP_DECLARE_V0_SEQ_URL=http://l3-node:9953 \
             ghcr.io/madara-alliance/bootstrapper:nightly \
             --config /apps/configs/devnet.json --mode udc
 
