@@ -52,7 +52,7 @@ jobs:
             --rpc-port 9955 --rpc-admin-port 9953 \
             --devnet --chain-config-path /apps/configs/presets/devnet.yaml \
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8855 \
-            --no-l1-sync \
+            --no-l1-sync --no-charge-fee \
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_l2.log
 
       - name: Wait for server to be ready
