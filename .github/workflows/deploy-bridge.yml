@@ -141,8 +141,8 @@ jobs:
       - name: Run Bootstrapper on L3
         run: |
           docker run -d --name bootstrapper-udc --network bridge-network \
-            -v ./madara/bootstrapper/config/:/apps/config/ ghcr.io/madara-alliance/bootstrapper:nightly \
-            --config /apps/config/devnet.json \
+            -v ./madara/bootstrapper/src/configs/:/apps/configs/ ghcr.io/madara-alliance/bootstrapper:nightly \
+            --config /apps/configs/devnet.json \
             --mode udc
 
           # Wait for container to finish
