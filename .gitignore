@@ -8,3 +8,4 @@ contracts*.json
 logs/
 *.log
 dist/
+config/
