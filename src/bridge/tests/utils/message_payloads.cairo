@@ -46,3 +46,30 @@ pub fn withdraw_message_payload_from_appchain(
     amount.serialize(ref message_payload);
     message_payload.span()
 }
+
+
+pub fn count_bytes(mut value: u128) -> usize {
+    let mut bytes = 0;
+    while value > 0 {
+        value /= 256;
+        bytes += 1;
+    };
+    bytes
+}
+
+pub fn deserialize_and_append(
+    mut value: Span<felt252>, mut calldata: Array<felt252>,
+) -> Array<felt252> {
+    if (value.len() == 1) {
+        let mut value_u256: u256 = (*value[0]).into();
+        let mut total_bytes = count_bytes(value_u256.low) + count_bytes(value_u256.high);
+
+        let mut value_byte_array: ByteArray = "";
+        value_byte_array.append_word(*value[0], total_bytes);
+        value_byte_array.serialize(ref calldata);
+    } else {
+        let value_byte_array = Serde::<ByteArray>::deserialize(ref value).unwrap();
+        value_byte_array.serialize(ref calldata);
+    }
+    calldata
+}

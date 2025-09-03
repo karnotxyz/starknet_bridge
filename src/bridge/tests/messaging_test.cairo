@@ -17,6 +17,8 @@ use starknet_bridge::constants;
 use starknet_bridge::mocks::hash;
 use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessagingDispatcherTrait};
 
+use starknet::syscalls::call_contract_syscall;
+use starknet::SyscallResultTrait;
 
 #[test]
 fn deploy_message_payload_1u128_ok() {
@@ -298,4 +300,32 @@ fn consume_message_zero_recipient() {
 
     mock.appchain_bridge.write(L3_BRIDGE_ADDRESS());
     mock.consume_message(usdc_address, 100, 0.try_into().unwrap());
+}
+
+
+#[test]
+fn test_name_bytearray() {
+    let usdc_felt252 = deploy_erc20_with_felt252(
+        'qwertyuiopasdfghjklzxcvbnm12345', 'qwertyuiopasdfghjklzxcvbnm12345',
+    );
+    let usdc_ByteArray = deploy_erc20(
+        "qwertyuiopasdfghjklzxcvbnm12345", "qwertyuiopasdfghjklzxcvbnm12345",
+    );
+
+    let name_selector = selector!("name");
+
+    let mut a1 = ArrayTrait::new();
+    let mut name = call_contract_syscall(usdc_felt252, name_selector, array![].span())
+        .unwrap_syscall();
+    a1 = message_payloads::deserialize_and_append(name, a1);
+
+    let mut b1 = ArrayTrait::new();
+    let mut name = call_contract_syscall(usdc_ByteArray, name_selector, array![].span())
+        .unwrap_syscall();
+    b1 = message_payloads::deserialize_and_append(name, b1);
+
+    println!("a1 {:?}", a1);
+    println!("b1 {:?}", b1);
+
+    assert(a1 == b1, 'Incorrect serialisation');
 }
