@@ -39,6 +39,25 @@ pub fn deploy_erc20(name: ByteArray, symbol: ByteArray) -> ContractAddress {
     return usdc;
 }
 
+pub fn deploy_erc20_with_felt252(name: felt252, symbol: felt252) -> ContractAddress {
+    let erc20_class_hash = snf::declare("ERC20_FELT_NAME_SYMBOL").unwrap().contract_class();
+    let mut constructor_args = ArrayTrait::new();
+    let fixed_supply: u256 = 1000000000;
+
+    name.serialize(ref constructor_args);
+    symbol.serialize(ref constructor_args);
+    18.serialize(ref constructor_args); // decimals
+    fixed_supply.serialize(ref constructor_args);
+    OWNER().serialize(ref constructor_args);
+    OWNER().serialize(ref constructor_args);
+    OWNER().serialize(ref constructor_args);
+    10.serialize(ref constructor_args);
+
+    let (usdc, _) = erc20_class_hash.deploy(@constructor_args).unwrap();
+
+    return usdc;
+}
+
 pub fn deploy_token_bridge_with_messaging() -> (
     ITokenBridgeDispatcher, EventSpy, IMockMessagingDispatcher,
 ) {

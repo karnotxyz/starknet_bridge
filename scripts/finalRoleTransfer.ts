@@ -62,7 +62,19 @@ async function changeRoleWithMethod(acc: Account, contract: Contract, address: s
     }
 
     const call = contract.populate(method, [addr]);
-    let tx = await acc.execute([call]);
+    let tx = await acc.execute([call], {
+      maxFee: 0,
+      resourceBounds: {
+        l1_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0"
+        },
+        l2_gas: {
+          max_amount: "0x0",
+          max_price_per_unit: "0x0"
+        }
+      }
+    });
     let receipt = await acc.waitForTransaction(tx.transaction_hash);
     assert(receipt.isSuccess(), `Failed to execute ${method} for address ${addr}`);
     logger.txHash(tx.transaction_hash);

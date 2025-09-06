@@ -152,6 +152,7 @@ export async function declareContract(contract: Contract, skipIfPresentInDump: b
     if (layer === Layer.L3) {
       logger.info('Declaring on L3');
       tx = await acc.declareIfNot(payload, {
+        maxFee: 0,
         resourceBounds: {
           l1_gas: {
             max_amount: "0x0",
@@ -226,6 +227,7 @@ export async function deployContract(contract: Contract, constructorData: RawArg
       classHash: contract.classHash,
       constructorCalldata: constructorData,
     }, {
+      maxFee: 0,
       resourceBounds: {
         l1_gas: {
           max_amount: "0x0",

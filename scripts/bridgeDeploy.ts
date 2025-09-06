@@ -129,6 +129,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
     });
 
     const res = await acc_l3.execute([call], {
+      maxFee: 0,
       resourceBounds: {
         l1_gas: {
           max_amount: "0x0",
@@ -153,6 +154,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
       account: acc_l3.address,
     });
     const res = await acc_l3.execute([call], {
+      maxFee: 0,
       resourceBounds: {
         l1_gas: {
           max_amount: "0x0",
@@ -177,6 +179,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
       l2_token_governance: acc_l3.address,
     });
     const res = await acc_l3.execute([call], {
+      maxFee: 0,
       resourceBounds: {
         l1_gas: {
           max_amount: "0x0",
@@ -225,6 +228,7 @@ export async function setL2Bridge(acc_l3: Account) {
       l1_bridge_address: tokenBridge,
     });
     const res = await acc_l3.execute([call], {
+      maxFee: 0,
       resourceBounds: {
         l1_gas: {
           max_amount: "0x0",
@@ -304,6 +308,7 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
     });
 
     let result = await acc_l3.execute([call], {
+      maxFee: 0,
       resourceBounds: {
         l1_gas: {
           max_amount: "0x0",
@@ -578,6 +583,7 @@ export async function initiateTokenL3toL2Withdrawal(
   );
 
   let tx = await acc_l3.execute([initiateWithdrawalCall], {
+    maxFee: 0,
     resourceBounds: {
       l1_gas: {
         max_amount: "0x0",
@@ -589,7 +595,6 @@ export async function initiateTokenL3toL2Withdrawal(
       }
     }
   });
-
   const tx_receipt = await acc_l3.waitForTransaction(tx.transaction_hash);
   assert(tx_receipt.isSuccess(), `Withdrawal initiation failed`);
 

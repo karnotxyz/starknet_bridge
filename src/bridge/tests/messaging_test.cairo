@@ -9,24 +9,71 @@ use starknet_bridge::bridge::tests::constants::{
     TIMELOCK_ADDRESS, TOKEN_ADMIN, USDC_MOCK_ADDRESS,
 };
 use starknet_bridge::bridge::tests::utils::message_payloads;
-use starknet_bridge::bridge::tests::utils::setup::{deploy_erc20, mock_state_testing};
+use starknet_bridge::bridge::tests::utils::setup::{
+    deploy_erc20, deploy_erc20_with_felt252, mock_state_testing,
+};
 use starknet_bridge::bridge::token_bridge::TokenBridge::TokenBridgeInternal;
 use starknet_bridge::constants;
 use starknet_bridge::mocks::hash;
 use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessagingDispatcherTrait};
 
+use starknet::syscalls::call_contract_syscall;
+use starknet::SyscallResultTrait;
 
 #[test]
-fn deploy_message_payload_ok() {
-    let usdc_address = deploy_erc20("USDC", "USDC");
+fn deploy_message_payload_1u128_ok() {
+    let usdc_address = deploy_erc20_with_felt252('USDC', 'USDC');
     let calldata = TokenBridge::deployment_message_payload(usdc_address);
 
     println!("calldata {:?}", calldata);
     let expected_calldata: Span<felt252> = array![
-        3229811236586461276790806733073987758974063646349769890211994918419655038703, // usdc_address
+        1878846678861813862807137660746142479173097938654444763365422304796849302852, // usdc_address
         0,
         1431520323,
         4, // "USDC"
+        0,
+        1431520323,
+        4, // "USDC"
+        18,
+    ]
+        .span();
+
+    assert(calldata == expected_calldata, 'Incorrect serialisation');
+}
+
+#[test]
+fn deploy_message_payload_2u128_ok() {
+    let usdc_address = deploy_erc20_with_felt252('Starknet Bridged Token USDC', 'USDC');
+    let calldata = TokenBridge::deployment_message_payload(usdc_address);
+
+    println!("calldata {:?}", calldata);
+    let expected_calldata: Span<felt252> = array![
+        1490587303571540848742139364702760394050729519911961861263204573571851472479, // token address 
+        0,
+        34331236061979135384369429850688382866543914782444172758941385795,
+        27, // "Starknet Bridged Token USDC"
+        0,
+        1431520323,
+        4, // "USDC"
+        18,
+    ]
+        .span();
+
+    assert(calldata == expected_calldata, 'Incorrect serialisation');
+}
+
+#[test]
+fn deploy_message_payload_3u128_ok() {
+    let usdc_address = deploy_erc20("Starknet Bridged Into Appchain Token USDC", "USDC");
+    let calldata = TokenBridge::deployment_message_payload(usdc_address);
+    println!("calldata {:?}", calldata);
+
+    let expected_calldata: Span<felt252> = array![
+        143620707853892322995637150357644909544175399019378012924718466488958919106, // token address
+        1,
+        147451536117456215510223090790872767498932623355471960875487237126251703840,
+        398734111865851813774403,
+        10, // "Starknet Bridged Into Appchain Token USDC"
         0,
         1431520323,
         4, // "USDC"
@@ -253,4 +300,32 @@ fn consume_message_zero_recipient() {
 
     mock.appchain_bridge.write(L3_BRIDGE_ADDRESS());
     mock.consume_message(usdc_address, 100, 0.try_into().unwrap());
+}
+
+
+#[test]
+fn test_name_bytearray() {
+    let usdc_felt252 = deploy_erc20_with_felt252(
+        'qwertyuiopasdfghjklzxcvbnm12345', 'qwertyuiopasdfghjklzxcvbnm12345',
+    );
+    let usdc_ByteArray = deploy_erc20(
+        "qwertyuiopasdfghjklzxcvbnm12345", "qwertyuiopasdfghjklzxcvbnm12345",
+    );
+
+    let name_selector = selector!("name");
+
+    let mut a1 = ArrayTrait::new();
+    let mut name = call_contract_syscall(usdc_felt252, name_selector, array![].span())
+        .unwrap_syscall();
+    a1 = message_payloads::deserialize_and_append(name, a1);
+
+    let mut b1 = ArrayTrait::new();
+    let mut name = call_contract_syscall(usdc_ByteArray, name_selector, array![].span())
+        .unwrap_syscall();
+    b1 = message_payloads::deserialize_and_append(name, b1);
+
+    println!("a1 {:?}", a1);
+    println!("b1 {:?}", b1);
+
+    assert(a1 == b1, 'Incorrect serialisation');
 }
