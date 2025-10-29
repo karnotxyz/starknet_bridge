@@ -132,13 +132,13 @@ export async function configureAppchainBridge(acc_l3: Account) {
       resourceBounds: {
         l1_gas: {
           max_amount: "0x0",
-          max_price_per_unit: "0x0",
+          max_price_per_unit: "0x0"
         },
         l2_gas: {
           max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-      },
+          max_price_per_unit: "0x0"
+        }
+      }
     });
 
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
@@ -156,13 +156,13 @@ export async function configureAppchainBridge(acc_l3: Account) {
       resourceBounds: {
         l1_gas: {
           max_amount: "0x0",
-          max_price_per_unit: "0x0",
+          max_price_per_unit: "0x0"
         },
         l2_gas: {
           max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-      },
+          max_price_per_unit: "0x0"
+        }
+      }
     });
 
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
@@ -180,13 +180,13 @@ export async function configureAppchainBridge(acc_l3: Account) {
       resourceBounds: {
         l1_gas: {
           max_amount: "0x0",
-          max_price_per_unit: "0x0",
+          max_price_per_unit: "0x0"
         },
         l2_gas: {
           max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-      },
+          max_price_per_unit: "0x0"
+        }
+      }
     });
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
     assert(tx_receipt.isSuccess(), `Set L2 Governance failed`);
@@ -228,13 +228,13 @@ export async function setL2Bridge(acc_l3: Account) {
       resourceBounds: {
         l1_gas: {
           max_amount: "0x0",
-          max_price_per_unit: "0x0",
+          max_price_per_unit: "0x0"
         },
         l2_gas: {
           max_amount: "0x0",
-          max_price_per_unit: "0x0",
-        },
-      },
+          max_price_per_unit: "0x0"
+        }
+      }
     });
 
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
@@ -291,8 +291,6 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
   const cls = await acc_l3.getClassAt(l3Bridge);
   const l3BridgeContract = new StarknetContract(cls.abi, l3Bridge, acc_l3);
 
-  let acc = getAccount(Layer.L3);
-
   {
     const class_hash = erc20L3Contract.classHash;
     if (!class_hash) {
@@ -305,19 +303,20 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
       erc20_class_hash: class_hash,
     });
 
-    let result = await acc.execute([call], {
+    let result = await acc_l3.execute([call], {
+      maxFee: 0,
       resourceBounds: {
         l1_gas: {
-          max_price_per_unit: "0x1",
           max_amount: "0x0",
+          max_price_per_unit: "0x0"
         },
         l2_gas: {
-          max_price_per_unit: "0x0",
           max_amount: "0x0",
-        },
-      },
+          max_price_per_unit: "0x0"
+        }
+      }
     });
-    const tx_receipt = await acc.waitForTransaction(result.transaction_hash);
+    const tx_receipt = await acc_l3.waitForTransaction(result.transaction_hash);
     assert(tx_receipt.isSuccess(), `Set ERC20 class hash failed`);
 
     logger.success("ERC20 class_hash set successfully!");

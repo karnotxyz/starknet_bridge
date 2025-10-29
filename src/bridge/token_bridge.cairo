@@ -3,9 +3,8 @@ pub mod TokenBridge {
     use core::array::ArrayTrait;
     use core::num::traits::Bounded;
     use core::num::traits::zero::Zero;
-    use core::option::OptionTrait;
+    use core::option::{OptionTrait, Option};
     use core::serde::Serde;
-    use core::to_byte_array::FormatAsByteArray;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::access::accesscontrol::interface::IAccessControl;
     use openzeppelin::introspection::src5::SRC5Component;
@@ -480,11 +479,24 @@ pub mod TokenBridge {
         return payload.span();
     }
 
+    fn count_bytes(mut value: u128) -> usize {
+        let mut bytes = 0;
+        while value > 0 {
+            value /= 256;
+            bytes += 1;
+        };
+        bytes
+    }
+
     fn deserialize_and_append(
         mut value: Span<felt252>, mut calldata: Array<felt252>,
     ) -> Array<felt252> {
         if (value.len() == 1) {
-            let value_byte_array = value[0].format_as_byte_array(10);
+            let mut value_u256: u256 = (*value[0]).into();
+            let mut total_bytes = count_bytes(value_u256.low) + count_bytes(value_u256.high);
+
+            let mut value_byte_array: ByteArray = "";
+            value_byte_array.append_word(*value[0], total_bytes);
             value_byte_array.serialize(ref calldata);
         } else {
             let value_byte_array = Serde::<ByteArray>::deserialize(ref value).unwrap();
@@ -834,9 +846,9 @@ pub mod TokenBridge {
             self.reentrancy_guard.end();
         }
 
-        //     checks token deployment status.
-        //     relies on l3 clearing l2-l3 message upon successful completion of deployment.
-        //     processing: check the l2-l3 deployment message. set status to `Active` if consumed.
+        // checks token deployment status.
+        // relies on l3 clearing l2-l3 message upon successful completion of deployment.
+        // processing: check the l2-l3 deployment message. set status to `Active` if consumed.
         //     if not consumed after the expected duration, it returns the status to `Unknown`.
         fn check_deployment_status(ref self: ContractState, token: ContractAddress) {
             self.pausable.assert_not_paused();
@@ -1130,6 +1142,14 @@ pub mod TokenBridge {
                 return Bounded::MAX;
             }
             return max_total_balance;
+        }
+
+        fn get_token_settings(self: @ContractState, token: ContractAddress) -> TokenSettings {
+            self.token_settings.read(token)
+        }
+
+        fn get_max_pending_duration(self: @ContractState) -> u64 {
+            self.max_pending_duration.read()
         }
 
         fn get_appchain_token_bridge(self: @ContractState) -> ContractAddress {

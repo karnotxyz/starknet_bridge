@@ -66,6 +66,9 @@ pub mod mocks {
     pub mod access_control_mock;
     pub mod erc20;
 
+    #[cfg(test)]
+    pub mod erc20_felt_name_symbol;
+
     #[cfg(target: 'test')]
     pub mod hash;
 
