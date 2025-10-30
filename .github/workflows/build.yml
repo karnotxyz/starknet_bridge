@@ -13,11 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: asdf-vm/actions/install@v3
+      - uses: asdf-vm/actions/setup@v4
 
       - name: Check starknet_bridge
         working-directory: ./starknet_bridge
         run: |
+          asdf plugin add scarb
           asdf install
           scarb fmt --check
           scarb build
@@ -26,9 +27,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: asdf-vm/actions/install@v3
+      - uses: asdf-vm/actions/setup@v3
       - name: Check udc
         working-directory: ./udc
         run: |
+          asdf plugin add scarb
           asdf install
           scarb build
