@@ -93,7 +93,7 @@ export async function executeUpgradeTokenBridgeL2(acc_l2: Account) {
     }
 
 
-    const timelock_l2Contract = new Contract(TimelockABI, timelockContract.address, acc_l2).typedv2(TimelockABI);
+    const timelock_l2Contract = new Contract({ abi: TimelockABI, address: timelockContract.address, providerOrAccount: acc_l2 }).typedv2(TimelockABI);
     const executeTx = await timelock_l2Contract.execute(
         {
             to: tokenBridgeL2Contract.address,

@@ -129,6 +129,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
     });
 
     const res = await acc_l3.execute([call], {
+      tip: 0,
       resourceBounds: {
         l1_data_gas: {
           max_amount: 0n,
@@ -157,6 +158,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
       account: acc_l3.address,
     });
     const res = await acc_l3.execute([call], {
+      tip: 0,
       resourceBounds: {
         l1_data_gas: {
           max_amount: 0n,
@@ -185,6 +187,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
       l2_token_governance: acc_l3.address,
     });
     const res = await acc_l3.execute([call], {
+      tip: 0,
       resourceBounds: {
         l1_data_gas: {
           max_amount: 0n,
@@ -237,6 +240,7 @@ export async function setL2Bridge(acc_l3: Account) {
       l1_bridge_address: tokenBridge,
     });
     const res = await acc_l3.execute([call], {
+      tip: 0,
       resourceBounds: {
         l1_gas: {
           max_amount: 0n,
@@ -320,6 +324,7 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
     });
 
     let result = await acc_l3.execute([call], {
+      tip: 0,
       resourceBounds: {
         l1_data_gas: {
           max_amount: 0n,
@@ -403,7 +408,7 @@ export async function enrollToken(
   const call = tokenBridgeContract.populate("enroll_token", {
     token: tokenAddress,
   });
-  let result = await acc_l2.execute([call]);
+  let result = await acc_l2.execute([call], { tip: 0 });
   const tx_receipt = await acc_l2.waitForTransaction(result.transaction_hash);
   assert(tx_receipt.isSuccess(), `Enroll token failed`);
 
@@ -452,7 +457,7 @@ export async function deposit(
       spender: tokenBridge,
       amount,
     });
-    let result = await acc_l2.execute([call]);
+    let result = await acc_l2.execute([call], { tip: 0 });
     const tx_receipt = await acc_l2.waitForTransaction(result.transaction_hash);
     assert(tx_receipt.isSuccess(), `Approval failed`);
 
@@ -600,6 +605,7 @@ export async function initiateTokenL3toL2Withdrawal(
   );
 
   let tx = await acc_l3.execute([initiateWithdrawalCall], {
+    tip: 0,
     resourceBounds: {
       l1_data_gas: {
         max_amount: 0n,
