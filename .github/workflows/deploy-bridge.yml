@@ -81,6 +81,7 @@ jobs:
           bash ./scripts/shell/build.sh
 
       - name: Build bridge contracts
+        working-directory: ./starknet_bridge
         run: |
           asdf plugin add scarb
           asdf install
