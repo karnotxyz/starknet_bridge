@@ -138,7 +138,11 @@ jobs:
               fi
           done
           echo "Server is ready!"
-      
+
+      - name: Remove l2_deployer_address from devnet.yaml
+        run: |
+          yq -i 'del(.l2_deployer_address)' ./madara/bootstrapper/src/configs/devnet.json
+
       - name: Run Bootstrapper on L3
         run: |
           docker run -d --name bootstrapper-udc --network bridge-network \
