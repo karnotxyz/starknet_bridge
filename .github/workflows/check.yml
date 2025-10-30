@@ -18,5 +18,6 @@ jobs:
         working-directory: ./starknet_bridge
         run: |
           asdf plugin add scarb
+          asdf plugin add starknet-foundry
           asdf install
           scarb test
