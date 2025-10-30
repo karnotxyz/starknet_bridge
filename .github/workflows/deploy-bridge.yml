@@ -48,11 +48,11 @@ jobs:
           docker run -d --name l2-node --network bridge-network -p 9944:9944 \
             -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l2-db \
-            --rpc-external --rpc-admin --rpc-cors "*" \
+            --rpc-external --rpc-admin --rpc-admin-external --rpc-cors "*" \
             --rpc-port 9944 --rpc-admin-port 9943 \
             --sequencer --chain-config-path /apps/configs/presets/devnet.yaml \
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8844 \
-            --no-l1-sync --no-charge-fee \
+            --no-l1-sync --strk-per-eth 10000 --no-charge-fee \
             --blob-gas-price 0 2>&1 | tee -a ./madara_output_l2.log
 
       - name: Wait for server to be ready
