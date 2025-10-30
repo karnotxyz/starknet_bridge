@@ -9,10 +9,27 @@ on:
 permissions: read-all
 
 jobs:
-  check:
+  check-starknet-bridge:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: asdf-vm/actions/install@v3
-      - run: scarb fmt --check
-      - run: scarb build
+        with:
+          tool_versions: starknet_bridge/.tool-versions
+      - name: Check starknet_bridge
+        working-directory: ./starknet_bridge
+        run: |
+          scarb fmt --check
+          scarb build
+  
+  check-udc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: asdf-vm/actions/install@v3
+        with:
+          tool_versions: udc/.tool-versions
+      - name: Check udc
+        working-directory: ./udc
+        run: |
+          scarb build

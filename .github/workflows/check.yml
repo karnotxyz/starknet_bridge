@@ -9,9 +9,13 @@ on:
 permissions: read-all
 
 jobs:
-  test:
+  test-starknet-bridge:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: asdf-vm/actions/install@v3
-      - run: snforge test
+        with: 
+          tool_versions: starknet_bridge/.tool-versions
+      - name: Run tests for starknet_bridge
+        working-directory: ./starknet_bridge
+        run: snforge test
