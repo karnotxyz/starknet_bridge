@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: asdf-vm/actions/install@v3
-        with: 
-          tool_versions: starknet_bridge/.tool-versions
+      - uses: asdf-vm/actions/install@v4
       - name: Run tests for starknet_bridge
         working-directory: ./starknet_bridge
-        run: snforge test
+        run: |
+          asdf install
+          snforge test
