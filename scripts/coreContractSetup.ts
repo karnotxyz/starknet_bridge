@@ -52,7 +52,7 @@ export async function setProgramInfo(acc_l2: Account, programInfo?: ProgramInfo)
         throw new Error(errorMsg);
     }
 
-    const appchainContractInstance = new StarknetContract(AppchainABI, appchainContract.address, acc_l2).typedv2(AppchainABI);
+    const appchainContractInstance = new StarknetContract({abi: AppchainABI, address: appchainContract.address, providerOrAccount: acc_l2}).typedv2(AppchainABI);
     if (!programInfo) {
         programInfo = appchainConfig.programInfo;
     }
@@ -93,7 +93,7 @@ export async function setFactRegistry(
       throw new Error(errorMsg);
   }
 
-  const appchainContractInstance = new StarknetContract(AppchainABI, appchainContract.address, acc_l2).typedv2(AppchainABI);
+  const appchainContractInstance = new StarknetContract({abi: AppchainABI, address: appchainContract.address, providerOrAccount: acc_l2}).typedv2(AppchainABI);
   let tx = await appchainContractInstance.set_facts_registry(factRegistryAddress);
   const tx_receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
   assert(tx_receipt.isSuccess(), `Set fact registry failed`);

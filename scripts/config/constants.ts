@@ -3,12 +3,17 @@ import { Package, Contract, Layer, AppchainConfig } from "./types.ts";
 // Define our packages
 export const starknetBridgePackage: Package = {
   name: "starknet_bridge",
-  base_path: "./target/dev",
+  base_path: "./starknet_bridge/target/dev",
 };
 
 export const starkgatePackage: Package = {
   name: "starkgate_contracts",
   base_path: "./starkgate-contracts/cairo_contracts",
+};
+
+export const udcPackage: Package = {
+  name: "udc",
+  base_path: "./udc/target/dev",
 };
 
 // Define all contract instances upfront
@@ -46,6 +51,18 @@ export const erc20L3Contract: Contract = {
   name: "ERC20",
   layer: Layer.L3,
   package: starknetBridgePackage,
+};
+
+export const feeTokenContract: Contract = {
+  name: "FeeToken",
+  layer: Layer.L3,
+  package: starknetBridgePackage,
+};
+
+export const universalDeployerContract: Contract = {
+  name: "UniversalDeployer",
+  layer: Layer.L3,
+  package: udcPackage,
 };
 
 // =========================== appchainContract Config ===========================
