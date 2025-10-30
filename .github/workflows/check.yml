@@ -17,6 +17,6 @@ jobs:
       - name: Run tests for starknet_bridge
         working-directory: ./starknet_bridge
         run: |
-          asdf plugin add scarb starknet-foundry
+          asdf plugin add scarb
           asdf install
-          snforge test
+          scarb test
