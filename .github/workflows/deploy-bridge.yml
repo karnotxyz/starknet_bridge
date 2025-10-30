@@ -88,7 +88,7 @@ jobs:
             --config /apps/configs/devnet.json --mode udc
 
           # Wait for container to finish
-          EXIT_CODE=$(docker wait bootstrapper-udc)
+          EXIT_CODE=$(docker wait bootstrapper-udc-l2)
 
           # Show logs
           docker logs bootstrapper-udc
@@ -194,7 +194,7 @@ jobs:
           EXIT_CODE=$(docker wait bootstrapper-udc)
 
           # Show logs
-          docker logs bootstrapper-udc
+          docker logs bootstrapper-udc-l3
           
           # Check exit status
           if [ $EXIT_CODE -ne 0 ]; then
