@@ -42,14 +42,14 @@ The TokenBridge has the following role hierarchy:
 - SECURITY_AGENT: Handles security-related operations
 - UPGRADE_GOVERNOR: Ability to upgrade the token bridge.
 
-| Role | Role Admin |
-|------|------------|
-| UPGRADE_GOVERNOR | DEFAULT_ADMIN |
+| Role             | Role Admin       |
+| ---------------- | ---------------- |
+| UPGRADE_GOVERNOR | DEFAULT_ADMIN    |
 | GOVERNANCE_ADMIN | GOVERNANCE_ADMIN |
-| APP_GOVERNOR | GOVERNANCE_ADMIN |
-| SECURITY_ADMIN | GOVERNANCE_ADMIN |
-| SECURITY_AGENT | SECURITY_ADMIN |
-| TOKEN_ADMIN | APP_GOVERNOR |
+| APP_GOVERNOR     | GOVERNANCE_ADMIN |
+| SECURITY_ADMIN   | GOVERNANCE_ADMIN |
+| SECURITY_AGENT   | SECURITY_ADMIN   |
+| TOKEN_ADMIN      | APP_GOVERNOR     |
 
 Note: The admin for the UPGRADE_GOVERNOR role is held by the timelock contract only, which means that only the timelock can add/remove more UPGRADE_GOVERNOR roles.
 

@@ -55,6 +55,7 @@ import { executeUpgradeTokenBridgeL2, upgradeAppchain, upgradeTokenBridgeL2 } fr
 import { testTokenActions } from "./tokenActions.ts";
 import { deployCoreContract, setFactRegistry, setProgramInfo } from "./coreContractSetup.ts";
 import { appchainConfig } from "./config/constants.ts";
+import { deployFeeToken, deployUniversalDeployer } from "./chainEssentials.ts";
 const program = new Command();
 
 program
@@ -110,6 +111,14 @@ program
       verificationType: options.verificationType as VerificationType
     };
     await setFactRegistry(acc_l2, factRegistryOptions);
+  });
+
+// Deploy Universal Deployer Command
+program
+  .command("deploy-universal-deployer")
+  .description("Deploy the universal deployer to L3")
+  .action(async () => {
+    await deployUniversalDeployer();
   });
 
 // Deploy Appchain Bridge Command
@@ -438,6 +447,7 @@ program
     await configureAppchainBridge(acc_l3);
     await setL2Bridge(acc_l3);
     await declareAndSetERC20L3(acc_l3);
+    await deployFeeToken("Native Fee token", "FT", 18);
 
     if (options.withEnroll) {
       // Deploy and enroll token

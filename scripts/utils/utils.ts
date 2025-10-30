@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, config, extractContractHashes, hash, json, num, provider } from 'starknet'
+import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContractHashes, hash, json, legacyDeployer, num, provider } from 'starknet'
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
@@ -60,7 +60,7 @@ export function getContracts() {
   return {}
 }
 
-function saveContracts(contracts: any) {
+export function saveContracts(contracts: any) {
   const PATH = dumpPath;
   writeFileSync(PATH, JSON.stringify(contracts, null, 4));
 }
@@ -92,12 +92,12 @@ export function getAccount(layer: Layer): Account {
   const provider = getProvider(layer);
   if (layer == Layer.L2) {
     const privateKey = process.env.ACCOUNT_L2_PRIVATE_KEY as string;
-    const accountAddress: string = process.env.ACCOUNT_L2_ADDRESS as string;
-    return new Account(provider, accountAddress, privateKey, '1', "0x3");
+    const address: string = process.env.ACCOUNT_L2_ADDRESS as string;
+    return new Account({provider, address, signer: privateKey, deployer: legacyDeployer});
   } else if (layer == Layer.L3) {
     const privateKey = process.env.ACCOUNT_L3_PRIVATE_KEY as string;
-    const accountAddress: string = process.env.ACCOUNT_L3_ADDRESS as string;
-    return new Account(provider, accountAddress, privateKey, '1', "0x3");
+    const address: string = process.env.ACCOUNT_L3_ADDRESS as string;
+    return new Account({provider, address, signer: privateKey, deployer: legacyDeployer});
   } else {
     throw new Error('Invalid layer');
   }
@@ -152,17 +152,7 @@ export async function declareContract(contract: Contract, skipIfPresentInDump: b
     if (layer === Layer.L3) {
       logger.info('Declaring on L3');
       tx = await acc.declareIfNot(payload, {
-        maxFee: 0,
-        resourceBounds: {
-          l1_gas: {
-            max_amount: "0x0",
-            max_price_per_unit: "0x0"
-          },
-          l2_gas: {
-            max_amount: "0x0",
-            max_price_per_unit: "0x0"
-          }
-        }
+        tip: 0,
       });
     } else {
       logger.info('Declaring on L2');
@@ -194,8 +184,8 @@ export async function declareContract(contract: Contract, skipIfPresentInDump: b
     contract.classHash = tx.class_hash;
 
     return tx;
-  } catch (e: any) {
-    logger.error(e);
+  } catch (e) {
+    logger.error(e as string);
     throw e;
   }
 }
@@ -219,26 +209,17 @@ export async function deployContract(contract: Contract, constructorData: RawArg
     classHash: contract.classHash,
     constructorCalldata: constructorData,
   })
-  console.log("Deploy fee", contract.name, Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
+  console.log("Deploy fee", contract.name, Number(fee.overall_fee) / 10 ** 18, 'STRK')
 
   let tx: { transaction_hash: any; contract_address: any; address?: string; deployer?: string; unique?: string; classHash?: string; calldata_len?: string; calldata?: string[]; salt?: string; };
   if (layer === Layer.L3) {
     tx = await acc.deployContract({
       classHash: contract.classHash,
       constructorCalldata: constructorData,
-    }, {
-      maxFee: 0,
-      resourceBounds: {
-        l1_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0"
-        },
-        l2_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0"
-        }
-      }
-    });
+    },
+      {
+        tip: 0,
+      });
   } else {
     tx = await acc.deployContract({
       classHash: contract.classHash,

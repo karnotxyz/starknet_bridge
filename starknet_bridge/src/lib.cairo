@@ -65,6 +65,7 @@ pub mod mocks {
     #[cfg(test)]
     pub mod access_control_mock;
     pub mod erc20;
+    pub mod fee_token;
 
     #[cfg(test)]
     pub mod erc20_felt_name_symbol;

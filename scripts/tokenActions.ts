@@ -21,24 +21,24 @@ async function executeAndAssertTransaction(
   expectedSuccess: boolean,
   errorMessage?: string
 ) {
-  try {
-    // Execute the transaction
-    const tx = await (typeof transactionPromise === 'function' ? transactionPromise() : transactionPromise);
-    const receipt = await account.waitForTransaction(tx.transaction_hash);
-
-    // Check if the result matches expectations
-    if (expectedSuccess) {
-      assert(receipt.isSuccess(), `${errorMessage} - Expected success but got failure`);
-    } else {
-      assert(receipt.isReverted(), `${errorMessage} - Expected failure but got success`);
-    }
-
-    return receipt;
-  } catch (error: any) {
-    // If we're expecting a failure and get an error during execution, that's fine
-    if (!expectedSuccess && error.toString().includes(errorMessage)) {
-      return null;
-    }
+    try {
+        // Execute the transaction
+        const tx = await (typeof transactionPromise === 'function' ? transactionPromise() : transactionPromise);
+        const receipt = await account.waitForTransaction(tx.transaction_hash);
+        
+        // Check if the result matches expectations
+        if (expectedSuccess) {
+            assert(receipt.isSuccess(), `${errorMessage} - Expected success but got failure`);
+        } else {
+            assert(receipt.isReverted(), `${errorMessage} - Expected failure but got success`);
+        }
+        
+        return receipt;
+    } catch (error) {
+        // If we're expecting a failure and get an error during execution, that's fine
+        if (!expectedSuccess && error.toString().includes(errorMessage)) {
+            return null;
+        }
 
     // Re-throw unexpected errors
     throw error;
@@ -102,11 +102,11 @@ export async function testTokenActions(acc_l2: Account, token: string = "ERC20_O
     throw new Error(errorMsg);
   }
 
-  const tokenAddress = tokenContract.address;
-  const tokenStarknetContract = new StarknetContract(ERC20ABI, tokenAddress, acc_l2).typedv2(ERC20ABI);
-  const tokenBridge = tokenBridgeL2Contract.address;
+    const tokenAddress = tokenContract.address;
+    const tokenStarknetContract = new StarknetContract({abi: ERC20ABI, address: tokenAddress, providerOrAccount: acc_l2}).typedv2(ERC20ABI);
+    const tokenBridge = tokenBridgeL2Contract.address;
 
-  const tokenBridgeContract = new StarknetContract(TokenBridgeL2ABI, tokenBridge, acc_l2).typedv2(TokenBridgeL2ABI);
+    const tokenBridgeContract = new StarknetContract({abi: TokenBridgeL2ABI, address: tokenBridge, providerOrAccount: acc_l2}).typedv2(TokenBridgeL2ABI);
 
   // 1. Current status: Unknown
   await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Unknown);
