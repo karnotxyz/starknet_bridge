@@ -45,7 +45,7 @@ jobs:
 
       - name: Run l2
         run: |
-          docker run --name l2-node --network bridge-network -p 9944:9944 \
+          docker run -d --name l2-node --network bridge-network -p 9944:9944 \
             -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
             --base-path ./madara-l2-db \
             --rpc-external --rpc-admin --rpc-admin-external --rpc-cors "*" \
@@ -53,7 +53,7 @@ jobs:
             --sequencer --chain-config-path /apps/configs/presets/devnet.yaml \
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8844 \
             --no-l1-sync --strk-per-eth 10000 --no-charge-fee \
-            --blob-gas-price 0 2>&1 | tee -a ./madara_output_l2.log
+            --blob-gas-price 0 --l1-gas-price 0 2>&1 | tee -a ./madara_output_l2.log
 
       - name: Wait for server to be ready
         run: |
@@ -156,7 +156,7 @@ jobs:
             --settlement-layer STARKNET \
             --l1-endpoint http://l2-node:9944 \
             --strk-per-eth 10000 --no-charge-fee \
-            --blob-gas-price 0 2>&1 | tee -a ./madara_output_l3.log
+            --blob-gas-price 0 --l1-gas-price 0 2>&1 | tee -a ./madara_output_l3.log
 
       - name: Wait for server to be ready
         run: |
