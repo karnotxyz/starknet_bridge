@@ -23,7 +23,7 @@ export async function upgradeAppchain(acc_l2: Account) {
         throw new Error(error);
     }
 
-    const appchain_l2 = new Contract(AppchainABI, appchain.address, acc_l2).typedv2(AppchainABI);
+    const appchain_l2 = new Contract({ abi: AppchainABI, address: appchain.address, providerOrAccount: acc_l2 }).typedv2(AppchainABI);
     const tx = await appchain_l2.upgrade(appchain_new.classHash);
 
     const rec = await acc_l2.waitForTransaction(tx.transaction_hash);
@@ -57,7 +57,7 @@ export async function upgradeTokenBridgeL2(acc_l2: Account) {
     }
 
     
-    const timelock_l2Contract = new Contract(TimelockABI, timelockContract.address, acc_l2).typedv2(TimelockABI);
+    const timelock_l2Contract = new Contract({ abi: TimelockABI, address: timelockContract.address, providerOrAccount: acc_l2 }).typedv2(TimelockABI);
     const minDelay = await timelock_l2Contract.get_min_delay();
     const proposalTx = await timelock_l2Contract.schedule(
         { 

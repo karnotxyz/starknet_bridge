@@ -54,20 +54,7 @@ export async function deployUniversalDeployer() {
 
   const res = await acc_l3.execute([txn], {
     tip: 0,
-    resourceBounds: {
-      l1_gas: {
-        max_amount: 0n,
-        max_price_per_unit: 0n
-      },
-      l2_gas: {
-        max_amount: 0n,
-        max_price_per_unit: 0n
-      },
-      l1_data_gas: {
-        max_amount: 0n,
-        max_price_per_unit: 0n
-      },
-    }
+
   });
 
   const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
@@ -86,10 +73,10 @@ export async function deployUniversalDeployer() {
 
     const contracts = getContracts();
     if (!contracts.contracts) {
-        contracts['contracts'] = {};
+      contracts['contracts'] = {};
     }
     if (!contracts.contracts[Layer.L3]) {
-        contracts.contracts[Layer.L3] = {};
+      contracts.contracts[Layer.L3] = {};
     }
     contracts.contracts[udcContract.layer][udcContract.name] = contract_address;
     saveContracts(contracts);

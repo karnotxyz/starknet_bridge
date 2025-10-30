@@ -121,7 +121,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
 
   const appchainBridge = tokenBridgeL3Contract.address;
   const cls = await acc_l3.getClassAt(appchainBridge);
-  const appchainBridgeContract = new StarknetContract({abi: cls.abi, address: appchainBridge, providerOrAccount: acc_l3});
+  const appchainBridgeContract = new StarknetContract({ abi: cls.abi, address: appchainBridge, providerOrAccount: acc_l3 });
 
   {
     const call = appchainBridgeContract.populate("register_app_role_admin", {
@@ -130,20 +130,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
 
     const res = await acc_l3.execute([call], {
       tip: 0,
-      resourceBounds: {
-        l1_data_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l1_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l2_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        }
-      }
+
     });
 
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
@@ -159,20 +146,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
     });
     const res = await acc_l3.execute([call], {
       tip: 0,
-      resourceBounds: {
-        l1_data_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l1_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l2_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        }
-      }
+
     });
 
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
@@ -188,20 +162,7 @@ export async function configureAppchainBridge(acc_l3: Account) {
     });
     const res = await acc_l3.execute([call], {
       tip: 0,
-      resourceBounds: {
-        l1_data_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l1_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l2_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        }
-      }
+
     });
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
     assert(tx_receipt.isSuccess(), `Set L2 Governance failed`);
@@ -233,7 +194,7 @@ export async function setL2Bridge(acc_l3: Account) {
   const tokenBridge = tokenBridgeL2Contract.address;
   const appchainBridge = tokenBridgeL3Contract.address;
   const cls = await acc_l3.getClassAt(appchainBridge);
-  const appchainBridgeContract = new StarknetContract({abi: cls.abi, address: appchainBridge, providerOrAccount: acc_l3});
+  const appchainBridgeContract = new StarknetContract({ abi: cls.abi, address: appchainBridge, providerOrAccount: acc_l3 });
 
   {
     const call = appchainBridgeContract.populate("set_l1_bridge", {
@@ -241,20 +202,7 @@ export async function setL2Bridge(acc_l3: Account) {
     });
     const res = await acc_l3.execute([call], {
       tip: 0,
-      resourceBounds: {
-        l1_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l2_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l1_data_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        }
-      }
+
     });
 
     const tx_receipt = await acc_l3.waitForTransaction(res.transaction_hash);
@@ -309,7 +257,7 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
 
   const l3Bridge = tokenBridgeL3Contract.address;
   const cls = await acc_l3.getClassAt(l3Bridge);
-  const l3BridgeContract = new StarknetContract({abi: cls.abi, address: l3Bridge, providerOrAccount: acc_l3});
+  const l3BridgeContract = new StarknetContract({ abi: cls.abi, address: l3Bridge, providerOrAccount: acc_l3 });
 
   {
     const class_hash = erc20L3Contract.classHash;
@@ -325,20 +273,7 @@ export async function declareAndSetERC20L3(acc_l3: Account) {
 
     let result = await acc_l3.execute([call], {
       tip: 0,
-      resourceBounds: {
-        l1_data_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l1_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l2_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        }
-      }
+
     });
     const tx_receipt = await acc_l3.waitForTransaction(result.transaction_hash);
     assert(tx_receipt.isSuccess(), `Set ERC20 class hash failed`);
@@ -364,7 +299,7 @@ export async function configurePermissionedEnrollment(
   }
 
   const tokenBridge = tokenBridgeL2Contract.address;
-  const tokenBridgeContract = new StarknetContract({abi: TokenBridgeL2ABI, address: tokenBridge, providerOrAccount: acc_l2}).typedv2(TokenBridgeL2ABI);
+  const tokenBridgeContract = new StarknetContract({ abi: TokenBridgeL2ABI, address: tokenBridge, providerOrAccount: acc_l2 }).typedv2(TokenBridgeL2ABI);
   const tx = await tokenBridgeContract.configure_permissionless_enrollment(permissioned_enroll);
   const receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
   assert(receipt.isSuccess(), "Failed to configure permissionless enrollment");
@@ -403,7 +338,7 @@ export async function enrollToken(
   const tokenBridge = tokenBridgeL2Contract.address;
 
   const cls = await acc_l2.getClassAt(tokenBridge);
-  const tokenBridgeContract = new StarknetContract({abi: cls.abi, address: tokenBridge, providerOrAccount: acc_l2});
+  const tokenBridgeContract = new StarknetContract({ abi: cls.abi, address: tokenBridge, providerOrAccount: acc_l2 });
 
   const call = tokenBridgeContract.populate("enroll_token", {
     token: tokenAddress,
@@ -451,7 +386,7 @@ export async function deposit(
   // Approval
   {
     const tokenCls = await acc_l2.getClassAt(tokenAddress);
-    const token = new StarknetContract({abi: tokenCls.abi, address: tokenAddress, providerOrAccount: acc_l2});
+    const token = new StarknetContract({ abi: tokenCls.abi, address: tokenAddress, providerOrAccount: acc_l2 });
 
     const call = token.populate("approve", {
       spender: tokenBridge,
@@ -590,7 +525,7 @@ export async function initiateTokenL3toL2Withdrawal(
   const l2TokenAddress = tokenContract.address;
 
   let cls = await acc_l3.getClassAt(tokenBridge_l3);
-  let tokenBridgeContract_l3 = new StarknetContract({abi: cls.abi, address: tokenBridge_l3, providerOrAccount: acc_l3});
+  let tokenBridgeContract_l3 = new StarknetContract({ abi: cls.abi, address: tokenBridge_l3, providerOrAccount: acc_l3 });
 
   const initiateWithdrawalCall = tokenBridgeContract_l3.populate(
     "initiate_token_withdraw",
@@ -606,20 +541,7 @@ export async function initiateTokenL3toL2Withdrawal(
 
   let tx = await acc_l3.execute([initiateWithdrawalCall], {
     tip: 0,
-    resourceBounds: {
-      l1_data_gas: {
-        max_amount: 0n,
-        max_price_per_unit: 0n,
-      },
-      l1_gas: {
-        max_amount: 0n,
-        max_price_per_unit: 0n,
-      },
-      l2_gas: {
-        max_amount: 0n,
-        max_price_per_unit: 0n,
-      },
-    }
+
   });
   const tx_receipt = await acc_l3.waitForTransaction(tx.transaction_hash);
   assert(tx_receipt.isSuccess(), `Withdrawal initiation failed`);

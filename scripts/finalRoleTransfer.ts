@@ -37,7 +37,10 @@ async function changeRole(acc_l2: Account, contract: TypedContractV2<typeof Time
     }
 
     const call = contract.populate(method, [role, addr]);
-    let tx = await acc_l2.execute([call], { tip: 0 });
+    let tx = await acc_l2.execute([call], {
+      tip: 0,
+
+    });
     let receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
     assert(receipt.isSuccess(), `Failed to ${method} role ${role} to address ${addr}`);
     logger.txHash(tx.transaction_hash);
@@ -64,20 +67,7 @@ async function changeRoleWithMethod(acc: Account, contract: Contract, address: s
     const call = contract.populate(method, [addr]);
     let tx = await acc.execute([call], {
       tip: 0,
-      resourceBounds: {
-        l1_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l2_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        },
-        l1_data_gas: {
-          max_amount: 0n,
-          max_price_per_unit: 0n
-        }
-      }
+
     });
     let receipt = await acc.waitForTransaction(tx.transaction_hash);
     assert(receipt.isSuccess(), `Failed to execute ${method} for address ${addr}`);
@@ -387,7 +377,7 @@ export async function checkAppchainL2Roles(acc_l2: Account, finalRoles: FinalRol
   logger.info(`Checking appchain owner ${l2Roles_Appchain.owner}`);
   const pending_owner = await appchainContract_l2.pending_owner();
   assert(
-    standardiseAddress(pending_owner) === standardiseAddress(l2Roles_Appchain.owner), 
+    standardiseAddress(pending_owner) === standardiseAddress(l2Roles_Appchain.owner),
     `Appchain pending owner not set, found ${pending_owner}`
   );
 
