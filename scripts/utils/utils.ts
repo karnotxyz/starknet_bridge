@@ -69,8 +69,7 @@ export function getProvider(layer: Layer): RpcProvider {
   if (layer === Layer.L2) {
     return new RpcProvider({ nodeUrl: process.env.RPC_L2_URL as string, retries: 5 });
   } else if (layer === Layer.L3) {
-    config.set('legacyMode', true);
-    return new RpcProvider({ nodeUrl: process.env.RPC_L3_URL as string, retries: 5, specVersion: '0.7.1' });
+    return new RpcProvider({ nodeUrl: process.env.RPC_L3_URL as string, retries: 5 });
   } else {
     throw new Error('Invalid layer');
   }
