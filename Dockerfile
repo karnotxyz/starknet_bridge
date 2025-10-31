@@ -36,21 +36,23 @@ RUN ./starkgate-contracts/scripts/setup.sh
 RUN ls -lah ./starkgate-contracts/.downloads/cairo/bin
 
 # Install all tools in .tool-versions
-COPY .tool-versions .tool-versions
+COPY ./starknet_bridge/.tool-versions ./starknet_bridge/.tool-versions
 RUN asdf install
 
-COPY src/ ./src
-COPY .tool-versions .tool-versions
-COPY Scarb.* ./
+COPY ./starknet_bridge/src/ ./starknet_bridge/src
+COPY ./starknet_bridge/Scarb.* ./starknet_bridge/
 
 # Build bridge contracts
-RUN scarb build
+RUN cd starknet_bridge && scarb build
 
 COPY starkgate-contracts/ starkgate-contracts/
 RUN cd starkgate-contracts && ./scripts/build-cairo.sh
 
-COPY . .
-
+COPY ./udc/Scarb.* ./udc/
+COPY ./udc/.tool-versions ./udc/.tool-versions
+RUN asdf install
+COPY ./udc/src/ ./udc/src/
+RUN cd udc && scarb build
 
 # Second stage: Runner
 FROM node:22.10-slim AS runner
