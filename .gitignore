@@ -4,8 +4,7 @@ target
 node_modules/
 .env
 contracts*.json
-
-logs/
 *.log
 dist/
 config/
+logs/
