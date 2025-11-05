@@ -53,7 +53,7 @@ jobs:
             --sequencer --chain-config-path /apps/configs/presets/devnet.yaml \
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8844 \
             --no-l1-sync --strk-per-eth 10000 --no-charge-fee \
-            --blob-gas-price 0 --l1-gas-price 0 2>&1 | tee -a ./madara_output_l2.log
+            --blob-gas-price 1 --l1-gas-price 1 2>&1 | tee -a ./madara_output_l2.log
 
       - name: Wait for server to be ready
         run: |
@@ -74,6 +74,8 @@ jobs:
         run: |
           yq -i 'del(.l2_deployer_address)' ./madara/bootstrapper/src/configs/devnet.json
   
+      # TODO(mehul, hotfix): This is a temporary workaround for address issues during UDC deployment.
+      # We are currently getting address mismatch problems; revisit this logic to fix it properly later.
       - name: Run Bootstrapper on L2
         run: |
           docker run -d --name bootstrapper-udc-l2 --network bridge-network \

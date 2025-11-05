@@ -152,6 +152,20 @@ export async function declareContract(contract: Contract, skipIfPresentInDump: b
       logger.info('Declaring on L3');
       tx = await acc.declareIfNot(payload, {
         tip: 0,
+        resourceBounds: {
+          l1_data_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
+          l1_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
+          l2_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
+        }
       });
     } else {
       logger.info('Declaring on L2');
@@ -218,6 +232,20 @@ export async function deployContract(contract: Contract, constructorData: RawArg
     },
       {
         tip: 0,
+        resourceBounds: {
+          l1_data_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
+          l1_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
+          l2_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
+        }
       });
   } else {
     tx = await acc.deployContract({
