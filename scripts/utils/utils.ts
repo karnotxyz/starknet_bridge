@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContractHashes, hash, json, legacyDeployer, num, provider } from 'starknet'
+import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, hash, json, legacyDeployer, num, encode } from 'starknet'
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
@@ -280,3 +280,37 @@ export async function deployContract(contract: Contract, constructorData: RawArg
   return tx;
 }
 
+/**
+ * 
+ * @param config_hash_version_string - Config hash version string (e.g., "StarknetOsConfig2")
+ * @param chain_id - Chain ID of the L3 network
+ * @param fee_token_address - Address of the fee token
+ * @param native_fee_token_address - Address of the native fee token (ETH)
+ * @returns The computed config hash
+ */
+export function calculateConfigHash(
+  config_hash_version_string: string,
+  chain_id: string,
+  fee_token_address: string | bigint,
+  native_fee_token_address: string | bigint
+): string {
+  // Convert config hash version string to felt (using utf8ToBigInt instead of deprecated encodeShortString)
+  const config_hash_version_felt = num.toHex(encode.utf8ToBigInt(config_hash_version_string));
+  const chain_id_felt = num.toHex(encode.utf8ToBigInt(chain_id));
+  
+  const values = [
+    config_hash_version_felt,
+    chain_id_felt,
+    num.toHex(fee_token_address),
+    num.toHex(native_fee_token_address)
+  ];
+  
+  const configHash = hash.computePedersenHashOnElements(values);
+  logger.info(`Generated SNOS config hash: ${configHash}`);
+  logger.info(`  - config_hash_version: "${config_hash_version_string}"`);
+  logger.info(`  - chain_id: ${chain_id_felt}`);
+  logger.info(`  - fee_token_address: ${num.toHex(fee_token_address)}`);
+  logger.info(`  - native_fee_token_address: ${num.toHex(native_fee_token_address)}`);
+  
+  return configHash;
+}

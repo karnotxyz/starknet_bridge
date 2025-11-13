@@ -13,8 +13,9 @@ export async function deployFeeToken(
 ) {
   await declareContract(feeTokenContract);
   logger.success("FeeToken declared!");
+  const feeContract = getContract(feeTokenContract);
 
-  await deployContract(feeTokenContract, [
+  await deployContract(feeContract, [
     byteArray.byteArrayFromString(name), // name
     byteArray.byteArrayFromString(symbol), // symbol
     decimals, // decimals
@@ -97,4 +98,3 @@ export async function deployUniversalDeployer() {
     console.log(`Address: ${contract_address}`);
   }
 }
-

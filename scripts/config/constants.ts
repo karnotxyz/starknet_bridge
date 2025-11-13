@@ -70,7 +70,7 @@ export const appchainConfig: AppchainConfig = {
   programInfo: {
     bootloader_program_hash : "0x5ab580b04e3532b6b18f81cfa654a05e29dd8e2352d88df1e765a84072db07",
     snos_config_hash: "0x3ebcaa0cab0f8640a41ef3296b83af23086a4d215ea7bf26652181fb0ad24c3",
-    snos_program_hash: "0x54d3603ed14fb897d0925c48f26330ea9950bd4ca95746dad4f7f09febffe0d",
+    snos_program_hash: "0x10e5341a417427d140af8f5def7d2cc687d84591ff8ec241623c590b5ca8c80",
     layout_bridge_program_hash: "0x193641eb151b0f41674641089952e60bc3aded26e3cf42793655c562b8c3aa0",
   },
   factRegistry: {

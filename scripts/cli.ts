@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 import * as dotenv from "dotenv";
 // Load environment variables
+
 dotenv.config({
   path:
     process.env.CI || process.env.CI == "true" || process.env.GITHUB_ACTIONS
@@ -16,6 +17,8 @@ import {
   getAccount,
   setDumpPath,
   sleep,
+  calculateConfigHash,
+  getContract,
 } from "./utils/utils.ts";
 import { logger } from "./utils/logger.ts";
 import {
@@ -54,7 +57,7 @@ import {
 import { executeUpgradeTokenBridgeL2, upgradeAppchain, upgradeTokenBridgeL2 } from "./upgrades.ts";
 import { testTokenActions } from "./tokenActions.ts";
 import { deployCoreContract, setFactRegistry, setProgramInfo } from "./coreContractSetup.ts";
-import { appchainConfig } from "./config/constants.ts";
+import { appchainConfig, feeTokenContract } from "./config/constants.ts";
 import { deployFeeToken, deployUniversalDeployer } from "./chainEssentials.ts";
 const program = new Command();
 
@@ -85,14 +88,55 @@ program
   .command("set-program-info")
   .description("Set the program info for the core contract")
   .option("--bootloader-hash <hash>", "Bootloader program hash")
-  .option("--snos-config-hash <hash>", "SNOS config hash")
+  .option("--snos-config-hash <hash>", "SNOS config hash (if not provided, will be generated from fee token and chain ID)")
   .option("--snos-program-hash <hash>", "SNOS program hash")
   .option("--layout-bridge-hash <hash>", "Layout bridge program hash")
+  .option("--chain-id <chainId>", "Chain ID of the L3 network (required if --snos-config-hash is not provided)")
+  .option("--config-hash-version <version>", "Config hash version string (default: StarknetOsConfig2, can be set via CONFIG_HASH_VERSION env var)")
+  .option("--native-fee-token-address <address>", "Native fee token address (if not provided, will use fee token address)")
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
+    
+    // Get config hash version from env or option, defaulting to "StarknetOsConfig2"
+    const configHashVersion = options.configHashVersion || process.env.CONFIG_HASH_VERSION || "StarknetOsConfig2";
+    
+    // If snos_config_hash is not provided, generate it dynamically
+    let snosConfigHash: string;
+    if (options.snosConfigHash) {
+      snosConfigHash = options.snosConfigHash;
+      logger.info("Using provided SNOS config hash");
+    } else {
+      // Assert that chain ID is provided when snos_config_hash is not provided
+      if (!options.chainId) {
+        throw new Error("--chain-id must be provided when --snos-config-hash is not specified");
+      }
+      
+      logger.info("Generating SNOS config hash from fee token and chain ID...");
+      
+      // Get fee token address from deployed contract
+      const feeToken = getContract(feeTokenContract);
+      if (!feeToken.address) {
+        throw new Error("Fee token not deployed. Please deploy the fee token first using 'deploy-fee-token' command.");
+      }
+      
+      // If native fee token address is not provided, use fee token address
+      const nativeFeeTokenAddress = options.nativeFeeTokenAddress || feeToken.address;
+      if (!options.nativeFeeTokenAddress) {
+        logger.info(`Native fee token address not provided, using fee token address: ${feeToken.address}`);
+      }
+      
+      // Generate the config hash
+      snosConfigHash = calculateConfigHash(
+        configHashVersion,
+        options.chainId,
+        feeToken.address,
+        nativeFeeTokenAddress
+      );
+    }
+    
     const programInfo: ProgramInfo = {
       bootloader_program_hash: options.bootloaderHash || appchainConfig.programInfo.bootloader_program_hash,
-      snos_config_hash: options.snosConfigHash || appchainConfig.programInfo.snos_config_hash,
+      snos_config_hash: snosConfigHash,
       snos_program_hash: options.snosProgramHash || appchainConfig.programInfo.snos_program_hash,
       layout_bridge_program_hash: options.layoutBridgeHash || appchainConfig.programInfo.layout_bridge_program_hash
     };
@@ -120,6 +164,17 @@ program
   .action(async () => {
     await deployUniversalDeployer();
   });
+
+program
+  .command("deploy-fee-token")
+  .option("-n, --name <name>", "Token name", "Native Fee token")
+  .option("-s, --symbol <symbol>", "Token symbol", "FT")
+  .option("-d, --decimals <decimals>", "Number of decimals", "18")
+  .description("Deploy the fee token to L3")
+  .action(async () => {
+    await deployFeeToken();
+  });
+
 
 // Deploy Appchain Bridge Command
 program
@@ -429,6 +484,9 @@ program
     "To deploy a token and ernroll post the setup",
     false
   )
+  .option("-fn, --fee-token-name <name>", "Fee token name", "Native Fee token")
+  .option("-fs, --fee-token-symbol <symbol>", "Fee token symbol", "FT")
+  .option("-fd, --fee-token-decimals <decimals>", "Fee token decimals", "18")
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
     const acc_l3 = getAccount(Layer.L3);
@@ -437,16 +495,17 @@ program
 
     // Setup
     logger.info("MAIN STEP 1: Setting up bridges...");
+
     await deployAppchainBridge();
     // Deploy timelock contract with 0 `min_delay` initially
     await deployTimelockContract(0);
     await deployL2Bridge();
+    await deployFeeToken(options.feeTokenName, options.feeTokenSymbol, parseInt(options.feeTokenDecimals, 10));
 
     logger.info("MAIN STEP 2: Configuring the bridges...");
     await configureAppchainBridge(acc_l3);
     await setL2Bridge(acc_l3);
     await declareAndSetERC20L3(acc_l3);
-    await deployFeeToken("Native Fee token", "FT", 18);
 
     if (options.withEnroll) {
       // Deploy and enroll token

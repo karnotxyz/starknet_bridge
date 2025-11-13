@@ -62,7 +62,8 @@ pub mod FeeToken {
         decimals: u8,
         owner: ContractAddress,
     ) {
-        self.erc20.initializer("MyToken", "MTK");
+        self.erc20.initializer(name, symbol);
+        self.erc20.mint(owner, 1000000000000000000000000000000000000000);
         self.ownable.initializer(owner);
     }
 
