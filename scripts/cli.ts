@@ -484,9 +484,9 @@ program
     "To deploy a token and ernroll post the setup",
     false
   )
-  .option("-fn, --fee-token-name <name>", "Fee token name", "Native Fee token")
-  .option("-fs, --fee-token-symbol <symbol>", "Fee token symbol", "FT")
-  .option("-fd, --fee-token-decimals <decimals>", "Fee token decimals", "18")
+  .option("-n, --fee-token-name <name>", "Fee token name", "Native Fee token")
+  .option("-s, --fee-token-symbol <symbol>", "Fee token symbol", "FT")
+  .option("-d, --fee-token-decimals <decimals>", "Fee token decimals", "18")
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
     const acc_l3 = getAccount(Layer.L3);
