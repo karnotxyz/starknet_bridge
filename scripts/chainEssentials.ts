@@ -23,6 +23,11 @@ export async function deployFeeToken(
   ]);
 }
 
+/**
+ * TODO(mehul): Address mismatch problems during UDC deployment. 
+ * The class hash we get is incorrect.
+ * Revisit this logic to fix it properly later.
+ */
 export async function deployUniversalDeployer() {
   await declareContract(universalDeployerContract);
   logger.success("Cairo 1 UniversalDeployer declared!");
