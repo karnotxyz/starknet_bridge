@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, hash, json, legacyDeployer, num, encode } from 'starknet'
+import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, hash, json, legacyDeployer, num, encode, BlockTag } from 'starknet'
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
@@ -67,9 +67,9 @@ export function saveContracts(contracts: any) {
 
 export function getProvider(layer: Layer): RpcProvider {
   if (layer === Layer.L2) {
-    return new RpcProvider({ nodeUrl: process.env.RPC_L2_URL as string, retries: 5 });
+    return new RpcProvider({ nodeUrl: process.env.RPC_L2_URL as string, retries: 5, blockIdentifier: BlockTag.PRE_CONFIRMED });
   } else if (layer === Layer.L3) {
-    return new RpcProvider({ nodeUrl: process.env.RPC_L3_URL as string, retries: 5 });
+    return new RpcProvider({ nodeUrl: process.env.RPC_L3_URL as string, retries: 5, blockIdentifier: BlockTag.PRE_CONFIRMED });
   } else {
     throw new Error('Invalid layer');
   }
@@ -92,11 +92,11 @@ export function getAccount(layer: Layer): Account {
   if (layer == Layer.L2) {
     const privateKey = process.env.ACCOUNT_L2_PRIVATE_KEY as string;
     const address: string = process.env.ACCOUNT_L2_ADDRESS as string;
-    return new Account({provider, address, signer: privateKey, deployer: legacyDeployer});
+    return new Account({ provider, address, signer: privateKey, deployer: legacyDeployer });
   } else if (layer == Layer.L3) {
     const privateKey = process.env.ACCOUNT_L3_PRIVATE_KEY as string;
     const address: string = process.env.ACCOUNT_L3_ADDRESS as string;
-    return new Account({provider, address, signer: privateKey, deployer: legacyDeployer});
+    return new Account({ provider, address, signer: privateKey, deployer: legacyDeployer });
   } else {
     throw new Error('Invalid layer');
   }
@@ -297,20 +297,20 @@ export function calculateConfigHash(
   // Convert config hash version string to felt (using utf8ToBigInt instead of deprecated encodeShortString)
   const config_hash_version_felt = num.toHex(encode.utf8ToBigInt(config_hash_version_string));
   const chain_id_felt = num.toHex(encode.utf8ToBigInt(chain_id));
-  
+
   const values = [
     config_hash_version_felt,
     chain_id_felt,
     num.toHex(fee_token_address),
     num.toHex(native_fee_token_address)
   ];
-  
+
   const configHash = hash.computePedersenHashOnElements(values);
   logger.info(`Generated SNOS config hash: ${configHash}`);
   logger.info(`  - config_hash_version: "${config_hash_version_string}"`);
   logger.info(`  - chain_id: ${chain_id_felt}`);
   logger.info(`  - fee_token_address: ${num.toHex(fee_token_address)}`);
   logger.info(`  - native_fee_token_address: ${num.toHex(native_fee_token_address)}`);
-  
+
   return configHash;
 }

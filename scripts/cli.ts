@@ -167,12 +167,12 @@ program
 
 program
   .command("deploy-fee-token")
-  .option("-n, --name <name>", "Token name", "Native Fee token")
-  .option("-s, --symbol <symbol>", "Token symbol", "FT")
-  .option("-d, --decimals <decimals>", "Number of decimals", "18")
-  .description("Deploy the fee token to L3")
-  .action(async () => {
-    await deployFeeToken();
+  .description("Deploy fee token")
+  .option("-n, --fee-token-name <name>", "Fee token name", "Native Fee token")
+  .option("-s, --fee-token-symbol <symbol>", "Fee token symbol", "FT")
+  .option("-d, --fee-token-decimals <decimals>", "Fee token decimals", "18")
+  .action(async (options) => {
+    await deployFeeToken(options.feeTokenName, options.feeTokenSymbol, parseInt(options.feeTokenDecimals, 10));
   });
 
 
