@@ -61,7 +61,7 @@ pub mod erc20 {
     pub mod replaceability_interface;
 }
 
-pub mod fee_token{
+pub mod fee_token {
     pub mod fee_token;
 }
 

@@ -64,8 +64,7 @@ pub mod FeeToken {
             from: ContractAddress,
             recipient: ContractAddress,
             amount: u256,
-        ) {
-        }
+        ) {}
     }
 
     #[generate_trait]
