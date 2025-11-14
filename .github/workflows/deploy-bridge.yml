@@ -125,7 +125,7 @@ jobs:
       - name: Run Core Contract Deployment Script
         run: |
           tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-core
-          tsx ./scripts/cli.ts --dump-path=./contracts.json set-program-info
+          tsx ./scripts/cli.ts --dump-path=./contracts.json set-program-info --chain-id MADARA_DEVNET
           tsx ./scripts/cli.ts --dump-path=./contracts.json set-fact-registry
 
       - name: Update Core Contract Address
