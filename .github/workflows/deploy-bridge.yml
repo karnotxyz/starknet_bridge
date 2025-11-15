@@ -125,7 +125,6 @@ jobs:
       - name: Run Core Contract Deployment Script
         run: |
           tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-core
-          tsx ./scripts/cli.ts --dump-path=./contracts.json set-program-info --chain-id MADARA_DEVNET
           tsx ./scripts/cli.ts --dump-path=./contracts.json set-fact-registry
 
       - name: Update Core Contract Address
@@ -208,6 +207,7 @@ jobs:
       - name: Run Bridge Deployment Script
         run: |
           tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
+          tsx ./scripts/cli.ts --dump-path=./contracts.json set-program-info --chain-id MADARA_DEVNET
           tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-erc20
 
       - name: Run Token Actions
