@@ -56,8 +56,14 @@ export const erc20L3Contract: Contract = {
 export const feeTokenContract: Contract = {
   name: "FeeToken",
   layer: Layer.L3,
-  package: starknetBridgePackage,
+  package: udcPackage,
 };
+
+export const boostrapAccountContract: Contract = {
+  name: "Account",
+  layer: Layer.L3,
+  package: udcPackage,
+}
 
 export const universalDeployerContract: Contract = {
   name: "UniversalDeployer",
@@ -81,3 +87,11 @@ export const appchainConfig: AppchainConfig = {
     }
   }
 };
+
+// Hex value of `BOOTSTRAP`
+/// This is a special private key for the bootstrap account.
+/// It can be used to make the first special declare txn without any validation.
+/// Check this for [reference](https://github.com/starkware-libs/sequencer/blob/main/crates/starknet_api/src/executable_transaction.rs#L236C4-L239C6)
+export const BOOTSTRAP = "0x424f4f545354524150";
+
+export const BOOTSTRAP_ACCOUNT_PUBLIC_KEY = "0xabcdefghijklmn"
