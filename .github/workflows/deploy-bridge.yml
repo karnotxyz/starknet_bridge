@@ -74,8 +74,8 @@ jobs:
         run: |
           yq -i 'del(.l2_deployer_address)' ./madara/bootstrapper/src/configs/devnet.json
   
-      # TODO(mehul, hotfix): This is a temporary workaround for address issues during UDC deployment.
-      # We are currently getting address mismatch problems; revisit this logic to fix it properly later.
+      # TODO(mehul, hotfix): This is a temporary workaround till we dont have either
+      # cairo0 account deployment/BOOTSTRP txn
       - name: Run Bootstrapper on L2
         run: |
           docker run -d --name bootstrapper-udc-l2 --network bridge-network \
@@ -114,6 +114,13 @@ jobs:
 
       - name: Build bridge contracts
         working-directory: ./starknet_bridge
+        run: |
+          asdf plugin add scarb
+          asdf install
+          scarb build
+
+      - name: Build UDC
+        working-directory: ./udc
         run: |
           asdf plugin add scarb
           asdf install

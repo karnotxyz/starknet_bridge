@@ -505,6 +505,7 @@ program
     logger.info("MAIN STEP 2: Configuring the bridges...");
     await configureAppchainBridge(acc_l3);
     await setL2Bridge(acc_l3);
+    await deployUniversalDeployer();
     await declareAndSetERC20L3(acc_l3);
 
     if (options.withEnroll) {
