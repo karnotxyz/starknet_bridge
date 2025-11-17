@@ -164,7 +164,7 @@ jobs:
             --settlement-layer STARKNET \
             --l1-endpoint http://l2-node:9944 \
             --strk-per-eth 10000 --no-charge-fee \
-            --blob-gas-price 0 --l1-gas-price 0 2>&1 | tee -a ./madara_output_l3.log
+            --blob-gas-price 1 --l1-gas-price 1 2>&1 | tee -a ./madara_output_l3.log
 
       - name: Wait for server to be ready
         run: |
