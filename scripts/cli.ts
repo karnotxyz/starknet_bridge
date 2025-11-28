@@ -56,7 +56,7 @@ import {
 } from "./finalRoleTransfer.ts";
 import { executeUpgradeTokenBridgeL2, upgradeAppchain, upgradeTokenBridgeL2 } from "./upgrades.ts";
 import { testTokenActions } from "./tokenActions.ts";
-import { deployCoreContract, setFactRegistry, setProgramInfo } from "./coreContractSetup.ts";
+import { deployCoreContract, setFactRegistry, setProgramInfo, setUseKzgDa } from "./coreContractSetup.ts";
 import { appchainConfig, feeTokenContract } from "./config/constants.ts";
 import { deployFeeToken, deployUniversalDeployer } from "./chainEssentials.ts";
 const program = new Command();
@@ -93,7 +93,6 @@ program
   .option("--layout-bridge-hash <hash>", "Layout bridge program hash")
   .option("--chain-id <chainId>", "Chain ID of the L3 network (required if --snos-config-hash is not provided)")
   .option("--config-hash-version <version>", "Config hash version string (default: StarknetOsConfig2, can be set via CONFIG_HASH_VERSION env var)")
-  .option("--native-fee-token-address <address>", "Native fee token address (if not provided, will use fee token address)")
   .action(async (options) => {
     const acc_l2 = getAccount(Layer.L2);
     
@@ -119,18 +118,11 @@ program
         throw new Error("Fee token not deployed. Please deploy the fee token first using 'deploy-fee-token' command.");
       }
       
-      // If native fee token address is not provided, use fee token address
-      const nativeFeeTokenAddress = options.nativeFeeTokenAddress || feeToken.address;
-      if (!options.nativeFeeTokenAddress) {
-        logger.info(`Native fee token address not provided, using fee token address: ${feeToken.address}`);
-      }
-      
       // Generate the config hash
       snosConfigHash = calculateConfigHash(
         configHashVersion,
         options.chainId,
         feeToken.address,
-        nativeFeeTokenAddress
       );
     }
     
@@ -444,6 +436,15 @@ program
   .action(async () => {
     const acc_l2 = getAccount(Layer.L2);
     await upgradeAppchain(acc_l2);
+  });
+
+program
+  .command("set-use-kzg-da")
+  .option("-u, --use-kzg-da <useKzgDa>", "Use KZG DA flag", "true")
+  .description("Set the use KZG DA flag for the core contract")
+  .action(async (options) => {
+    const acc_l2 = getAccount(Layer.L2);
+    await setUseKzgDa(acc_l2, Boolean(options.useKzgDa));
   });
 
 program

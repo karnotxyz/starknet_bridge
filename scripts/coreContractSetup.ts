@@ -101,3 +101,21 @@ export async function setFactRegistry(
   logger.success("Fact registry set successfully!");
   logger.txHash(tx.transaction_hash);
 }
+
+export async function setUseKzgDa(acc_l2: Account, useKzgDa: boolean) {
+  getContract(appchainContract);
+  // Verify we have the required addresses
+  if (!appchainContract.address) {
+    const errorMsg = "Appchain core contract address not found, deploy core contract first";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  const appchainContractInstance = new StarknetContract({ abi: AppchainABI, address: appchainContract.address, providerOrAccount: acc_l2 }).typedv2(AppchainABI);
+  let tx = await appchainContractInstance.set_use_kzg_da(useKzgDa);
+  const tx_receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
+  assert(tx_receipt.isSuccess(), `Set use KZG DA failed`);
+
+  logger.success("Use KZG DA set successfully!");
+  logger.txHash(tx.transaction_hash);
+}
