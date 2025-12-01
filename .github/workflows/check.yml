@@ -9,9 +9,15 @@ on:
 permissions: read-all
 
 jobs:
-  test:
+  test-starknet-bridge:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: asdf-vm/actions/install@v3
-      - run: snforge test
+      - uses: asdf-vm/actions/setup@v4
+      - name: Run tests for starknet_bridge
+        working-directory: ./starknet_bridge
+        run: |
+          asdf plugin add scarb
+          asdf plugin add starknet-foundry
+          asdf install
+          scarb test

@@ -30,7 +30,7 @@ async function executeAndAssertTransaction(
         if (expectedSuccess) {
             assert(receipt.isSuccess(), `${errorMessage} - Expected success but got failure`);
         } else {
-            assert(receipt.isRejected(), `${errorMessage} - Expected failure but got success`);
+            assert(receipt.isReverted(), `${errorMessage} - Expected failure but got success`);
         }
         
         return receipt;
@@ -103,10 +103,10 @@ export async function testTokenActions(acc_l2: Account, token: string = "ERC20_O
     }
 
     const tokenAddress = tokenContract.address;
-    const tokenStarknetContract = new StarknetContract(ERC20ABI, tokenAddress, acc_l2).typedv2(ERC20ABI);
+    const tokenStarknetContract = new StarknetContract({abi: ERC20ABI, address: tokenAddress, providerOrAccount: acc_l2}).typedv2(ERC20ABI);
     const tokenBridge = tokenBridgeL2Contract.address;
 
-    const tokenBridgeContract = new StarknetContract(TokenBridgeL2ABI, tokenBridge, acc_l2).typedv2(TokenBridgeL2ABI);
+    const tokenBridgeContract = new StarknetContract({abi: TokenBridgeL2ABI, address: tokenBridge, providerOrAccount: acc_l2}).typedv2(TokenBridgeL2ABI);
 
     // 1. Current status: Unknown
     await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Unknown);

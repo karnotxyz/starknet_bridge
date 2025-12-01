@@ -12,15 +12,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "chalk": "^5.4.1",
+    "chalk": "^5.6.2",
     "commander": "^13.1.0",
-    "dotenv": "^16.4.7",
-    "starknet": "^6.24.1",
-    "viem": "^2.23.9",
-    "winston": "^3.17.0"
+    "dotenv": "^16.6.1",
+    "starknet": "next",
+    "viem": "^2.40.0",
+    "winston": "^3.18.3"
   },
   "devDependencies": {
-    "@types/node": "^22.13.9",
-    "typescript": "^5.8.2"
+    "@types/node": "^22.19.1",
+    "typescript": "^5.9.3"
   }
 }

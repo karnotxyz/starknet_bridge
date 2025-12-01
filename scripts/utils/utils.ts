@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, extractContractHashes, hash, json, num, provider } from 'starknet'
+import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, hash, json, legacyDeployer, num, encode, BlockTag } from 'starknet'
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
@@ -60,16 +60,16 @@ export function getContracts() {
   return {}
 }
 
-function saveContracts(contracts: any) {
+export function saveContracts(contracts: any) {
   const PATH = dumpPath;
   writeFileSync(PATH, JSON.stringify(contracts, null, 4));
 }
 
 export function getProvider(layer: Layer): RpcProvider {
   if (layer === Layer.L2) {
-    return new RpcProvider({ nodeUrl: process.env.RPC_L2_URL as string, retries: 5 });
+    return new RpcProvider({ nodeUrl: process.env.RPC_L2_URL as string, retries: 5, blockIdentifier: BlockTag.PRE_CONFIRMED });
   } else if (layer === Layer.L3) {
-    return new RpcProvider({ nodeUrl: process.env.RPC_L3_URL as string, retries: 5 });
+    return new RpcProvider({ nodeUrl: process.env.RPC_L3_URL as string, retries: 5, blockIdentifier: BlockTag.PRE_CONFIRMED });
   } else {
     throw new Error('Invalid layer');
   }
@@ -91,12 +91,12 @@ export function getAccount(layer: Layer): Account {
   const provider = getProvider(layer);
   if (layer == Layer.L2) {
     const privateKey = process.env.ACCOUNT_L2_PRIVATE_KEY as string;
-    const accountAddress: string = process.env.ACCOUNT_L2_ADDRESS as string;
-    return new Account(provider, accountAddress, privateKey, '1', "0x3");
+    const address: string = process.env.ACCOUNT_L2_ADDRESS as string;
+    return new Account({ provider, address, signer: privateKey, deployer: legacyDeployer });
   } else if (layer == Layer.L3) {
     const privateKey = process.env.ACCOUNT_L3_PRIVATE_KEY as string;
-    const accountAddress: string = process.env.ACCOUNT_L3_ADDRESS as string;
-    return new Account(provider, accountAddress, privateKey, '1', "0x3");
+    const address: string = process.env.ACCOUNT_L3_ADDRESS as string;
+    return new Account({ provider, address, signer: privateKey, deployer: legacyDeployer });
   } else {
     throw new Error('Invalid layer');
   }
@@ -151,16 +151,20 @@ export async function declareContract(contract: Contract, skipIfPresentInDump: b
     if (layer === Layer.L3) {
       logger.info('Declaring on L3');
       tx = await acc.declareIfNot(payload, {
-        maxFee: 0,
+        tip: 0,
         resourceBounds: {
+          l1_data_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
           l1_gas: {
-            max_amount: "0x0",
-            max_price_per_unit: "0x0"
+            max_amount: 0n,
+            max_price_per_unit: 0n,
           },
           l2_gas: {
-            max_amount: "0x0",
-            max_price_per_unit: "0x0"
-          }
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
         }
       });
     } else {
@@ -194,7 +198,7 @@ export async function declareContract(contract: Contract, skipIfPresentInDump: b
 
     return tx;
   } catch (e) {
-    logger.error(e);
+    logger.error(e as string);
     throw e;
   }
 }
@@ -218,26 +222,31 @@ export async function deployContract(contract: Contract, constructorData: RawArg
     classHash: contract.classHash,
     constructorCalldata: constructorData,
   })
-  console.log("Deploy fee", contract.name, Number(fee.suggestedMaxFee) / 10 ** 18, 'ETH')
+  console.log("Deploy fee", contract.name, Number(fee.overall_fee) / 10 ** 18, 'STRK')
 
   let tx: { transaction_hash: any; contract_address: any; address?: string; deployer?: string; unique?: string; classHash?: string; calldata_len?: string; calldata?: string[]; salt?: string; };
   if (layer === Layer.L3) {
     tx = await acc.deployContract({
       classHash: contract.classHash,
       constructorCalldata: constructorData,
-    }, {
-      maxFee: 0,
-      resourceBounds: {
-        l1_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0"
-        },
-        l2_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0"
+    },
+      {
+        tip: 0,
+        resourceBounds: {
+          l1_data_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
+          l1_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
+          l2_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
         }
-      }
-    });
+      });
   } else {
     tx = await acc.deployContract({
       classHash: contract.classHash,
@@ -271,3 +280,34 @@ export async function deployContract(contract: Contract, constructorData: RawArg
   return tx;
 }
 
+/**
+ * 
+ * @param config_hash_version_string - Config hash version string (e.g., "StarknetOsConfig2")
+ * @param chain_id - Chain ID of the L3 network
+ * @param fee_token_address - Address of the fee token
+ * @param native_fee_token_address - Address of the native fee token (ETH)
+ * @returns The computed config hash
+ */
+export function calculateConfigHash(
+  config_hash_version_string: string,
+  chain_id: string,
+  fee_token_address: string | bigint,
+): string {
+  // Convert config hash version string to felt (using utf8ToBigInt instead of deprecated encodeShortString)
+  const config_hash_version_felt = num.toHex(encode.utf8ToBigInt(config_hash_version_string));
+  const chain_id_felt = num.toHex(encode.utf8ToBigInt(chain_id));
+
+  const values = [
+    config_hash_version_felt,
+    chain_id_felt,
+    num.toHex(fee_token_address),
+  ];
+
+  const configHash = hash.computePedersenHashOnElements(values);
+  logger.info(`Generated SNOS config hash: ${configHash} ${config_hash_version_felt}`);
+  logger.info(`  - config_hash_version: "${config_hash_version_string}"`);
+  logger.info(`  - chain_id: ${chain_id_felt}`);
+  logger.info(`  - fee_token_address: ${num.toHex(fee_token_address)}`);
+
+  return configHash;
+}

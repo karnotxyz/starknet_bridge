@@ -45,15 +45,15 @@ jobs:
 
       - name: Run l2
         run: |
-          docker run -d --name l2-node --network bridge-network -p 9944:9944 \
-            -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
+          docker run -d --name l2-node --network bridge-network -p 9944:9944 -p 9943:9943 \
+            -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:manual-62d8aa1\
             --base-path ./madara-l2-db \
-            --rpc-external --rpc-admin --rpc-cors "*" \
+            --rpc-external --rpc-admin --rpc-admin-external --rpc-cors "*" \
             --rpc-port 9944 --rpc-admin-port 9943 \
-            --devnet --chain-config-path /apps/configs/presets/devnet.yaml \
+            --sequencer --chain-config-path /apps/configs/presets/devnet.yaml \
             --feeder-gateway-enable --gateway-enable --gateway-external --gateway-port 8844 \
-            --no-l1-sync --no-charge-fee \
-            --blob-gas-price 0 2>&1 | tee -a ./madara_output_l2.log
+            --no-l1-sync --strk-per-eth 10000 --no-charge-fee \
+            --blob-gas-price 1 --l1-gas-price 1 2>&1 | tee -a ./madara_output_l2.log
 
       - name: Wait for server to be ready
         run: |
@@ -69,9 +69,41 @@ jobs:
             fi
           done
           echo "Server is ready!"
+      
+      - name: Remove l2_deployer_address from devnet.yaml
+        run: |
+          yq -i 'del(.l2_deployer_address)' ./madara/bootstrapper/src/configs/devnet.json
+  
+      # TODO(mehul, hotfix): This is a temporary workaround till we dont have either
+      # cairo0 account deployment/BOOTSTRP txn
+      - name: Run Bootstrapper on L2
+        run: |
+          docker run -d --name bootstrapper-udc-l2 --network bridge-network \
+            -v ./madara/bootstrapper/src/configs/:/apps/configs/ \
+            -e ETH_RPC=http://l2-node:9944 \
+            -e ETH_PRIVATE_KEY=0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07 \
+            -e CONFIG_HASH_VERSION=StarknetOsConfig2 \
+            -e ROLLUP_SEQ_URL=http://l2-node:9944 \
+            -e ROLLUP_DECLARE_V0_SEQ_URL=http://l2-node:9943 \
+            -e ROLLUP_PRIVATE_KEY=0xabcd \
+            ghcr.io/madara-alliance/bootstrapper:nightly \
+            --config /apps/configs/devnet.json --mode udc
+
+          # Wait for container to finish
+          EXIT_CODE=$(docker wait bootstrapper-udc-l2)
+
+          # Show logs
+          docker logs bootstrapper-udc-l2
+          
+          # Check exit status
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "Bootstrapper container failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+          echo "Bootstrapper container completed successfully" 
 
       - name: Setup asdf
-        uses: asdf-vm/actions/install@v3
+        uses: asdf-vm/actions/setup@v4
 
       - name: Build Starkgate Contracts
         run: |
@@ -81,7 +113,18 @@ jobs:
           bash ./scripts/shell/build.sh
 
       - name: Build bridge contracts
-        run: scarb build
+        working-directory: ./starknet_bridge
+        run: |
+          asdf plugin add scarb
+          asdf install
+          scarb build
+
+      - name: Build UDC
+        working-directory: ./udc
+        run: |
+          asdf plugin add scarb
+          asdf install
+          scarb build
 
       - name: Install tsx
         run: pnpm i -g tsx
@@ -89,7 +132,6 @@ jobs:
       - name: Run Core Contract Deployment Script
         run: |
           tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-core
-          tsx ./scripts/cli.ts --dump-path=./contracts.json set-program-info
           tsx ./scripts/cli.ts --dump-path=./contracts.json set-fact-registry
 
       - name: Update Core Contract Address
@@ -113,7 +155,7 @@ jobs:
       - name: Run l3
         run: |
           docker run -d --name l3-node --network bridge-network \
-            -p 9955:9955 -p 9953:9953 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:nightly \
+            -p 9955:9955 -p 9953:9953 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:manual-62d8aa1 \
             --base-path ./madara-l3-db \
             --rpc-cors "*" --rpc-external --rpc-admin --rpc-admin-external \
             --rpc-port 9955 --rpc-admin-port 9953 \
@@ -122,7 +164,7 @@ jobs:
             --settlement-layer STARKNET \
             --l1-endpoint http://l2-node:9944 \
             --strk-per-eth 10000 --no-charge-fee \
-            --blob-gas-price 0 2>&1 | tee -a ./madara_output_l3.log
+            --blob-gas-price 1 --l1-gas-price 1 2>&1 | tee -a ./madara_output_l3.log
 
       - name: Wait for server to be ready
         run: |
@@ -138,24 +180,29 @@ jobs:
               fi
           done
           echo "Server is ready!"
-      
+
+      - name: Remove l2_deployer_address from devnet.yaml
+        run: |
+          yq -i 'del(.l2_deployer_address)' ./madara/bootstrapper/src/configs/devnet.json
+
       - name: Run Bootstrapper on L3
         run: |
-          docker run -d --name bootstrapper-udc --network bridge-network \
+          docker run -d --name bootstrapper-udc-l3 --network bridge-network \
             -v ./madara/bootstrapper/src/configs/:/apps/configs/ \
             -e ETH_RPC=http://l2-node:9944 \
             -e ETH_PRIVATE_KEY=0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07 \
             -e CONFIG_HASH_VERSION=StarknetOsConfig2 \
             -e ROLLUP_SEQ_URL=http://l3-node:9955 \
             -e ROLLUP_DECLARE_V0_SEQ_URL=http://l3-node:9953 \
+            -e ROLLUP_PRIVATE_KEY=0xabcd \
             ghcr.io/madara-alliance/bootstrapper:nightly \
             --config /apps/configs/devnet.json --mode udc
 
           # Wait for container to finish
-          EXIT_CODE=$(docker wait bootstrapper-udc)
+          EXIT_CODE=$(docker wait bootstrapper-udc-l3)
 
           # Show logs
-          docker logs bootstrapper-udc
+          docker logs bootstrapper-udc-l3
           
           # Check exit status
           if [ $EXIT_CODE -ne 0 ]; then
@@ -167,6 +214,7 @@ jobs:
       - name: Run Bridge Deployment Script
         run: |
           tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
+          tsx ./scripts/cli.ts --dump-path=./contracts.json set-program-info --chain-id MADARA_DEVNET
           tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-erc20
 
       - name: Run Token Actions

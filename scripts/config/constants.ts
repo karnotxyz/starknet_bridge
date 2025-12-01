@@ -3,12 +3,17 @@ import { Package, Contract, Layer, AppchainConfig } from "./types.ts";
 // Define our packages
 export const starknetBridgePackage: Package = {
   name: "starknet_bridge",
-  base_path: "./target/dev",
+  base_path: "./starknet_bridge/target/dev",
 };
 
 export const starkgatePackage: Package = {
   name: "starkgate_contracts",
   base_path: "./starkgate-contracts/cairo_contracts",
+};
+
+export const udcPackage: Package = {
+  name: "udc",
+  base_path: "./udc/target/dev",
 };
 
 // Define all contract instances upfront
@@ -48,12 +53,24 @@ export const erc20L3Contract: Contract = {
   package: starknetBridgePackage,
 };
 
+export const feeTokenContract: Contract = {
+  name: "FeeToken",
+  layer: Layer.L3,
+  package: starknetBridgePackage,
+};
+
+export const universalDeployerContract: Contract = {
+  name: "UniversalDeployer",
+  layer: Layer.L3,
+  package: udcPackage,
+};
+
 // =========================== appchainContract Config ===========================
 export const appchainConfig: AppchainConfig = {
   programInfo: {
     bootloader_program_hash : "0x5ab580b04e3532b6b18f81cfa654a05e29dd8e2352d88df1e765a84072db07",
     snos_config_hash: "0x3ebcaa0cab0f8640a41ef3296b83af23086a4d215ea7bf26652181fb0ad24c3",
-    snos_program_hash: "0x54d3603ed14fb897d0925c48f26330ea9950bd4ca95746dad4f7f09febffe0d",
+    snos_program_hash: "0x10e5341a417427d140af8f5def7d2cc687d84591ff8ec241623c590b5ca8c80",
     layout_bridge_program_hash: "0x193641eb151b0f41674641089952e60bc3aded26e3cf42793655c562b8c3aa0",
   },
   factRegistry: {

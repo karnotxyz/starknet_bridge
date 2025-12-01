@@ -37,7 +37,8 @@ async function changeRole(acc_l2: Account, contract: TypedContractV2<typeof Time
     }
 
     const call = contract.populate(method, [role, addr]);
-    let tx = await acc_l2.execute([call]);
+    let tx = await acc_l2.execute([call], { tip: 0 });
+    
     let receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
     assert(receipt.isSuccess(), `Failed to ${method} role ${role} to address ${addr}`);
     logger.txHash(tx.transaction_hash);
@@ -63,16 +64,20 @@ async function changeRoleWithMethod(acc: Account, contract: Contract, address: s
 
     const call = contract.populate(method, [addr]);
     let tx = await acc.execute([call], {
-      maxFee: 0,
+      tip: 0,
       resourceBounds: {
+        l1_data_gas: {
+          max_amount: 0n,
+          max_price_per_unit: 0n,
+        },
         l1_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0"
+          max_amount: 0n,
+          max_price_per_unit: 0n,
         },
         l2_gas: {
-          max_amount: "0x0",
-          max_price_per_unit: "0x0"
-        }
+          max_amount: 0n,
+          max_price_per_unit: 0n,
+        },
       }
     });
     let receipt = await acc.waitForTransaction(tx.transaction_hash);
@@ -110,7 +115,7 @@ export async function transferTokenBridgeL2Roles(acc_l2: Account, finalRoles: Fi
   }
   logger.address("L2 Bridge contract", tokenBridgeL2Contract.address);
 
-  let tokenBridgeContract_l2 = new Contract(TokenBridgeL2Abi, tokenBridgeL2Contract.address, acc_l2).typedv2(TokenBridgeL2Abi);
+  let tokenBridgeContract_l2 = new Contract({ abi: TokenBridgeL2Abi, address: tokenBridgeL2Contract.address, providerOrAccount: acc_l2 }).typedv2(TokenBridgeL2Abi);
 
   const l2Roles_TokenBridge = finalRoles.l2.TokenBridge;
 
@@ -131,7 +136,7 @@ export async function transferTimelockL2Roles(acc_l2: Account, finalRoles: Final
   }
   logger.address("Timelock contract", timelockContract.address);
 
-  let timelockContract_l2 = new Contract(TimelockAbi, timelockContract.address, acc_l2).typedv2(TimelockAbi);
+  let timelockContract_l2 = new Contract({ abi: TimelockAbi, address: timelockContract.address, providerOrAccount: acc_l2 }).typedv2(TimelockAbi);
 
   const l2Roles_TimelockController = finalRoles.l2.TimelockController_starknet_bridge;
   await changeRole(acc_l2, timelockContract_l2, TimelockControllerRoleIds.PROPOSER_ROLE, l2Roles_TimelockController.PROPOSER_ROLE, "grant_role");
@@ -151,7 +156,7 @@ export async function transferAppchainL2Roles(acc_l2: Account, finalRoles: Final
   }
   logger.address("Appchain contract", appchainContract.address);
 
-  let appchainContract_l2 = new Contract(AppchainAbi, appchainContract.address, acc_l2).typedv2(AppchainAbi);
+  let appchainContract_l2 = new Contract({ abi: AppchainAbi, address: appchainContract.address, providerOrAccount: acc_l2 }).typedv2(AppchainAbi);
   const l2Roles_Appchain = finalRoles.l2.appchain
 
   // Register operators
@@ -181,7 +186,7 @@ export async function transferTokenBridgeL3Roles(acc_l3: Account, finalRoles: Fi
   logger.address("L3 Bridge contract", tokenBridgeL3Contract.address);
 
   let l3_tokenBridgeCls = await acc_l3.getClassAt(tokenBridgeL3Contract.address);
-  let l3_tokenBridgeContract_l3 = new Contract(l3_tokenBridgeCls.abi, tokenBridgeL3Contract.address, acc_l3);
+  let l3_tokenBridgeContract_l3 = new Contract({ abi: l3_tokenBridgeCls.abi, address: tokenBridgeL3Contract.address, providerOrAccount: acc_l3 });
 
   const l3Roles_TokenBridge = finalRoles.l3.TokenBridge;
 
@@ -231,7 +236,7 @@ export async function renounceTokenBridgeL2Roles(acc_l2: Account) {
   }
   logger.address("L2 Bridge contract", tokenBridgeL2Contract.address);
 
-  let tokenBridgeContract_l2 = new Contract(TokenBridgeL2Abi, tokenBridgeL2Contract.address, acc_l2).typedv2(TokenBridgeL2Abi);
+  let tokenBridgeContract_l2 = new Contract({ abi: TokenBridgeL2Abi, address: tokenBridgeL2Contract.address, providerOrAccount: acc_l2 }).typedv2(TokenBridgeL2Abi);
 
   await changeRole(acc_l2, tokenBridgeContract_l2, L2TokenBridgeRoleIds.TOKEN_ADMIN, acc_l2.address, "renounce_role");
   await changeRole(acc_l2, tokenBridgeContract_l2, L2TokenBridgeRoleIds.SECURITY_AGENT, acc_l2.address, "renounce_role");
@@ -254,7 +259,7 @@ export async function renounceTimelockRolesRoles(acc_l2: Account) {
   logger.address("Timelock contract", timelockContract.address);
 
 
-  let timelockContract_l2 = new Contract(TimelockAbi, timelockContract.address, acc_l2).typedv2(TimelockAbi);
+  let timelockContract_l2 = new Contract({ abi: TimelockAbi, address: timelockContract.address, providerOrAccount: acc_l2 }).typedv2(TimelockAbi);
 
   await changeRole(acc_l2, timelockContract_l2, TimelockControllerRoleIds.PROPOSER_ROLE, acc_l2.address, "renounce_role");
   await changeRole(acc_l2, timelockContract_l2, TimelockControllerRoleIds.EXECUTOR_ROLE, acc_l2.address, "renounce_role");
@@ -272,7 +277,7 @@ export async function renounceAppchainL2Roles(acc_l2: Account) {
   }
   logger.address("Appchain contract", appchainContract.address);
 
-  let appchainContract_l2 = new Contract(AppchainAbi, appchainContract.address, acc_l2).typedv2(AppchainAbi);
+  let appchainContract_l2 = new Contract({ abi: AppchainAbi, address: appchainContract.address, providerOrAccount: acc_l2 }).typedv2(AppchainAbi);
 
   // Unregister current owner as operator if it is registered
   const isRegistered = await appchainContract_l2.is_operator(acc_l2.address);
@@ -302,7 +307,7 @@ export async function renounceTokenBridgeL3Roles(acc_l3: Account) {
   }
   logger.address("L3 Bridge contract", tokenBridgeL3Contract.address);
 
-  let l3_tokenBridgeContract_l3 = new Contract(TokenBridgeL3Abi, tokenBridgeL3Contract.address, acc_l3);
+  let l3_tokenBridgeContract_l3 = new Contract({ abi: TokenBridgeL3Abi, address: tokenBridgeL3Contract.address, providerOrAccount: acc_l3 });
 
   // Revoke roles
   await changeRoleWithMethod(acc_l3, l3_tokenBridgeContract_l3, acc_l3.address, "remove_token_admin", ["is_token_admin", false]);
@@ -321,7 +326,7 @@ export async function checkTokenBridgeL2Roles(acc_l2: Account, finalRoles: Final
     throw new Error(error);
   }
   logger.address("L2 Bridge contract", tokenBridgeL2Contract.address);
-  let tokenBridgeContract_l2 = new Contract(TokenBridgeL2Abi, tokenBridgeL2Contract.address, acc_l2).typedv2(TokenBridgeL2Abi);
+  let tokenBridgeContract_l2 = new Contract({ abi: TokenBridgeL2Abi, address: tokenBridgeL2Contract.address, providerOrAccount: acc_l2 }).typedv2(TokenBridgeL2Abi);
 
   const l2Roles_TokenBridge = finalRoles.l2.TokenBridge;
   const roleChecks = [
@@ -349,7 +354,7 @@ export async function checkTimelockL2Roles(acc_l2: Account, finalRoles: FinalRol
   }
   logger.address("Timelock contract", timelockContract.address);
 
-  let timelockContract_l2 = new Contract(TimelockAbi, timelockContract.address, acc_l2).typedv2(TimelockAbi);
+  let timelockContract_l2 = new Contract({ abi: TimelockAbi, address: timelockContract.address, providerOrAccount: acc_l2 }).typedv2(TimelockAbi);
 
   const l2Roles_TimelockController = finalRoles.l2.TimelockController_starknet_bridge;
   const roleChecks = [
@@ -376,14 +381,14 @@ export async function checkAppchainL2Roles(acc_l2: Account, finalRoles: FinalRol
   }
   logger.address("Appchain contract", appchainContract.address);
 
-  let appchainContract_l2 = new Contract(AppchainAbi, appchainContract.address, acc_l2).typedv2(AppchainAbi);
+  let appchainContract_l2 = new Contract({ abi: AppchainAbi, address: appchainContract.address, providerOrAccount: acc_l2 }).typedv2(AppchainAbi);
 
   const l2Roles_Appchain = finalRoles.l2.appchain;
 
   logger.info(`Checking appchain owner ${l2Roles_Appchain.owner}`);
   const pending_owner = await appchainContract_l2.pending_owner();
   assert(
-    standardiseAddress(pending_owner) === standardiseAddress(l2Roles_Appchain.owner), 
+    standardiseAddress(pending_owner) === standardiseAddress(l2Roles_Appchain.owner),
     `Appchain pending owner not set, found ${pending_owner}`
   );
 
@@ -403,7 +408,7 @@ export async function checkTokenBridgeL3Roles(acc_l3: Account, finalRoles: Final
   }
   logger.address("L3 Bridge contract", tokenBridgeL3Contract.address);
 
-  let tokenBridgeContract_l3 = new Contract(TokenBridgeL3Abi, tokenBridgeL3Contract.address, acc_l3);
+  let tokenBridgeContract_l3 = new Contract({ abi: TokenBridgeL3Abi, address: tokenBridgeL3Contract.address, providerOrAccount: acc_l3 });
 
   const l3Roles_TokenBridge = finalRoles.l3.TokenBridge;
 

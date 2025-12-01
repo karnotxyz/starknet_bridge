@@ -10,7 +10,7 @@ import { Layer, ProgramInfo, FactRegistryOptions } from "./config/types.ts";
 import { Account, Contract as StarknetContract } from "starknet";
 import { logger } from "./utils/logger.ts";
 import {
-    appchainConfig,
+  appchainConfig,
   appchainContract,
 } from "./config/constants.ts";
 import { ABI as AppchainABI } from "./abis/starknet_bridge_appchain.ts";
@@ -52,7 +52,7 @@ export async function setProgramInfo(acc_l2: Account, programInfo?: ProgramInfo)
         throw new Error(errorMsg);
     }
 
-    const appchainContractInstance = new StarknetContract(AppchainABI, appchainContract.address, acc_l2).typedv2(AppchainABI);
+    const appchainContractInstance = new StarknetContract({abi: AppchainABI, address: appchainContract.address, providerOrAccount: acc_l2}).typedv2(AppchainABI);
     if (!programInfo) {
         programInfo = appchainConfig.programInfo;
     }
@@ -93,11 +93,29 @@ export async function setFactRegistry(
       throw new Error(errorMsg);
   }
 
-  const appchainContractInstance = new StarknetContract(AppchainABI, appchainContract.address, acc_l2).typedv2(AppchainABI);
+  const appchainContractInstance = new StarknetContract({ abi: AppchainABI, address: appchainContract.address, providerOrAccount: acc_l2 }).typedv2(AppchainABI);
   let tx = await appchainContractInstance.set_facts_registry(factRegistryAddress);
   const tx_receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
   assert(tx_receipt.isSuccess(), `Set fact registry failed`);
 
   logger.success("Fact registry set successfully!");
+  logger.txHash(tx.transaction_hash);
+}
+
+export async function setUseKzgDa(acc_l2: Account, useKzgDa: boolean) {
+  getContract(appchainContract);
+  // Verify we have the required addresses
+  if (!appchainContract.address) {
+    const errorMsg = "Appchain core contract address not found, deploy core contract first";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  const appchainContractInstance = new StarknetContract({ abi: AppchainABI, address: appchainContract.address, providerOrAccount: acc_l2 }).typedv2(AppchainABI);
+  let tx = await appchainContractInstance.set_use_kzg_da(useKzgDa);
+  const tx_receipt = await acc_l2.waitForTransaction(tx.transaction_hash);
+  assert(tx_receipt.isSuccess(), `Set use KZG DA failed`);
+
+  logger.success("Use KZG DA set successfully!");
   logger.txHash(tx.transaction_hash);
 }

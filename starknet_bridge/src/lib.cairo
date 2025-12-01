@@ -61,6 +61,10 @@ pub mod erc20 {
     pub mod replaceability_interface;
 }
 
+pub mod fee_token {
+    pub mod fee_token;
+}
+
 pub mod mocks {
     #[cfg(test)]
     pub mod access_control_mock;
