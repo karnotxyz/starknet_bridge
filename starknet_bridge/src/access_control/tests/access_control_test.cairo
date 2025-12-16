@@ -5,10 +5,10 @@ use openzeppelin::access::accesscontrol::interface::{
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpy};
 use starknet_bridge::access_control::roles::Roles;
+use starknet_bridge::access_control::tests::utils::has_role_only;
 use starknet_bridge::bridge::tests::constants::{
     APP_GOVERNOR, GOVERNANCE_ADMIN, SECURITY_ADMIN, SECURITY_AGENT, TOKEN_ADMIN, UPGRADE_GOVERNOR,
 };
-use starknet_bridge::access_control::tests::utils::has_role_only;
 
 fn deploy_access_control() -> (IAccessControlDispatcher, EventSpy) {
     let access_control_mock_class_hash = snf::declare("access_control_mock")

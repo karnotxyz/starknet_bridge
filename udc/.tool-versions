@@ -1,1 +1,3 @@
+# Ensure to not change this, as to get
+# the same class hash for UDC we need have the same compiler version.
 scarb 2.11.4

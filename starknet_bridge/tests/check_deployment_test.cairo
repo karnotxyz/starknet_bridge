@@ -1,21 +1,21 @@
+use piltover::messaging::interface::{IMessagingDispatcher, IMessagingDispatcherTrait};
+use piltover::messaging::types::MessageToAppchainStatus;
 use snforge_std as snf;
 use snforge_std::EventSpyAssertionsTrait;
 use starknet::get_block_timestamp;
+use starknet_bridge::bridge::TokenBridge::Event;
 use starknet_bridge::bridge::tests::constants::{L3_BRIDGE_ADDRESS, SECURITY_AGENT};
 use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet_bridge::bridge::tests::utils::setup::{
-    deploy_token_bridge_with_messaging, deploy_erc20, enroll_token,
+    deploy_erc20, deploy_token_bridge_with_messaging, enroll_token,
 };
 use starknet_bridge::bridge::types::TokenStatus;
 use starknet_bridge::bridge::{
     ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, ITokenBridgeDispatcherTrait,
     TokenBridge,
 };
-use starknet_bridge::bridge::TokenBridge::Event;
 use starknet_bridge::constants;
-use piltover::messaging::interface::{IMessagingDispatcher, IMessagingDispatcherTrait};
-use starknet_bridge::mocks::messaging::{IMockMessagingDispatcherTrait};
-use piltover::messaging::types::MessageToAppchainStatus;
+use starknet_bridge::mocks::messaging::IMockMessagingDispatcherTrait;
 
 #[test]
 fn check_deployment_status_non_pending_token() {

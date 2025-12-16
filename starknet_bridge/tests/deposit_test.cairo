@@ -3,19 +3,18 @@ use snforge_std as snf;
 use snforge_std::{EventSpy, EventSpyAssertionsTrait};
 use starknet::ContractAddress;
 use starknet_bridge::bridge::TokenBridge::Event;
+use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet_bridge::bridge::tests::utils::setup::{
-    deploy_erc20, deploy_token_bridge_with_messaging, enroll_token_and_settle, enroll_token,
+    deploy_erc20, deploy_token_bridge_with_messaging, enroll_token, enroll_token_and_settle,
 };
-
 use starknet_bridge::bridge::types::TokenStatus;
 use starknet_bridge::bridge::{
     ITokenBridgeAdminDispatcher, ITokenBridgeAdminDispatcherTrait, ITokenBridgeDispatcher,
     ITokenBridgeDispatcherTrait, TokenBridge,
 };
 use starknet_bridge::constants;
-use starknet_bridge::bridge::tests::utils::message_payloads;
 use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessagingDispatcherTrait};
-use super::constants::{SECURITY_AGENT, TOKEN_ADMIN, L3_BRIDGE_ADDRESS};
+use super::constants::{L3_BRIDGE_ADDRESS, SECURITY_AGENT, TOKEN_ADMIN};
 
 
 fn setup(

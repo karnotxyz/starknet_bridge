@@ -1,8 +1,8 @@
-use crate::access_control::roles::Roles;
+use core::starknet::ContractAddress;
 use openzeppelin::access::accesscontrol::interface::{
     IAccessControlDispatcher, IAccessControlDispatcherTrait,
 };
-use core::starknet::ContractAddress;
+use crate::access_control::roles::Roles;
 
 pub fn has_role_only(
     access_control: IAccessControlDispatcher, role: felt252, address: ContractAddress,

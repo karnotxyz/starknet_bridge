@@ -1,5 +1,5 @@
-mod token_bridge_test;
 mod check_deployment_test;
+mod token_bridge_test;
 use starknet_bridge::bridge::tests::constants;
 mod deposit_reclaim_test;
 mod deposit_test;

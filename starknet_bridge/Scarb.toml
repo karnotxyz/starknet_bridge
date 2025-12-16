@@ -9,7 +9,7 @@ openzeppelin = "0.20.0"
 piltover = { git = "https://github.com/keep-starknet-strange/piltover", rev = "9970d44e729073de955d4e9ffa0441d20aab03a7" }
 
 [dev-dependencies]
-snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.40.0" }
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.54.0" }
 
 [[target.starknet-contract]]
 casm = true
@@ -18,6 +18,9 @@ build-external-contracts = ["piltover::appchain::appchain"]
 
 [tool.voyager]
 TokenBridge = { path = "src/bridge/token_bridge.cairo" }
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
 
 [scripts]
 test = "snforge test"

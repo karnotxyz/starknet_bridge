@@ -53,7 +53,7 @@ pub fn count_bytes(mut value: u128) -> usize {
     while value > 0 {
         value /= 256;
         bytes += 1;
-    };
+    }
     bytes
 }
 

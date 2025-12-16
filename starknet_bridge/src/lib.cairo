@@ -53,12 +53,12 @@ pub mod timelock {
 
 pub mod constants;
 pub mod erc20 {
+    pub mod access_control_interface;
+    pub mod erc20;
     pub mod err_msg;
     pub mod interface;
-    pub mod erc20;
-    pub mod roles_interface;
-    pub mod access_control_interface;
     pub mod replaceability_interface;
+    pub mod roles_interface;
 }
 
 pub mod fee_token {

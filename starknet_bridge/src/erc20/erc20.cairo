@@ -15,35 +15,30 @@
 //! A derived contract can use [_mint](_mint) to create a different supply mechanism.
 #[starknet::contract]
 mod ERC20 {
-    use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapWriteAccess,
-        StorageMapReadAccess,
-    };
     use core::num::traits::zero::Zero;
-    use starknet_bridge::erc20::err_msg::AccessErrors as AccessErrors;
-    use starknet_bridge::erc20::err_msg::ERC20Errors as ERC20Errors;
-    use starknet_bridge::erc20::err_msg::ReplaceErrors as ReplaceErrors;
-
-    use openzeppelin::token::erc20::interface::{IERC20, IERC20Metadata};
-    use openzeppelin::token::erc20::interface::IERC20CamelOnly;
-    use starknet_bridge::erc20::interface::{IMintableToken, IMintableTokenCamel};
-    use starknet_bridge::erc20::access_control_interface::{
-        IAccessControl, RoleId, RoleAdminChanged, RoleGranted, RoleRevoked,
-    };
-    use starknet_bridge::erc20::roles_interface::IMinimalRoles;
-    use starknet_bridge::erc20::roles_interface::{
-        GOVERNANCE_ADMIN, UPGRADE_GOVERNOR, GovernanceAdminAdded, GovernanceAdminRemoved,
-        UpgradeGovernorAdded, UpgradeGovernorRemoved,
-    };
-
-    use starknet_bridge::erc20::replaceability_interface::{
-        ImplementationData, IReplaceable, EIC_INITIALIZE_SELECTOR, IMPLEMENTATION_EXPIRATION,
-        ImplementationAdded, ImplementationRemoved, ImplementationReplaced, ImplementationFinalized,
-    };
-    use starknet::ContractAddress;
     use core::poseidon;
-    use starknet::{get_caller_address, get_block_timestamp};
+    use openzeppelin::token::erc20::interface::{IERC20, IERC20CamelOnly, IERC20Metadata};
+    use starknet::storage::{
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
     use starknet::syscalls::library_call_syscall;
+    use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
+    use starknet_bridge::erc20::access_control_interface::{
+        IAccessControl, RoleAdminChanged, RoleGranted, RoleId, RoleRevoked,
+    };
+    use starknet_bridge::erc20::err_msg::{
+        AccessErrors as AccessErrors, ERC20Errors as ERC20Errors, ReplaceErrors as ReplaceErrors,
+    };
+    use starknet_bridge::erc20::interface::{IMintableToken, IMintableTokenCamel};
+    use starknet_bridge::erc20::replaceability_interface::{
+        EIC_INITIALIZE_SELECTOR, IMPLEMENTATION_EXPIRATION, IReplaceable, ImplementationAdded,
+        ImplementationData, ImplementationFinalized, ImplementationRemoved, ImplementationReplaced,
+    };
+    use starknet_bridge::erc20::roles_interface::{
+        GOVERNANCE_ADMIN, GovernanceAdminAdded, GovernanceAdminRemoved, IMinimalRoles,
+        UPGRADE_GOVERNOR, UpgradeGovernorAdded, UpgradeGovernorRemoved,
+    };
 
     #[storage]
     struct Storage {
@@ -337,7 +332,7 @@ mod ERC20 {
                     assert(res.is_ok(), ReplaceErrors::EIC_LIB_CALL_FAILED);
                 },
                 Option::None(()) => {},
-            };
+            }
 
             // Replace the class hash.
             let result = starknet::syscalls::replace_class_syscall(implementation_data.impl_hash);

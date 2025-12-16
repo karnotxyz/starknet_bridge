@@ -15,20 +15,6 @@ export const ABI = [
     ]
   },
   {
-    "type": "struct",
-    "name": "core::integer::u256",
-    "members": [
-      {
-        "name": "low",
-        "type": "core::integer::u128"
-      },
-      {
-        "name": "high",
-        "type": "core::integer::u128"
-      }
-    ]
-  },
-  {
     "type": "interface",
     "name": "piltover::interface::IAppchain",
     "items": [
@@ -43,14 +29,6 @@ export const ABI = [
           {
             "name": "layout_bridge_output",
             "type": "core::array::Span::<core::felt252>"
-          },
-          {
-            "name": "onchain_data_hash",
-            "type": "core::felt252"
-          },
-          {
-            "name": "onchain_data_size",
-            "type": "core::integer::u256"
           }
         ],
         "outputs": [],
@@ -211,6 +189,29 @@ export const ABI = [
           }
         ],
         "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_use_kzg_da",
+        "inputs": [
+          {
+            "name": "use_kzg_da",
+            "type": "core::bool"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "get_use_kzg_da",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::bool"
+          }
+        ],
+        "state_mutability": "view"
       }
     ]
   },
@@ -238,6 +239,10 @@ export const ABI = [
       {
         "name": "Pending",
         "type": "core::felt252"
+      },
+      {
+        "name": "Cancelling",
+        "type": "()"
       }
     ]
   },
@@ -399,139 +404,9 @@ export const ABI = [
     "interface_name": "piltover::state::interface::IState"
   },
   {
-    "type": "struct",
-    "name": "piltover::snos_output::MessageToStarknet",
-    "members": [
-      {
-        "name": "from_address",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "name": "to_address",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "name": "payload",
-        "type": "core::array::Span::<core::felt252>"
-      }
-    ]
-  },
-  {
-    "type": "struct",
-    "name": "core::array::Span::<piltover::snos_output::MessageToStarknet>",
-    "members": [
-      {
-        "name": "snapshot",
-        "type": "@core::array::Array::<piltover::snos_output::MessageToStarknet>"
-      }
-    ]
-  },
-  {
-    "type": "struct",
-    "name": "piltover::snos_output::MessageToAppchain",
-    "members": [
-      {
-        "name": "from_address",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "name": "to_address",
-        "type": "core::starknet::contract_address::ContractAddress"
-      },
-      {
-        "name": "nonce",
-        "type": "core::felt252"
-      },
-      {
-        "name": "selector",
-        "type": "core::felt252"
-      },
-      {
-        "name": "payload",
-        "type": "core::array::Span::<core::felt252>"
-      }
-    ]
-  },
-  {
-    "type": "struct",
-    "name": "core::array::Span::<piltover::snos_output::MessageToAppchain>",
-    "members": [
-      {
-        "name": "snapshot",
-        "type": "@core::array::Array::<piltover::snos_output::MessageToAppchain>"
-      }
-    ]
-  },
-  {
-    "type": "struct",
-    "name": "piltover::snos_output::StarknetOsOutput",
-    "members": [
-      {
-        "name": "initial_root",
-        "type": "core::felt252"
-      },
-      {
-        "name": "final_root",
-        "type": "core::felt252"
-      },
-      {
-        "name": "prev_block_number",
-        "type": "core::felt252"
-      },
-      {
-        "name": "new_block_number",
-        "type": "core::felt252"
-      },
-      {
-        "name": "prev_block_hash",
-        "type": "core::felt252"
-      },
-      {
-        "name": "new_block_hash",
-        "type": "core::felt252"
-      },
-      {
-        "name": "os_program_hash",
-        "type": "core::felt252"
-      },
-      {
-        "name": "starknet_os_config_hash",
-        "type": "core::felt252"
-      },
-      {
-        "name": "use_kzg_da",
-        "type": "core::felt252"
-      },
-      {
-        "name": "full_output",
-        "type": "core::felt252"
-      },
-      {
-        "name": "messages_to_l1",
-        "type": "core::array::Span::<piltover::snos_output::MessageToStarknet>"
-      },
-      {
-        "name": "messages_to_l2",
-        "type": "core::array::Span::<piltover::snos_output::MessageToAppchain>"
-      }
-    ]
-  },
-  {
     "type": "interface",
     "name": "piltover::state::interface::IState",
     "items": [
-      {
-        "type": "function",
-        "name": "update",
-        "inputs": [
-          {
-            "name": "program_output",
-            "type": "piltover::snos_output::StarknetOsOutput"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
       {
         "type": "function",
         "name": "get_state",
@@ -625,6 +500,26 @@ export const ABI = [
         "type": "core::felt252"
       }
     ]
+  },
+  {
+    "type": "function",
+    "name": "set_state",
+    "inputs": [
+      {
+        "name": "state_root",
+        "type": "core::felt252"
+      },
+      {
+        "name": "block_number",
+        "type": "core::felt252"
+      },
+      {
+        "name": "block_hash",
+        "type": "core::felt252"
+      }
+    ],
+    "outputs": [],
+    "state_mutability": "external"
   },
   {
     "type": "event",
@@ -1005,6 +900,20 @@ export const ABI = [
         "name": "block_hash",
         "type": "core::felt252",
         "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "core::integer::u256",
+    "members": [
+      {
+        "name": "low",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "high",
+        "type": "core::integer::u128"
       }
     ]
   },

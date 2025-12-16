@@ -475,12 +475,11 @@ export async function deposit(
       }
     ).typedv2(TokenBridgeL2ABI);
 
-    const result = await tokenBridgeContract.deposit({
-      token: tokenAddress,
+    const result = await tokenBridgeContract.deposit(
+      tokenAddress,
       amount,
-      appchain_recipient: process.env.ACCOUNT_L3_ADDRESS as string,
-      message: 0,
-    });
+      process.env.ACCOUNT_L3_ADDRESS as string
+    );
 
     const tx_receipt = await acc_l2.waitForTransaction(result.transaction_hash);
     assert(tx_receipt.isSuccess(), `Deposit failed`);
