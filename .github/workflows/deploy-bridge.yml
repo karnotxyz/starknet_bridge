@@ -86,7 +86,7 @@ jobs:
             -e ROLLUP_SEQ_URL=http://l2-node:9944 \
             -e ROLLUP_DECLARE_V0_SEQ_URL=http://l2-node:9943 \
             -e ROLLUP_PRIVATE_KEY=0xabcd \
-            ghcr.io/madara-alliance/bootstrapper:nightly \
+            ghcr.io/madara-alliance/bootstrapper:manual-640e0e2 \
             --config /apps/configs/devnet.json --mode udc
 
           # Wait for container to finish
@@ -195,7 +195,7 @@ jobs:
             -e ROLLUP_SEQ_URL=http://l3-node:9955 \
             -e ROLLUP_DECLARE_V0_SEQ_URL=http://l3-node:9953 \
             -e ROLLUP_PRIVATE_KEY=0xabcd \
-            ghcr.io/madara-alliance/bootstrapper:nightly \
+            ghcr.io/madara-alliance/bootstrapper:manual-640e0e2 \
             --config /apps/configs/devnet.json --mode udc
 
           # Wait for container to finish
