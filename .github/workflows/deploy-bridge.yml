@@ -46,7 +46,7 @@ jobs:
       - name: Run l2
         run: |
           docker run -d --name l2-node --network bridge-network -p 9944:9944 -p 9943:9943 \
-            -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:manual-62d8aa1\
+            -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:manual-640e0e2\
             --base-path ./madara-l2-db \
             --rpc-external --rpc-admin --rpc-admin-external --rpc-cors "*" \
             --rpc-port 9944 --rpc-admin-port 9943 \
@@ -155,7 +155,7 @@ jobs:
       - name: Run l3
         run: |
           docker run -d --name l3-node --network bridge-network \
-            -p 9955:9955 -p 9953:9953 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:manual-62d8aa1 \
+            -p 9955:9955 -p 9953:9953 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:manual-640e0e2 \
             --base-path ./madara-l3-db \
             --rpc-cors "*" --rpc-external --rpc-admin --rpc-admin-external \
             --rpc-port 9955 --rpc-admin-port 9953 \
