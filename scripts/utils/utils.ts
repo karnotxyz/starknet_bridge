@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, hash, json, legacyDeployer, num, encode, BlockTag, Contract as StarknetContract, CallData } from 'starknet'
+import { Account, RawArgs, RpcProvider, TransactionFinalityStatus, hash, json, legacyDeployer, num, encode, BlockTag } from 'starknet'
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { http, createWalletClient, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
@@ -203,62 +203,6 @@ export async function declareContract(contract: Contract, skipIfPresentInDump: b
   }
 }
 
-async function deployContractOnL3(contract: Contract, constructorData: RawArgs, acc: Account, provider: RpcProvider) {
-  const accountClass = await acc.getClassAt(acc.address);
-  const accountContract = new StarknetContract({
-    abi: accountClass.abi,
-    address: acc.address,
-    providerOrAccount: acc,
-  });
-  const compiledConstructorData = CallData.compile(constructorData);
-
-  const deployCall = accountContract.populate("deploy_contract", {
-    class_hash: contract.classHash as string,
-    salt: 0n,
-    from_zero: true,
-    calldata: compiledConstructorData,
-  });
-
-  const tx = await acc.execute([deployCall], {
-    tip: 0,
-    resourceBounds: {
-      l1_data_gas: {
-        max_amount: 0n,
-        max_price_per_unit: 0n,
-      },
-      l1_gas: {
-        max_amount: 0n,
-        max_price_per_unit: 0n,
-      },
-      l2_gas: {
-        max_amount: 0n,
-        max_price_per_unit: 0n,
-      },
-    }
-  });
-
-  const txReceipt = await provider.waitForTransaction(tx.transaction_hash, {
-    retryInterval: 100,
-  });
-
-  assert(txReceipt.isSuccess(), `Contract ${contract.name} deployment failed`);
-
-  const contractDeployedEvent = num.toHex(hash.starknetKeccak('ContractDeployed'));
-  const contractAddress = txReceipt.value.events.find((event: any) => event.keys[0] === contractDeployedEvent)?.data[0];
-
-  if (!contractAddress) {
-    throw new Error(`Contract ${contract.name} deployment event not found`);
-  }
-
-  return {
-    tx: {
-      transaction_hash: tx.transaction_hash,
-      contract_address: contractAddress,
-    },
-    receipt: txReceipt,
-  };
-}
-
 export async function deployContract(contract: Contract, constructorData: RawArgs) {
   // If contract has address, it's already deployed
   if (contract.address) {
@@ -281,20 +225,40 @@ export async function deployContract(contract: Contract, constructorData: RawArg
   console.log("Deploy fee", contract.name, Number(fee.overall_fee) / 10 ** 18, 'STRK')
 
   let tx: { transaction_hash: any; contract_address: any; address?: string; deployer?: string; unique?: string; classHash?: string; calldata_len?: string; calldata?: string[]; salt?: string; };
-  let tx_receipt;
   if (layer === Layer.L3) {
-    ({ tx, receipt: tx_receipt } = await deployContractOnL3(contract, constructorData, acc, provider));
+    tx = await acc.deployContract({
+      classHash: contract.classHash,
+      constructorCalldata: constructorData,
+    },
+      {
+        tip: 0,
+        resourceBounds: {
+          l1_data_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
+          l1_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
+          l2_gas: {
+            max_amount: 0n,
+            max_price_per_unit: 0n,
+          },
+        }
+      });
   } else {
     tx = await acc.deployContract({
       classHash: contract.classHash,
       constructorCalldata: constructorData,
     });
-    tx_receipt = await provider.waitForTransaction(tx.transaction_hash, {
-      // successStates: [TransactionFinalityStatus.ACCEPTED_ON_L2],
-      retryInterval: 100,
-    })
   }
   console.log('Deploy tx: ', tx.transaction_hash);
+
+  let tx_receipt = await provider.waitForTransaction(tx.transaction_hash, {
+    // successStates: [TransactionFinalityStatus.ACCEPTED_ON_L2],
+    retryInterval: 100,
+  })
 
   assert(tx_receipt.isSuccess(), `Contract ${contract.name} deployment failed`);
 
