@@ -203,7 +203,7 @@ export async function declareContract(contract: Contract, skipIfPresentInDump: b
   }
 }
 
-async function deployContractOnL3(contract: Contract, constructorData: RawArgs, acc: Account, provider: RpcProvider) {
+async function deployContractOnL3(contract: Contract, constructorData: RawArgs, acc: Account) {
   const accountClass = await acc.getClassAt(acc.address);
   const accountContract = new StarknetContract({
     abi: accountClass.abi,
@@ -219,7 +219,7 @@ async function deployContractOnL3(contract: Contract, constructorData: RawArgs, 
     calldata: compiledConstructorData,
   });
 
-  const tx = await acc.execute([deployCall], {
+  return acc.execute([deployCall], {
     tip: 0,
     resourceBounds: {
       l1_data_gas: {
@@ -236,27 +236,6 @@ async function deployContractOnL3(contract: Contract, constructorData: RawArgs, 
       },
     }
   });
-
-  const txReceipt = await provider.waitForTransaction(tx.transaction_hash, {
-    retryInterval: 100,
-  });
-
-  assert(txReceipt.isSuccess(), `Contract ${contract.name} deployment failed`);
-
-  const contractDeployedEvent = num.toHex(hash.starknetKeccak('ContractDeployed'));
-  const contractAddress = txReceipt.value.events.find((event: any) => event.keys[0] === contractDeployedEvent)?.data[0];
-
-  if (!contractAddress) {
-    throw new Error(`Contract ${contract.name} deployment event not found`);
-  }
-
-  return {
-    tx: {
-      transaction_hash: tx.transaction_hash,
-      contract_address: contractAddress,
-    },
-    receipt: txReceipt,
-  };
 }
 
 export async function deployContract(contract: Contract, constructorData: RawArgs) {
@@ -280,23 +259,32 @@ export async function deployContract(contract: Contract, constructorData: RawArg
   })
   console.log("Deploy fee", contract.name, Number(fee.overall_fee) / 10 ** 18, 'STRK')
 
-  let tx: { transaction_hash: any; contract_address: any; address?: string; deployer?: string; unique?: string; classHash?: string; calldata_len?: string; calldata?: string[]; salt?: string; };
-  let tx_receipt;
+  let tx: { transaction_hash: any; contract_address?: any; address?: string; deployer?: string; unique?: string; classHash?: string; calldata_len?: string; calldata?: string[]; salt?: string; };
   if (layer === Layer.L3) {
-    ({ tx, receipt: tx_receipt } = await deployContractOnL3(contract, constructorData, acc, provider));
+    tx = await deployContractOnL3(contract, constructorData, acc);
   } else {
     tx = await acc.deployContract({
       classHash: contract.classHash,
       constructorCalldata: constructorData,
     });
-    tx_receipt = await provider.waitForTransaction(tx.transaction_hash, {
-      // successStates: [TransactionFinalityStatus.ACCEPTED_ON_L2],
-      retryInterval: 100,
-    })
   }
+
+  const tx_receipt = await provider.waitForTransaction(tx.transaction_hash, {
+    // successStates: [TransactionFinalityStatus.ACCEPTED_ON_L2],
+    retryInterval: 100,
+  })
   console.log('Deploy tx: ', tx.transaction_hash);
 
   assert(tx_receipt.isSuccess(), `Contract ${contract.name} deployment failed`);
+
+  if (layer === Layer.L3) {
+    const contractDeployedEvent = num.toHex(hash.starknetKeccak('ContractDeployed'));
+    tx.contract_address = tx_receipt.value.events.find((event: any) => event.keys[0] === contractDeployedEvent)?.data[0];
+
+    if (!tx.contract_address) {
+      throw new Error(`Contract ${contract.name} deployment event not found`);
+    }
+  }
 
   const contracts = getContracts();
   if (!contracts.contracts) {

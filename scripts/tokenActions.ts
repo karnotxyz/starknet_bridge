@@ -5,7 +5,7 @@ import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge.ts";
 import { ABI as ERC20ABI } from "./abis/starknet_bridge_ERC20.ts";
 import { getAccount, getContract } from "./utils/utils.ts";
 import assert from "assert";
-import { enrollToken, getL3Balance, waitForCorrespondingL3Token } from "./bridgeDeploy.ts";
+import { enrollToken, waitForCorrespondingL3Token } from "./bridgeDeploy.ts";
 
 /**
  * Utility function to execute a transaction and assert its expected outcome
@@ -192,10 +192,6 @@ export async function testTokenActions(acc_l2: Account, token: string = "ERC20_O
 
     await enrollToken(acc_l2, token);
     await waitForCorrespondingL3Token(token);
-    await getL3Balance(
-        process.env.ACCOUNT_L3_ADDRESS as string,
-        "ERC20_OZ"
-    );
 
     // 1. Current status: Pending 
     await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Pending);

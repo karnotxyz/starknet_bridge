@@ -527,15 +527,18 @@ export async function getL3Balance(
     providerOrAccount: providerL3,
   });
 
-  const correspondingTokenAddress = await findCorrespondingL3Token(token);
+  const correspondingToken = await appchainBridgeContract.call("get_l2_token", [
+    enrolledTokenAddress,
+  ]);
   logger.info(`Finding corresponding appchain token`);
 
-  if (!correspondingTokenAddress) {
+  if (correspondingToken === 0n) {
     const errorMsg = "No corresponding token found on l3";
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
 
+  const correspondingTokenAddress = num.toHex(correspondingToken as any);
   logger.address(
     "Corresponding appchain token address",
     correspondingTokenAddress
@@ -552,53 +555,22 @@ export async function getL3Balance(
   logger.info(`Balance: ${balance}`);
 }
 
-async function findCorrespondingL3Token(
-  token: string = "ERC20_OZ"
-): Promise<string | null> {
-  const tokenContract: Contract = {
-    name: token,
-    layer: Layer.L2,
-    package: starknetBridgePackage
-  };
-
-  getContract(tokenContract);
-  getContract(tokenBridgeL3Contract);
-
-  if (!tokenContract.address || !tokenBridgeL3Contract.address) {
-    return null;
-  }
-
-  const providerL3 = getProvider(Layer.L3);
-  const appchainBridgeCls = await providerL3.getClassAt(tokenBridgeL3Contract.address);
-  const appchainBridgeContract = new StarknetContract({
-    abi: appchainBridgeCls.abi,
-    address: tokenBridgeL3Contract.address,
-    providerOrAccount: providerL3,
-  });
-
-  const correspondingToken = await appchainBridgeContract.call("get_l2_token", [
-    tokenContract.address,
-  ]);
-
-  if (correspondingToken === 0n) {
-    return null;
-  }
-
-  return num.toHex(correspondingToken as any);
-}
-
 export async function waitForCorrespondingL3Token(
   token: string = "ERC20_OZ",
   timeoutMs: number = 120000,
   intervalMs: number = 5000,
 ) {
+  const address = process.env.ACCOUNT_L3_ADDRESS as string;
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
-    const correspondingTokenAddress = await findCorrespondingL3Token(token);
-    if (correspondingTokenAddress) {
-      logger.address("Corresponding appchain token address", correspondingTokenAddress);
-      return correspondingTokenAddress;
+    try {
+      await getL3Balance(address, token);
+      return;
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== "No corresponding token found on l3") {
+        throw error;
+      }
     }
 
     logger.info("Waiting for corresponding appchain token on l3...");

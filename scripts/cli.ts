@@ -520,7 +520,6 @@ program
         "MAIN STEP 4: Check the corresponding token and balance on l3"
       );
       await waitForCorrespondingL3Token("ERC20_OZ");
-      await getL3Balance(process.env.ACCOUNT_L3_ADDRESS as string, "ERC20_OZ");
     }
 
     logger.success("Full flow completed successfully!");
