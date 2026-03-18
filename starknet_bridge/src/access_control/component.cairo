@@ -3,12 +3,12 @@ pub mod BridgeAccessControlComponent {
     use openzeppelin::access::accesscontrol::AccessControlComponent::{
         InternalImpl as AccessControlInternalImpl, InternalTrait as AccessControlInternalTrait,
     };
+    use openzeppelin::access::accesscontrol::interface::IAccessControl;
     use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::introspection::src5::SRC5Component::{
         InternalImpl as SRC5InternalImpl, SRC5Impl,
     };
-    use openzeppelin::access::accesscontrol::interface::IAccessControl;
     use starknet::ContractAddress;
     use starknet_bridge::access_control::roles::Roles;
 
@@ -61,23 +61,23 @@ pub mod BridgeAccessControlComponent {
 
             for governance_admin in governance_admins {
                 access_control._grant_role(Roles::GOVERNANCE_ADMIN, *governance_admin);
-            };
+            }
 
             for app_governor in app_governors {
                 access_control._grant_role(Roles::APP_GOVERNOR, *app_governor);
-            };
+            }
 
             for security_admin in security_admins {
                 access_control._grant_role(Roles::SECURITY_ADMIN, *security_admin);
-            };
+            }
 
             for security_agent in security_agents {
                 access_control._grant_role(Roles::SECURITY_AGENT, *security_agent);
-            };
+            }
 
             for token_admin in token_admins {
                 access_control._grant_role(Roles::TOKEN_ADMIN, *token_admin);
-            };
+            }
 
             // Set role admins
             access_control.set_role_admin(Roles::GOVERNANCE_ADMIN, Roles::GOVERNANCE_ADMIN);

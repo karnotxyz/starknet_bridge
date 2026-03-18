@@ -3,7 +3,7 @@ pub mod TokenBridge {
     use core::array::ArrayTrait;
     use core::num::traits::Bounded;
     use core::num::traits::zero::Zero;
-    use core::option::{OptionTrait, Option};
+    use core::option::{Option, OptionTrait};
     use core::serde::Serde;
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     use openzeppelin::access::accesscontrol::interface::IAccessControl;
@@ -32,9 +32,8 @@ pub mod TokenBridge {
         ClassHash, ContractAddress, SyscallResultTrait, get_block_timestamp, get_caller_address,
         get_contract_address,
     };
-
-    use starknet_bridge::access_control::roles::Roles;
     use starknet_bridge::access_control::component::BridgeAccessControlComponent;
+    use starknet_bridge::access_control::roles::Roles;
     use starknet_bridge::bridge::interface::{ITokenBridge, ITokenBridgeAdmin};
     use starknet_bridge::bridge::types::{TokenSettings, TokenStatus};
     use starknet_bridge::constants;
@@ -484,7 +483,7 @@ pub mod TokenBridge {
         while value > 0 {
             value /= 256;
             bytes += 1;
-        };
+        }
         bytes
     }
 

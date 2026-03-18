@@ -1,5 +1,9 @@
+use openzeppelin::access::accesscontrol::interface::{
+    IAccessControlDispatcher, IAccessControlDispatcherTrait,
+};
 use snforge_std as snf;
 use snforge_std::EventSpyAssertionsTrait;
+use starknet_bridge::access_control::roles::Roles;
 use starknet_bridge::bridge::TokenBridge::Event;
 use starknet_bridge::bridge::tests::utils::setup::deploy_token_bridge;
 use starknet_bridge::bridge::{
@@ -7,10 +11,6 @@ use starknet_bridge::bridge::{
 };
 use starknet_bridge::withdrawal_limit::interface::{
     IWithdrawalLimitDispatcher, IWithdrawalLimitDispatcherTrait,
-};
-use starknet_bridge::access_control::roles::Roles;
-use openzeppelin::access::accesscontrol::interface::{
-    IAccessControlDispatcher, IAccessControlDispatcherTrait,
 };
 use super::constants::{SECURITY_ADMIN, SECURITY_AGENT, USDC_MOCK_ADDRESS};
 

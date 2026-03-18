@@ -3,9 +3,9 @@ import { Layer, Contract, TokenStatus } from "./config/types.ts";
 import { starknetBridgePackage, tokenBridgeL2Contract } from "./config/constants.ts";
 import { ABI as TokenBridgeL2ABI } from "./abis/starknet_bridge_TokenBridge.ts";
 import { ABI as ERC20ABI } from "./abis/starknet_bridge_ERC20.ts";
-import { getAccount, getContract, sleep } from "./utils/utils.ts";
+import { getAccount, getContract } from "./utils/utils.ts";
 import assert from "assert";
-import { enrollToken, getL3Balance } from "./bridgeDeploy.ts";
+import { enrollToken, waitForCorrespondingL3Token } from "./bridgeDeploy.ts";
 
 /**
  * Utility function to execute a transaction and assert its expected outcome
@@ -35,8 +35,10 @@ async function executeAndAssertTransaction(
         
         return receipt;
     } catch (error) {
+        const errorText = error instanceof Error ? error.message : String(error);
+
         // If we're expecting a failure and get an error during execution, that's fine
-        if (!expectedSuccess && error.toString().includes(errorMessage)) {
+        if (!expectedSuccess && errorMessage && errorText.includes(errorMessage)) {
             return null;
         }
 
@@ -189,11 +191,7 @@ export async function testTokenActions(acc_l2: Account, token: string = "ERC20_O
     await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Unknown);
 
     await enrollToken(acc_l2, token);
-    await sleep(15000);
-    await getL3Balance(
-        process.env.ACCOUNT_L3_ADDRESS as string,
-        "ERC20_OZ"
-    );
+    await waitForCorrespondingL3Token(token);
 
     // 1. Current status: Pending 
     await tokenAsserts(tokenStarknetContract, tokenBridgeContract, TokenStatus.Pending);

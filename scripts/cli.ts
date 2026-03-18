@@ -16,7 +16,6 @@ import {
   dumpPath,
   getAccount,
   setDumpPath,
-  sleep,
   calculateConfigHash,
   getContract,
 } from "./utils/utils.ts";
@@ -34,6 +33,7 @@ import {
   initiateTokenL3toL2Withdrawal,
   deployTimelockContract,
   configurePermissionedEnrollment,
+  waitForCorrespondingL3Token,
 } from "./bridgeDeploy.ts";
 import { Layer, ProgramInfo, FactRegistryOptions, FactRegistryChain, VerificationType } from "./config/types.ts";
 import { finalRoles } from "./config/newRoles.ts";
@@ -519,8 +519,7 @@ program
       logger.info(
         "MAIN STEP 4: Check the corresponding token and balance on l3"
       );
-      await sleep(15000);
-      await getL3Balance(process.env.ACCOUNT_L3_ADDRESS as string, "ERC20_OZ");
+      await waitForCorrespondingL3Token("ERC20_OZ");
     }
 
     logger.success("Full flow completed successfully!");

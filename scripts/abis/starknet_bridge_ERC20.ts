@@ -412,7 +412,7 @@ export const ABI = [
       },
       {
         "name": "pending_word_len",
-        "type": "core::integer::u32"
+        "type": "core::internal::bounded_int::BoundedInt::<0, 30>"
       }
     ]
   },

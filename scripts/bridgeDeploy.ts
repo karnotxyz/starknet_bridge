@@ -4,7 +4,8 @@ import {
   getProvider,
   getAccount,
   getContract,
-  setDumpPath
+  setDumpPath,
+  sleep,
 } from "./utils/utils.ts";
 import { Layer, Contract, } from "./config/types.ts";
 import { Account, byteArray, Contract as StarknetContract, num } from "starknet";
@@ -475,12 +476,11 @@ export async function deposit(
       }
     ).typedv2(TokenBridgeL2ABI);
 
-    const result = await tokenBridgeContract.deposit({
-      token: tokenAddress,
+    const result = await tokenBridgeContract.deposit(
+      tokenAddress,
       amount,
-      appchain_recipient: process.env.ACCOUNT_L3_ADDRESS as string,
-      message: 0,
-    });
+      process.env.ACCOUNT_L3_ADDRESS as string
+    );
 
     const tx_receipt = await acc_l2.waitForTransaction(result.transaction_hash);
     assert(tx_receipt.isSuccess(), `Deposit failed`);
@@ -553,6 +553,31 @@ export async function getL3Balance(
   });
   const balance = await appchainToken.call("balanceOf", [address]);
   logger.info(`Balance: ${balance}`);
+}
+
+export async function waitForCorrespondingL3Token(
+  token: string = "ERC20_OZ",
+  timeoutMs: number = 120000,
+  intervalMs: number = 5000,
+) {
+  const address = process.env.ACCOUNT_L3_ADDRESS as string;
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    try {
+      await getL3Balance(address, token);
+      return;
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== "No corresponding token found on l3") {
+        throw error;
+      }
+    }
+
+    logger.info("Waiting for corresponding appchain token on l3...");
+    await sleep(intervalMs);
+  }
+
+  throw new Error(`No corresponding token found on l3 after ${timeoutMs}ms`);
 }
 
 /**

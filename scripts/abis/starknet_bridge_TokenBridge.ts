@@ -98,7 +98,7 @@ export const ABI = [
       },
       {
         "type": "function",
-        "name": "configure_permissionless_enrollment",
+        "name": "configure_permissioned_enrollment",
         "inputs": [
           {
             "name": "permissioned_enroll",
@@ -170,6 +170,18 @@ export const ABI = [
       },
       {
         "type": "function",
+        "name": "set_max_pending_duration",
+        "inputs": [
+          {
+            "name": "duration",
+            "type": "core::integer::u64"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
         "name": "pause",
         "inputs": [],
         "outputs": [],
@@ -222,6 +234,32 @@ export const ABI = [
       {
         "name": "snapshot",
         "type": "@core::array::Array::<core::felt252>"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "starknet_bridge::bridge::types::TokenSettings",
+    "members": [
+      {
+        "name": "token_status",
+        "type": "starknet_bridge::bridge::types::TokenStatus"
+      },
+      {
+        "name": "deployment_message_hash",
+        "type": "core::felt252"
+      },
+      {
+        "name": "deployment_message_nonce",
+        "type": "core::felt252"
+      },
+      {
+        "name": "pending_deployment_expiration",
+        "type": "core::integer::u64"
+      },
+      {
+        "name": "max_total_balance",
+        "type": "core::integer::u256"
       }
     ]
   },
@@ -509,6 +547,33 @@ export const ABI = [
         "outputs": [
           {
             "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "get_token_settings",
+        "inputs": [
+          {
+            "name": "token",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "starknet_bridge::bridge::types::TokenSettings"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "get_max_pending_duration",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::integer::u64"
           }
         ],
         "state_mutability": "view"
@@ -852,6 +917,18 @@ export const ABI = [
   },
   {
     "type": "event",
+    "name": "starknet_bridge::bridge::token_bridge::TokenBridge::TokenUnknown",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "token",
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
     "name": "starknet_bridge::bridge::token_bridge::TokenBridge::Deposit",
     "kind": "struct",
     "members": [
@@ -1142,12 +1219,36 @@ export const ABI = [
   },
   {
     "type": "event",
+    "name": "starknet_bridge::bridge::token_bridge::TokenBridge::SetPendingDuration",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "duration",
+        "type": "core::integer::u64",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
     "name": "starknet_bridge::bridge::token_bridge::TokenBridge::SetAppchainBridge",
     "kind": "struct",
     "members": [
       {
         "name": "appchain_bridge",
         "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "starknet_bridge::bridge::token_bridge::TokenBridge::ConfigurePermissionedEnrollment",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "enabled",
+        "type": "core::bool",
         "kind": "data"
       }
     ]
@@ -1410,6 +1511,11 @@ export const ABI = [
         "kind": "nested"
       },
       {
+        "name": "TokenUnknown",
+        "type": "starknet_bridge::bridge::token_bridge::TokenBridge::TokenUnknown",
+        "kind": "nested"
+      },
+      {
         "name": "Deposit",
         "type": "starknet_bridge::bridge::token_bridge::TokenBridge::Deposit",
         "kind": "nested"
@@ -1460,8 +1566,18 @@ export const ABI = [
         "kind": "nested"
       },
       {
+        "name": "SetPendingDuration",
+        "type": "starknet_bridge::bridge::token_bridge::TokenBridge::SetPendingDuration",
+        "kind": "nested"
+      },
+      {
         "name": "SetAppchainBridge",
         "type": "starknet_bridge::bridge::token_bridge::TokenBridge::SetAppchainBridge",
+        "kind": "nested"
+      },
+      {
+        "name": "ConfigurePermissionedEnrollment",
+        "type": "starknet_bridge::bridge::token_bridge::TokenBridge::ConfigurePermissionedEnrollment",
         "kind": "nested"
       },
       {

@@ -29,7 +29,7 @@ jobs:
       - name: Install Node.js and set up cache
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           cache: "pnpm"
 
       - name: Install Dependencies
@@ -46,7 +46,7 @@ jobs:
       - name: Run l2
         run: |
           docker run -d --name l2-node --network bridge-network -p 9944:9944 -p 9943:9943 \
-            -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:manual-62d8aa1\
+            -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:manual-fce4bda\
             --base-path ./madara-l2-db \
             --rpc-external --rpc-admin --rpc-admin-external --rpc-cors "*" \
             --rpc-port 9944 --rpc-admin-port 9943 \
@@ -55,16 +55,17 @@ jobs:
             --no-l1-sync --strk-per-eth 10000 --no-charge-fee \
             --blob-gas-price 1 --l1-gas-price 1 2>&1 | tee -a ./madara_output_l2.log
 
-      - name: Wait for server to be ready
+      - name: Wait for L2 RPC and blocks
         run: |
-          timeout=180  # 3 minutes in seconds
+          timeout=180
           elapsed=0
+          sleep 12
           until [ "$(curl -fsSL http://localhost:9944/health)" = "OK" ] && echo "Health check passed"; do
             echo "Waiting for server to be ready..."
-            sleep 2
+            sleep 10 
             elapsed=$((elapsed + 2))
             if [ $elapsed -ge $timeout ]; then
-              echo "Timeout: Server did not become ready within 3 minutes"
+              echo "Timeout: L2 did not become ready within 3 minutes"
               exit 1
             fi
           done
@@ -86,7 +87,7 @@ jobs:
             -e ROLLUP_SEQ_URL=http://l2-node:9944 \
             -e ROLLUP_DECLARE_V0_SEQ_URL=http://l2-node:9943 \
             -e ROLLUP_PRIVATE_KEY=0xabcd \
-            ghcr.io/madara-alliance/bootstrapper:nightly \
+            ghcr.io/madara-alliance/bootstrapper:manual-fce4bda \
             --config /apps/configs/devnet.json --mode udc
 
           # Wait for container to finish
@@ -155,7 +156,7 @@ jobs:
       - name: Run l3
         run: |
           docker run -d --name l3-node --network bridge-network \
-            -p 9955:9955 -p 9953:9953 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:manual-62d8aa1 \
+            -p 9955:9955 -p 9953:9953 -v ./madara/configs/:/apps/configs/ ghcr.io/madara-alliance/madara:manual-fce4bda \
             --base-path ./madara-l3-db \
             --rpc-cors "*" --rpc-external --rpc-admin --rpc-admin-external \
             --rpc-port 9955 --rpc-admin-port 9953 \
@@ -166,13 +167,14 @@ jobs:
             --strk-per-eth 10000 --no-charge-fee \
             --blob-gas-price 1 --l1-gas-price 1 2>&1 | tee -a ./madara_output_l3.log
 
-      - name: Wait for server to be ready
+      - name: Wait for L3 RPC and blocks
         run: |
-          timeout=180  # 3 minutes in seconds
+          timeout=180
           elapsed=0
+          sleep=12
           until [ "$(curl -fsSL http://localhost:9955/health)" = "OK" ] && echo "Health check passed"; do
             echo "Waiting for server to be ready..."
-              sleep 2
+              sleep 10
               elapsed=$((elapsed + 2))
               if [ $elapsed -ge $timeout ]; then
                 echo "Timeout: Server did not become ready within 3 minutes"
@@ -195,7 +197,7 @@ jobs:
             -e ROLLUP_SEQ_URL=http://l3-node:9955 \
             -e ROLLUP_DECLARE_V0_SEQ_URL=http://l3-node:9953 \
             -e ROLLUP_PRIVATE_KEY=0xabcd \
-            ghcr.io/madara-alliance/bootstrapper:nightly \
+            ghcr.io/madara-alliance/bootstrapper:manual-fce4bda \
             --config /apps/configs/devnet.json --mode udc
 
           # Wait for container to finish
@@ -211,11 +213,28 @@ jobs:
           fi
           echo "Bootstrapper container completed successfully" 
 
-      - name: Run Bridge Deployment Script
+      - name: Run Full Flow
+        timeout-minutes: 10
         run: |
           tsx ./scripts/cli.ts --dump-path=./contracts.json full-flow
+
+      - name: Set Program Info
+        timeout-minutes: 5
+        run: |
           tsx ./scripts/cli.ts --dump-path=./contracts.json set-program-info --chain-id MADARA_DEVNET
+
+      - name: Deploy ERC20
+        timeout-minutes: 10
+        run: |
           tsx ./scripts/cli.ts --dump-path=./contracts.json deploy-erc20
+
+      - name: Dump L2 logs on failure
+        if: failure()
+        run: docker logs l2-node || true
+
+      - name: Dump L3 logs on failure
+        if: failure()
+        run: docker logs l3-node || true
 
       - name: Run Token Actions
         run: |

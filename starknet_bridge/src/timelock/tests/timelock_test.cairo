@@ -1,12 +1,13 @@
+use openzeppelin::access::accesscontrol::DEFAULT_ADMIN_ROLE;
+use openzeppelin::access::accesscontrol::interface::{
+    IAccessControlDispatcher, IAccessControlDispatcherTrait,
+};
+use openzeppelin::governance::timelock::interface::ITimelockDispatcher;
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, DeclareResultTrait};
 use starknet_bridge::bridge::tests::constants::{
-    DELAY_TIME, PROPOSER_ROLE, EXECUTOR_ROLE, DEFAULT_ADMIN,
+    DEFAULT_ADMIN, DELAY_TIME, EXECUTOR_ROLE, PROPOSER_ROLE,
 };
-use openzeppelin::access::accesscontrol::{
-    DEFAULT_ADMIN_ROLE, interface::{IAccessControlDispatcher, IAccessControlDispatcherTrait},
-};
-use openzeppelin::governance::timelock::interface::ITimelockDispatcher;
 
 fn deploy_timelock() -> (ITimelockDispatcher, snf::EventSpy) {
     let timelock_class = snf::declare("TimelockController").unwrap().contract_class();

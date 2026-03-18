@@ -128,7 +128,7 @@ checksum = "sha256:44f32d242af1e43982decc49c563e613a9b67ade552f5c3d5cde504e92f74
 [[package]]
 name = "piltover"
 version = "0.1.0"
-source = "git+https://github.com/keep-starknet-strange/piltover?rev=9970d44e729073de955d4e9ffa0441d20aab03a7#9970d44e729073de955d4e9ffa0441d20aab03a7"
+source = "git+https://github.com/keep-starknet-strange/piltover?rev=de21ca013a888b34c855cd55394e8c557918a074#de21ca013a888b34c855cd55394e8c557918a074"
 dependencies = [
  "integrity",
  "openzeppelin",
@@ -136,13 +136,13 @@ dependencies = [
 
 [[package]]
 name = "snforge_scarb_plugin"
-version = "0.40.0"
-source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.40.0#c20f7692c1a2936327d86b7e2c89c5462f8afdcd"
+version = "0.54.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.54.0#bc522a78a7fbfc18835b99c9c79d9427763ec288"
 
 [[package]]
 name = "snforge_std"
-version = "0.40.0"
-source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.40.0#c20f7692c1a2936327d86b7e2c89c5462f8afdcd"
+version = "0.54.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.54.0#bc522a78a7fbfc18835b99c9c79d9427763ec288"
 dependencies = [
  "snforge_scarb_plugin",
 ]

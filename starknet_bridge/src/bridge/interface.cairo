@@ -1,6 +1,5 @@
 use starknet::ContractAddress;
-use starknet_bridge::bridge::types::TokenStatus;
-use starknet_bridge::bridge::types::TokenSettings;
+use starknet_bridge::bridge::types::{TokenSettings, TokenStatus};
 
 #[starknet::interface]
 pub trait ITokenBridgeAdmin<TContractState> {

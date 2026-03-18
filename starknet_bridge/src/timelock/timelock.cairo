@@ -1,8 +1,8 @@
 #[starknet::contract]
 pub mod TimelockController {
     use TimelockControllerComponent::InternalTrait as TimelockInternalTrait;
-    use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::access::accesscontrol::interface::IAccessControl;
+    use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::governance::timelock::{
         CANCELLER_ROLE, EXECUTOR_ROLE, PROPOSER_ROLE, TimelockControllerComponent,
     };

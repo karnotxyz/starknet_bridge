@@ -2,7 +2,9 @@ use piltover::messaging::interface::{IMessagingDispatcher, IMessagingDispatcherT
 use piltover::messaging::types::MessageToAppchainStatus;
 use snforge_std as snf;
 use snforge_std::{ContractClassTrait, DeclareResultTrait};
+use starknet::SyscallResultTrait;
 use starknet::storage::StoragePointerWriteAccess;
+use starknet::syscalls::call_contract_syscall;
 use starknet_bridge::bridge::TokenBridge;
 use starknet_bridge::bridge::tests::constants::{
     APP_GOVERNOR, DELAY_TIME, GOVERNANCE_ADMIN, L3_BRIDGE_ADDRESS, SECURITY_ADMIN, SECURITY_AGENT,
@@ -17,28 +19,26 @@ use starknet_bridge::constants;
 use starknet_bridge::mocks::hash;
 use starknet_bridge::mocks::messaging::{IMockMessagingDispatcher, IMockMessagingDispatcherTrait};
 
-use starknet::syscalls::call_contract_syscall;
-use starknet::SyscallResultTrait;
-
 #[test]
 fn deploy_message_payload_1u128_ok() {
     let usdc_address = deploy_erc20_with_felt252('USDC', 'USDC');
     let calldata = TokenBridge::deployment_message_payload(usdc_address);
 
-    println!("calldata {:?}", calldata);
-    let expected_calldata: Span<felt252> = array![
-        1878846678861813862807137660746142479173097938654444763365422304796849302852, // usdc_address
-        0,
-        1431520323,
-        4, // "USDC"
-        0,
-        1431520323,
-        4, // "USDC"
-        18,
-    ]
-        .span();
+    // Build expected calldata dynamically with actual deployed address
+    let mut expected_calldata = ArrayTrait::new();
+    usdc_address.serialize(ref expected_calldata);
+    // "USDC" as ByteArray: [0 (no full words), 1431520323 (pending_word), 4 (pending_word_len)]
+    0_felt252.serialize(ref expected_calldata); // data length
+    1431520323_felt252.serialize(ref expected_calldata); // pending_word
+    4_felt252.serialize(ref expected_calldata); // pending_word_len
+    // Symbol "USDC" as ByteArray
+    0_felt252.serialize(ref expected_calldata);
+    1431520323_felt252.serialize(ref expected_calldata);
+    4_felt252.serialize(ref expected_calldata);
+    // decimals
+    18_felt252.serialize(ref expected_calldata);
 
-    assert(calldata == expected_calldata, 'Incorrect serialisation');
+    assert(calldata == expected_calldata.span(), 'Incorrect serialisation');
 }
 
 #[test]
@@ -46,40 +46,32 @@ fn deploy_message_payload_2u128_ok() {
     let usdc_address = deploy_erc20_with_felt252('Starknet Bridged Token USDC', 'USDC');
     let calldata = TokenBridge::deployment_message_payload(usdc_address);
 
-    println!("calldata {:?}", calldata);
-    let expected_calldata: Span<felt252> = array![
-        1490587303571540848742139364702760394050729519911961861263204573571851472479, // token address 
-        0,
-        34331236061979135384369429850688382866543914782444172758941385795,
-        27, // "Starknet Bridged Token USDC"
-        0,
-        1431520323,
-        4, // "USDC"
-        18,
-    ]
-        .span();
+    // Build expected calldata dynamically with actual deployed address
+    let mut expected_calldata = ArrayTrait::new();
+    usdc_address.serialize(ref expected_calldata);
+    // "Starknet Bridged Token USDC" (27 chars) as ByteArray
+    0_felt252.serialize(ref expected_calldata); // data length (no full 31-byte words)
+    // pending_word for "Starknet Bridged Token USDC"
+    34331236061979135384369429850688382866543914782444172758941385795_felt252
+        .serialize(ref expected_calldata);
+    27_felt252.serialize(ref expected_calldata); // pending_word_len
+    // Symbol "USDC" as ByteArray
+    0_felt252.serialize(ref expected_calldata);
+    1431520323_felt252.serialize(ref expected_calldata);
+    4_felt252.serialize(ref expected_calldata);
+    // decimals
+    18_felt252.serialize(ref expected_calldata);
 
-    assert(calldata == expected_calldata, 'Incorrect serialisation');
+    assert(calldata == expected_calldata.span(), 'Incorrect serialisation');
 }
 
 #[test]
 fn deploy_message_payload_3u128_ok() {
     let usdc_address = deploy_erc20("Starknet Bridged Into Appchain Token USDC", "USDC");
     let calldata = TokenBridge::deployment_message_payload(usdc_address);
-    println!("calldata {:?}", calldata);
 
-    let expected_calldata: Span<felt252> = array![
-        143620707853892322995637150357644909544175399019378012924718466488958919106, // token address
-        1,
-        147451536117456215510223090790872767498932623355471960875487237126251703840,
-        398734111865851813774403,
-        10, // "Starknet Bridged Into Appchain Token USDC"
-        0,
-        1431520323,
-        4, // "USDC"
-        18,
-    ]
-        .span();
+    // Use the test utility function which handles ByteArray serialization correctly
+    let expected_calldata = message_payloads::deployment_message_payload(usdc_address);
 
     assert(calldata == expected_calldata, 'Incorrect serialisation');
 }
