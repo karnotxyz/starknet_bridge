@@ -4,7 +4,8 @@ import {
   getProvider,
   getAccount,
   getContract,
-  setDumpPath
+  setDumpPath,
+  sleep,
 } from "./utils/utils.ts";
 import { Layer, Contract, } from "./config/types.ts";
 import { Account, byteArray, Contract as StarknetContract, num } from "starknet";
@@ -526,18 +527,15 @@ export async function getL3Balance(
     providerOrAccount: providerL3,
   });
 
-  const correspondingToken = await appchainBridgeContract.call("get_l2_token", [
-    enrolledTokenAddress,
-  ]);
+  const correspondingTokenAddress = await findCorrespondingL3Token(token);
   logger.info(`Finding corresponding appchain token`);
 
-  if (correspondingToken === 0n) {
+  if (!correspondingTokenAddress) {
     const errorMsg = "No corresponding token found on l3";
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
 
-  const correspondingTokenAddress = num.toHex(correspondingToken as any);
   logger.address(
     "Corresponding appchain token address",
     correspondingTokenAddress
@@ -552,6 +550,62 @@ export async function getL3Balance(
   });
   const balance = await appchainToken.call("balanceOf", [address]);
   logger.info(`Balance: ${balance}`);
+}
+
+async function findCorrespondingL3Token(
+  token: string = "ERC20_OZ"
+): Promise<string | null> {
+  const tokenContract: Contract = {
+    name: token,
+    layer: Layer.L2,
+    package: starknetBridgePackage
+  };
+
+  getContract(tokenContract);
+  getContract(tokenBridgeL3Contract);
+
+  if (!tokenContract.address || !tokenBridgeL3Contract.address) {
+    return null;
+  }
+
+  const providerL3 = getProvider(Layer.L3);
+  const appchainBridgeCls = await providerL3.getClassAt(tokenBridgeL3Contract.address);
+  const appchainBridgeContract = new StarknetContract({
+    abi: appchainBridgeCls.abi,
+    address: tokenBridgeL3Contract.address,
+    providerOrAccount: providerL3,
+  });
+
+  const correspondingToken = await appchainBridgeContract.call("get_l2_token", [
+    tokenContract.address,
+  ]);
+
+  if (correspondingToken === 0n) {
+    return null;
+  }
+
+  return num.toHex(correspondingToken as any);
+}
+
+export async function waitForCorrespondingL3Token(
+  token: string = "ERC20_OZ",
+  timeoutMs: number = 120000,
+  intervalMs: number = 5000,
+) {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const correspondingTokenAddress = await findCorrespondingL3Token(token);
+    if (correspondingTokenAddress) {
+      logger.address("Corresponding appchain token address", correspondingTokenAddress);
+      return correspondingTokenAddress;
+    }
+
+    logger.info("Waiting for corresponding appchain token on l3...");
+    await sleep(intervalMs);
+  }
+
+  throw new Error(`No corresponding token found on l3 after ${timeoutMs}ms`);
 }
 
 /**
